@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "PCCL",
+			"path": "../../../.."
+		},
+		{
+			"name": "web",
+			"path": "../../../../../../../../Downloads/test-PCCL/web"
+		}
+	],
+	"settings": {}
+}

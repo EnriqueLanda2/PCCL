@@ -1,0 +1,195 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+/* ════════════════════════════════════════════════════════════════
+   PCCL — Global Styles · Tailwind v4 + Atlassian/JIRA palette
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Custom theme tokens ── */
+@theme {
+  /* ─── Atlassian Blue (primary) ─── */
+  --color-primary-50:  #DEEBFF;
+  --color-primary-100: #B3D4FF;
+  --color-primary-200: #4C9AFF;
+  --color-primary-300: #2684FF;
+  --color-primary-400: #0065FF;
+  --color-primary-500: #0052CC;
+  --color-primary-600: #0747A6;
+  --color-primary-700: #043584;
+
+  /* ─── Success / Green ─── */
+  --color-success-50:  #E3FCEF;
+  --color-success-100: #ABF5D1;
+  --color-success-200: #79F2C0;
+  --color-success-400: #36B37E;
+  --color-success-500: #00875A;
+  --color-success-600: #006644;
+
+  /* ─── Warning / Orange ─── */
+  --color-warning-50:  #FFFAE6;
+  --color-warning-100: #FFF0B3;
+  --color-warning-300: #FFC400;
+  --color-warning-400: #FFAB00;
+  --color-warning-500: #FF991F;
+  --color-warning-600: #FF8B00;
+
+  /* ─── Danger / Red ─── */
+  --color-danger-50:  #FFEBE6;
+  --color-danger-100: #FFBDAD;
+  --color-danger-300: #FF7452;
+  --color-danger-400: #FF5630;
+  --color-danger-500: #DE350B;
+  --color-danger-600: #BF2600;
+
+  /* ─── Neutrals (JIRA N-scale) ─── */
+  --color-neutral-50:  #FAFBFC;
+  --color-neutral-100: #F4F5F7;
+  --color-neutral-200: #EBECF0;
+  --color-neutral-300: #DFE1E6;
+  --color-neutral-400: #C1C7D0;
+  --color-neutral-500: #97A0AF;
+  --color-neutral-600: #7A869A;
+  --color-neutral-700: #5E6C84;
+  --color-neutral-800: #344563;
+  --color-neutral-900: #172B4D;
+
+  /* ─── Purple (epic/RBAC) ─── */
+  --color-purple-50:  #EAE6FF;
+  --color-purple-100: #C0B6F2;
+  --color-purple-300: #998DD9;
+  --color-purple-500: #6554C0;
+  --color-purple-600: #5243AA;
+
+  /* ─── Teal (progress) ─── */
+  --color-teal-50:  #E6FCFF;
+  --color-teal-400: #00C7E6;
+  --color-teal-500: #00B8D9;
+
+  /* ─── Font families ─── */
+  --font-sans:  'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', ui-monospace, monospace;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+
+  /* ─── Border radius ─── */
+  --radius-sm:   3px;
+  --radius-md:   4px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-full: 9999px;
+
+  /* ─── Shadows ─── */
+  --shadow-xs:  0 1px 2px 0 rgba(23,43,77,.04);
+  --shadow-sm:  0 1px 3px 0 rgba(23,43,77,.08), 0 1px 2px -1px rgba(23,43,77,.05);
+  --shadow-md:  0 4px 6px -1px rgba(23,43,77,.08), 0 2px 4px -2px rgba(23,43,77,.05);
+  --shadow-lg:  0 10px 15px -3px rgba(23,43,77,.08), 0 4px 6px -4px rgba(23,43,77,.05);
+  --shadow-xl:  0 20px 25px -5px rgba(23,43,77,.08), 0 8px 10px -6px rgba(23,43,77,.04);
+}
+
+/* ── Global base ── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #F4F5F7;
+    color: #172B4D;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Instrument Serif', ui-serif, Georgia, serif;
+    color: #172B4D;
+    line-height: 1.25;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar        { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { background: #C1C7D0; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #97A0AF; }
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 2px solid #0065FF;
+    outline-offset: 2px;
+  }
+
+  /* Selection */
+  ::selection {
+    background: #B3D4FF;
+    color: #172B4D;
+  }
+}
+
+/* ── Components ── */
+@layer components {
+  /* Course cover gradients */
+  .cover-1 { background: linear-gradient(135deg, #172B4D 0%, #0747A6 100%); }
+  .cover-2 { background: linear-gradient(135deg, #006644 0%, #00B8D9 100%); }
+  .cover-3 { background: linear-gradient(135deg, #BF2600 0%, #FF7452 100%); }
+  .cover-4 { background: linear-gradient(135deg, #FF8B00 0%, #006644 100%); }
+  .cover-5 { background: linear-gradient(135deg, #172B4D 0%, #FF8B00 100%); }
+  .cover-6 { background: linear-gradient(135deg, #5243AA 0%, #00B8D9 100%); }
+
+  /* Card hover lift */
+  .card-hover {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-pointer;
+  }
+
+  /* Skeleton pulse */
+  .skeleton {
+    @apply bg-neutral-200 rounded-lg animate-pulse;
+  }
+
+  /* Truncate text with ellipsis */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  /* Divider */
+  .divider {
+    @apply border-t border-neutral-200 my-4;
+  }
+}
+
+/* ── Animations ── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in       { animation: fadeIn 200ms ease forwards; }
+.animate-slide-in-left { animation: slideInLeft 200ms ease forwards; }
+.animate-scale-in      { animation: scaleIn 150ms ease forwards; }
