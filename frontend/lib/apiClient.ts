@@ -7,7 +7,7 @@
  *  - Sends & receives cookies (withCredentials)
  *  - Request interceptor: injects Content-Type + optional abort signal
  *  - Response interceptor: normalises errors into ApiError
- *  - Auto-redirect to /modules/auth on 401 (client-side only)
+ *  - Auto-redirect to /identity/auth on 401 (client-side only)
  *  - Retry logic on 429 / 503 (up to 2 retries with exponential back-off)
  *  - Typed error classes: ApiError, NetworkError, TimeoutError
  */
@@ -132,7 +132,7 @@ function createClient(): AxiosInstance {
 
       /* ── 401 → redirect to login (client-side only) ── */
       if (status === 401 && typeof window !== 'undefined') {
-        window.location.href = '/modules/auth';
+        window.location.href = '/identity/auth';
         return Promise.reject(new ApiError(401, 'UNAUTHORIZED', STATUS_MESSAGES[401]));
       }
 

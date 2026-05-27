@@ -11,16 +11,18 @@ type DomainPageProps = {
   backLabel: string;
 };
 
-export function DomainPage({
-  title,
-  eyebrow,
-  description,
-  purpose,
-  services,
-  routes,
-  backHref,
-  backLabel,
-}: DomainPageProps) {
+export function DomainPage(props: Readonly<DomainPageProps>) {
+  const {
+    title,
+    eyebrow,
+    description,
+    purpose,
+    services,
+    routes,
+    backHref,
+    backLabel,
+  } = props;
+
   return (
     <main className="page" style={{ padding: 24 }}>
       <section className="dashboard-stack">

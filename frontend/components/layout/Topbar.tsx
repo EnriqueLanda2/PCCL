@@ -9,9 +9,9 @@ import Link from 'next/link';
 import { Logo } from './Logo';
 import { appRoutes } from '@/lib/routes';
 
-interface TopbarProps {
+type TopbarProps = Readonly<{
   activeHref?: string;
-}
+}>;
 
 const navLinks = [
   { label: 'Catálogo', href: appRoutes.courses },
@@ -20,7 +20,9 @@ const navLinks = [
   { label: 'Historias', href: '#' },
 ];
 
-export function Topbar({ activeHref }: TopbarProps) {
+export function Topbar(props: TopbarProps) {
+  const { activeHref } = props;
+
   return (
     <header style={{
       display: 'flex',
@@ -65,7 +67,7 @@ export function Topbar({ activeHref }: TopbarProps) {
           Iniciar sesión
         </Link>
         <Link
-          href={appRoutes.login}
+          href={appRoutes.register}
           style={{
             display: 'inline-flex', alignItems: 'center', height: '36px',
             padding: '0 16px', borderRadius: '999px', fontSize: '13.5px', fontWeight: 500,

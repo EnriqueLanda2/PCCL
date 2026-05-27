@@ -5,7 +5,6 @@ import { CoursesModule } from './modules/courses/courses.module';
 import { InscriptionsModule } from './modules/inscriptions/inscriptions.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
 import { EvaluationsModule } from './modules/evaluations/evaluations.module';
-import { CertificatesModule } from './modules/certificates/certificates.module';
 import { ProgressModule } from './modules/progress/progress.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { LearningServiceController } from './learning-service.controller';
@@ -19,7 +18,6 @@ import { LearningServiceService } from './learning-service.service';
     LessonsModule,
     InscriptionsModule,
     EvaluationsModule,
-    CertificatesModule,
     ProgressModule,
     CalificationsModule,
   ],

@@ -25,7 +25,8 @@ function Breadcrumb() {
   const segments = pathname.split('/').filter(Boolean);
   if (segments.length < 2) return null;
 
-  const last = segments[segments.length - 1];
+  const last = segments.at(-1);
+  if (!last) return null;
   const label = ROUTE_LABELS[last] ?? last;
 
   return (
@@ -44,7 +45,7 @@ function Breadcrumb() {
 }
 
 /* ── Notification bell ── */
-function NotificationBell({ count = 0 }: { count?: number }) {
+function NotificationBell({ count = 0 }: Readonly<{ count?: number }>) {
   return (
     <button
       aria-label={count > 0 ? `${count} notificaciones` : 'Notificaciones'}
@@ -72,8 +73,8 @@ function SearchBar() {
         inputRef.current?.focus();
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    globalThis.addEventListener('keydown', handler);
+    return () => globalThis.removeEventListener('keydown', handler);
   }, []);
 
   return (

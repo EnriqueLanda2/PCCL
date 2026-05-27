@@ -42,11 +42,12 @@ const menuCatalog: MenuItem[] = [
   { key: 'rbac',          path: appRoutes.rbac,          label: 'RBAC',           icon: 'rbac'          },
 ];
 
-const learnGroup = ['dashboard', 'courses', 'lessons', 'progress', 'certificates'];
-const adminGroup = ['inscriptions', 'califications', 'reports', 'users', 'rbac'];
+const learningGroup = new Set(['dashboard', 'courses', 'lessons', 'inscriptions', 'califications', 'progress']);
+const identityGroup = new Set(['users', 'rbac']);
+const certificationGroup = new Set(['certificates', 'reports']);
 
 /* ── Section label ── */
-function SectionLabel({ children, collapsed }: { children: React.ReactNode; collapsed: boolean }) {
+function SectionLabel({ children, collapsed }: Readonly<{ children: React.ReactNode; collapsed: boolean }>) {
   if (collapsed) return <div className="h-px bg-white/10 mx-2 my-3" />;
   return (
     <p className="px-3 pt-5 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-primary-300/50 select-none">
@@ -56,7 +57,7 @@ function SectionLabel({ children, collapsed }: { children: React.ReactNode; coll
 }
 
 /* ── Nav item ── */
-function NavItem({ item, collapsed, isActive }: { item: MenuItem; collapsed: boolean; isActive: boolean }) {
+function NavItem({ item, collapsed, isActive }: Readonly<{ item: MenuItem; collapsed: boolean; isActive: boolean }>) {
   return (
     <Link
       href={item.path}
@@ -132,9 +133,10 @@ export function Sidebar() {
     }).catch(() => {});
   }, []);
 
-  const menu          = menuCatalog.filter((m) => visibleKeys.includes(m.key));
-  const learningItems = menu.filter((m) => learnGroup.includes(m.key));
-  const adminItems    = menu.filter((m) => adminGroup.includes(m.key));
+  const menu            = menuCatalog.filter((m) => visibleKeys.includes(m.key));
+  const learningItems   = menu.filter((m) => learningGroup.has(m.key));
+  const identityItems   = menu.filter((m) => identityGroup.has(m.key));
+  const certificationItems = menu.filter((m) => certificationGroup.has(m.key));
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -179,11 +181,26 @@ export function Sidebar() {
         </>
       )}
 
-      {/* ── Admin section ── */}
-      {adminItems.length > 0 && (
+      {/* ── Identity section ── */}
+      {identityItems.length > 0 && (
         <>
-          <SectionLabel collapsed={collapsed}>Administrar</SectionLabel>
-          {adminItems.map((item) => (
+          <SectionLabel collapsed={collapsed}>Identidad</SectionLabel>
+          {identityItems.map((item) => (
+            <NavItem
+              key={item.key}
+              item={item}
+              collapsed={collapsed}
+              isActive={pathname.startsWith(item.path)}
+            />
+          ))}
+        </>
+      )}
+
+      {/* ── Certification section ── */}
+      {certificationItems.length > 0 && (
+        <>
+          <SectionLabel collapsed={collapsed}>Certificar</SectionLabel>
+          {certificationItems.map((item) => (
             <NavItem
               key={item.key}
               item={item}

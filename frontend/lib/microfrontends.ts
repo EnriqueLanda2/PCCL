@@ -22,7 +22,7 @@ export const microfrontends: MicrofrontendItem[] = [
     description: 'Pantalla enfocada en autenticacion y administracion de usuarios.',
     purpose: 'Gestiona login, perfil, usuarios y permisos.',
     services: ['Identity Service'],
-    routes: ['/auth/login', '/auth/me', '/users', '/roles'],
+    routes: ['/identity/auth', '/identity/register', '/identity/users', '/identity/rbac'],
   },
   {
     key: 'learning',
@@ -32,7 +32,7 @@ export const microfrontends: MicrofrontendItem[] = [
     description: 'Zona del alumno y del docente para operar el aprendizaje.',
     purpose: 'Cubre cursos, inscripciones, progreso y calificaciones.',
     services: ['Learning Service'],
-    routes: ['/courses', '/lessons', '/inscriptions', '/progress', '/califications'],
+    routes: ['/learning/dashboard', '/learning/courses', '/learning/lessons', '/learning/inscriptions', '/learning/progress', '/learning/califications'],
   },
   {
     key: 'certification',
@@ -42,7 +42,7 @@ export const microfrontends: MicrofrontendItem[] = [
     description: 'Vista para certificados, seguimiento y trazabilidad.',
     purpose: 'Agrupa certificados y reportes de auditoria.',
     services: ['Certification & Audit Service'],
-    routes: ['/certificates', '/audit'],
+    routes: ['/certification/certificates', '/certification/audit'],
   },
 ];
 
