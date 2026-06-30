@@ -1,0 +1,65 @@
+services:
+
+  # ─── Message broker ───────────────────────────────────────────────────────────
+  nats:
+    image: nats:2.10-alpine
+    ports:
+      - '4222:4222'
+    restart: unless-stopped
+
+  # ─── Databases (one per service, ports match apps/backend/.env) ──────────────
+  postgres-identity:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5433:5432'
+    volumes:
+      - pgdata-identity:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  postgres-learning:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: learning
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5434:5432'
+    volumes:
+      - pgdata-learning:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  postgres-certification:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: certification
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5435:5432'
+    volumes:
+      - pgdata-certification:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata-identity:
+  pgdata-learning:
+  pgdata-certification:

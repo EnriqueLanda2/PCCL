@@ -41,8 +41,8 @@ services:
   # ─── Microservices ────────────────────────────────────────────────────────────
   identity-service:
     build:
-      context: .
-      dockerfile: Dockerfile.identity
+      context: ../../../apps/backend
+      dockerfile: ../../infra/docker/images/services/Dockerfile.identity
     environment:
       NATS_URL: nats://nats:4222
       IDENTITY_DATABASE_URL: postgresql://postgres:postgres@postgres-identity:5432/identity
@@ -56,8 +56,8 @@ services:
 
   learning-service:
     build:
-      context: .
-      dockerfile: Dockerfile.learning
+      context: ../../../apps/backend
+      dockerfile: ../../infra/docker/images/services/Dockerfile.learning
     environment:
       NATS_URL: nats://nats:4222
       LEARNING_DATABASE_URL: postgresql://postgres:postgres@postgres-learning:5432/learning
@@ -71,8 +71,8 @@ services:
 
   certification-service:
     build:
-      context: .
-      dockerfile: Dockerfile.certification
+      context: ../../../apps/backend
+      dockerfile: ../../infra/docker/images/services/Dockerfile.certification
     environment:
       NATS_URL: nats://nats:4222
       CERTIFICATION_DATABASE_URL: postgresql://postgres:postgres@postgres-certification:5432/certification
@@ -85,8 +85,8 @@ services:
 
   gateway:
     build:
-      context: .
-      dockerfile: Dockerfile.gateway
+      context: ../../../apps/backend
+      dockerfile: ../../infra/docker/images/services/Dockerfile.gateway
     ports:
       - '4000:4000'
     environment:
