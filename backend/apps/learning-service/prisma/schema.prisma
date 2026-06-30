@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/prisma/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("LEARNING_DATABASE_URL")
+}
+
+model Course {
+  id              String       @id @default(uuid()) @db.Uuid
+  transactionDate DateTime     @default(now()) @map("transaction_date") @db.Timestamp(6)
+  startDate       DateTime?    @map("start_date") @db.Timestamp(6)
+  endDate         DateTime?    @map("end_date") @db.Timestamp(6)
+  createdBy       String?      @map("created_by") @db.VarChar(100)
+  updatedBy       String?      @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
+  title           String       @db.VarChar(140)
+  description     String       @db.Text
+  status          String       @default("draft") @db.VarChar(20)
+  level           String       @default("basic") @db.VarChar(40)
+  lessons         Lesson[]
+  inscriptions    Inscription[]
+  evaluations     Evaluation[]
+
+  @@map("courses")
+}
+
+model Lesson {
+  id              String         @id @default(uuid()) @db.Uuid
+  transactionDate DateTime       @default(now()) @map("transaction_date") @db.Timestamp(6)
+  startDate       DateTime?      @map("start_date") @db.Timestamp(6)
+  endDate         DateTime?      @map("end_date") @db.Timestamp(6)
+  createdBy       String?        @map("created_by") @db.VarChar(100)
+  updatedBy       String?        @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamp(6)
+  title           String         @db.VarChar(140)
+  content         String         @db.Text
+  contentType     String         @default("text") @map("content_type") @db.VarChar(20)
+  courseId        String         @map("course_id") @db.Uuid
+  course          Course         @relation(fields: [courseId], references: [id])
+  califications   Calification[]
+
+  @@map("lessons")
+}
+
+model Inscription {
+  id                 String     @id @default(uuid()) @db.Uuid
+  transactionDate    DateTime   @default(now()) @map("transaction_date") @db.Timestamp(6)
+  startDate          DateTime?  @map("start_date") @db.Timestamp(6)
+  endDate            DateTime?  @map("end_date") @db.Timestamp(6)
+  createdBy          String?    @map("created_by") @db.VarChar(100)
+  updatedBy          String?    @map("updated_by") @db.VarChar(100)
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamp(6)
+  userId             String     @map("user_id") @db.Uuid
+  courseId           String     @map("course_id") @db.Uuid
+  course             Course     @relation(fields: [courseId], references: [id])
+  status             String     @default("enrolled") @db.VarChar(20)
+  progressPercentage Decimal?   @map("progress_percentage") @db.Decimal(5, 2)
+  completedAt        DateTime?  @map("completed_at") @db.Timestamp(6)
+  progress           Progress[]
+
+  @@map("inscriptions")
+}
+
+model Progress {
+  id                   String      @id @default(uuid()) @db.Uuid
+  transactionDate      DateTime    @default(now()) @map("transaction_date") @db.Timestamp(6)
+  startDate            DateTime?   @map("start_date") @db.Timestamp(6)
+  endDate              DateTime?   @map("end_date") @db.Timestamp(6)
+  createdBy            String?     @map("created_by") @db.VarChar(100)
+  updatedBy            String?     @map("updated_by") @db.VarChar(100)
+  createdAt            DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt            DateTime    @updatedAt @map("updated_at") @db.Timestamp(6)
+  inscriptionId        String      @map("inscription_id") @db.Uuid
+  inscription          Inscription @relation(fields: [inscriptionId], references: [id])
+  lessonsCompleted     Decimal     @default(0) @map("lessons_completed") @db.Decimal(5, 2)
+  evaluationsCompleted Decimal     @default(0) @map("evaluations_completed") @db.Decimal(5, 2)
+  averageScore         Decimal     @default(0) @map("average_score") @db.Decimal(5, 2)
+  progressPercentage   Decimal     @default(0) @map("progress_percentage") @db.Decimal(5, 2)
+  lastAccessAt         DateTime?   @map("last_access_at") @db.Timestamp(6)
+
+  @@map("progress")
+}
+
+model Calification {
+  id              String    @id @default(uuid()) @db.Uuid
+  transactionDate DateTime  @default(now()) @map("transaction_date") @db.Timestamp(6)
+  startDate       DateTime? @map("start_date") @db.Timestamp(6)
+  endDate         DateTime? @map("end_date") @db.Timestamp(6)
+  createdBy       String?   @map("created_by") @db.VarChar(100)
+  updatedBy       String?   @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  title           String    @db.VarChar(140)
+  content         String    @db.Text
+  type            String    @default("quiz") @db.VarChar(20)
+  totalPoints     Int       @default(10) @map("total_points")
+  maxAttempts     Int       @default(1) @map("max_attempts")
+  lessonId        String    @map("lesson_id") @db.Uuid
+  lesson          Lesson    @relation(fields: [lessonId], references: [id])
+
+  @@map("califications")
+}
+
+model Evaluation {
+  id              String              @id @default(uuid()) @db.Uuid
+  transactionDate DateTime            @default(now()) @map("transaction_date") @db.Timestamp(6)
+  startDate       DateTime?           @map("start_date") @db.Timestamp(6)
+  endDate         DateTime?           @map("end_date") @db.Timestamp(6)
+  createdBy       String?             @map("created_by") @db.VarChar(100)
+  updatedBy       String?             @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamp(6)
+  title           String              @db.VarChar(140)
+  description     String?             @db.Text
+  courseId        String              @map("course_id") @db.Uuid
+  course          Course              @relation(fields: [courseId], references: [id])
+  attempts        EvaluationAttempt[]
+
+  @@map("evaluations")
+}
+
+model EvaluationAttempt {
+  id              String     @id @default(uuid()) @db.Uuid
+  transactionDate DateTime   @default(now()) @map("transaction_date") @db.Timestamp(6)
+  startDate       DateTime?  @map("start_date") @db.Timestamp(6)
+  endDate         DateTime?  @map("end_date") @db.Timestamp(6)
+  createdBy       String?    @map("created_by") @db.VarChar(100)
+  updatedBy       String?    @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamp(6)
+  evaluationId    String     @map("evaluation_id") @db.Uuid
+  evaluation      Evaluation @relation(fields: [evaluationId], references: [id])
+  studentId       String     @map("student_id") @db.Uuid
+  answers         Json
+  score           Decimal?   @map("score") @db.Decimal(5, 2)
+
+  @@map("evaluation_attempts")
+}

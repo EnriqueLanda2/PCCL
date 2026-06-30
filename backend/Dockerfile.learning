@@ -1,18 +1,18 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json package-lock.json* ./
-COPY prisma ./prisma
-COPY tsconfig*.json ./
-COPY src ./src
+COPY package.json package-lock.json* tsconfig.json nest-cli.json ./
+COPY apps/learning-service ./apps/learning-service
+COPY libs ./libs
 RUN npm ci --no-audit --no-fund
-RUN npx prisma generate
-RUN npm run build
+RUN npx prisma generate --schema=apps/learning-service/prisma/schema.prisma
+RUN npx nest build learning-service
 
 FROM node:20-alpine
 WORKDIR /app
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
-EXPOSE 4002
-CMD ["bash","-lc","node dist/apps/learning-service/main"]
+COPY --from=builder /app/dist/apps/learning-service ./dist/apps/learning-service
+COPY --from=builder /app/apps/learning-service/prisma ./apps/learning-service/prisma
+COPY --from=builder /app/apps/learning-service/src/prisma/generated ./apps/learning-service/src/prisma/generated
+ENV NODE_ENV=production
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=apps/learning-service/prisma/schema.prisma && node dist/apps/learning-service/main"]

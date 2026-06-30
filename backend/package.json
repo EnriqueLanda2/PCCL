@@ -7,25 +7,33 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "prisma:generate": "prisma generate",
-    "prisma:studio": "prisma studio",
-    "prisma:migrate": "prisma migrate dev",
-    "postinstall": "prisma generate",
-    "start": "nest start",
-    "start:gateway": "node dist/main",
-    "start:identity": "node dist/apps/identity-service/main",
-    "start:learning": "node dist/apps/learning-service/main",
-    "start:certification": "node dist/apps/certification-audit-service/main",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "build:gateway": "nest build gateway",
+    "build:identity": "nest build identity-service",
+    "build:learning": "nest build learning-service",
+    "build:certification": "nest build certification-service",
+    "build:all": "npm run build:gateway && npm run build:identity && npm run build:learning && npm run build:certification",
+    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
+    "prisma:generate:identity": "prisma generate --schema=apps/identity-service/prisma/schema.prisma",
+    "prisma:generate:learning": "prisma generate --schema=apps/learning-service/prisma/schema.prisma",
+    "prisma:generate:certification": "prisma generate --schema=apps/certification-service/prisma/schema.prisma",
+    "prisma:generate:all": "npm run prisma:generate:identity && npm run prisma:generate:learning && npm run prisma:generate:certification",
+    "prisma:migrate:identity": "prisma migrate dev --schema=apps/identity-service/prisma/schema.prisma",
+    "prisma:migrate:learning": "prisma migrate dev --schema=apps/learning-service/prisma/schema.prisma",
+    "prisma:migrate:certification": "prisma migrate dev --schema=apps/certification-service/prisma/schema.prisma",
+    "start:gateway": "nest start gateway --watch",
+    "start:identity": "nest start identity-service --watch",
+    "start:learning": "nest start learning-service --watch",
+    "start:certification": "nest start certification-service --watch",
+    "start:gateway:prod": "node dist/apps/gateway/main",
+    "start:identity:prod": "node dist/apps/identity-service/main",
+    "start:learning:prod": "node dist/apps/learning-service/main",
+    "start:certification:prod": "node dist/apps/certification-service/main",
+    "docker:up": "docker-compose up --build",
+    "docker:down": "docker-compose down",
+    "lint": "eslint \"{apps,libs}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:cov": "jest --coverage"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -33,6 +41,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/mapped-types": "^2.0.5",
+    "@nestjs/microservices": "^11.1.27",
     "@nestjs/passport": "^11.0.0",
     "@nestjs/platform-express": "^11.0.1",
     "@prisma/client": "^6.0.0",
@@ -41,6 +50,7 @@
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.6",
     "helmet": "^7.1.0",
+    "nats": "^2.29.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
@@ -84,15 +94,27 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "roots": [
+      "<rootDir>/apps",
+      "<rootDir>/libs"
+    ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "apps/**/*.(t|j)s",
+      "libs/**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "@app/contracts/(.*)": "<rootDir>/libs/contracts/src/$1",
+      "@app/contracts": "<rootDir>/libs/contracts/src",
+      "@app/messaging/(.*)": "<rootDir>/libs/messaging/src/$1",
+      "@app/messaging": "<rootDir>/libs/messaging/src",
+      "@app/common/(.*)": "<rootDir>/libs/common/src/$1",
+      "@app/common": "<rootDir>/libs/common/src"
+    }
   }
 }

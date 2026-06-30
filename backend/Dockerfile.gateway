@@ -1,19 +1,16 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json package-lock.json* ./
-COPY prisma ./prisma
-COPY tsconfig*.json ./
-COPY src ./src
+COPY package.json package-lock.json* tsconfig.json nest-cli.json ./
+COPY apps/gateway ./apps/gateway
+COPY libs ./libs
 RUN npm ci --no-audit --no-fund
-RUN npx prisma generate
-RUN npm run build
+RUN npx nest build gateway
 
 FROM node:20-alpine
 WORKDIR /app
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/dist/apps/gateway ./dist/apps/gateway
 ENV NODE_ENV=production
 EXPOSE 4000
-CMD ["bash","-lc","npx prisma migrate deploy && node dist/main"]
+CMD ["node", "dist/apps/gateway/main"]
