@@ -2,3 +2,10 @@ packages:
   - 'apps/backend'
   - 'apps/frontend/web-shell'
   - 'packages/*'
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  bcrypt: true
+  prisma: true
+  sharp: true
+  unrs-resolver: true
