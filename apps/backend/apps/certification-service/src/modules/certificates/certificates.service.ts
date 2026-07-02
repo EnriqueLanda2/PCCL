@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { LEARNING_PATTERNS } from '@app/contracts';
@@ -13,14 +18,19 @@ export class CertificatesService {
   ) {}
 
   async generate(inscriptionId: string, actor: string) {
-    const insc = await firstValueFrom(
-      this.learningClient.send(LEARNING_PATTERNS.INSCRIPTION_FIND_ONE, { id: inscriptionId }),
+    const insc = await firstValueFrom<{ status: string } | null>(
+      this.learningClient.send(LEARNING_PATTERNS.INSCRIPTION_FIND_ONE, {
+        id: inscriptionId,
+      }),
     ).catch(() => null);
 
     if (!insc) throw new NotFoundException('Inscripcion no encontrada');
-    if (insc.status !== 'completed') throw new BadRequestException('Curso no completado');
+    if (insc.status !== 'completed')
+      throw new BadRequestException('Curso no completado');
 
-    const existing = await this.prisma.certificate.findFirst({ where: { inscriptionId } });
+    const existing = await this.prisma.certificate.findFirst({
+      where: { inscriptionId },
+    });
     if (existing) throw new BadRequestException('Certificado ya existe');
 
     const now = new Date();
@@ -29,7 +39,14 @@ export class CertificatesService {
 
     const certNum = `CERT-${inscriptionId.slice(0, 8).toUpperCase()}-${Date.now()}`;
     const cert = await this.prisma.certificate.create({
-      data: { inscriptionId, certificateNumber: certNum, issuedAt: now, expiresAt: expiry, createdBy: actor, updatedBy: actor },
+      data: {
+        inscriptionId,
+        certificateNumber: certNum,
+        issuedAt: now,
+        expiresAt: expiry,
+        createdBy: actor,
+        updatedBy: actor,
+      },
     });
     return this.findOne(cert.id);
   }

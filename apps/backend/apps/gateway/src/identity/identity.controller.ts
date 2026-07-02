@@ -19,6 +19,12 @@ import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequestUser } from '../auth/interfaces/request-user.interface';
 
+interface AuthResult {
+  token: string;
+  user: unknown;
+  access: unknown;
+}
+
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class IdentityController {
@@ -33,7 +39,7 @@ export class IdentityController {
     @Body() dto: { email: string; password: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await firstValueFrom<any>(
+    const result = await firstValueFrom<AuthResult>(
       this.client.send(IDENTITY_PATTERNS.AUTH_LOGIN, dto),
     );
     this.setCookie(res, result.token);
@@ -46,7 +52,7 @@ export class IdentityController {
     @Body() dto: { fullName: string; email: string; password: string },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await firstValueFrom<any>(
+    const result = await firstValueFrom<AuthResult>(
       this.client.send(IDENTITY_PATTERNS.AUTH_REGISTER, dto),
     );
     this.setCookie(res, result.token);
@@ -73,19 +79,20 @@ export class IdentityController {
 
   @Get('users')
   findAllUsers() {
-    return firstValueFrom(this.client.send(IDENTITY_PATTERNS.USER_FIND_ALL, {}));
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.USER_FIND_ALL, {}),
+    );
   }
 
   @Get('users/:id')
   findUser(@Param('id') id: string) {
-    return firstValueFrom(this.client.send(IDENTITY_PATTERNS.USER_FIND_BY_ID, { id }));
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.USER_FIND_BY_ID, { id }),
+    );
   }
 
   @Post('users')
-  createUser(
-    @Body() dto: any,
-    @CurrentUser() user: RequestUser | null,
-  ) {
+  createUser(@Body() dto: unknown, @CurrentUser() user: RequestUser | null) {
     return firstValueFrom(
       this.client.send(IDENTITY_PATTERNS.USER_CREATE, {
         dto,
@@ -103,7 +110,9 @@ export class IdentityController {
 
   @Get('rbac/catalogs')
   getRbacCatalogs() {
-    return firstValueFrom(this.client.send(IDENTITY_PATTERNS.RBAC_CATALOGS, {}));
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.RBAC_CATALOGS, {}),
+    );
   }
 
   private setCookie(res: Response, token: string) {

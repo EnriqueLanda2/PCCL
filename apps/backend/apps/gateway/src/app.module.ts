@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { MessagingModule } from '@app/messaging';
 import { JwtStrategy } from './auth/jwt.strategy';
@@ -15,14 +15,22 @@ import { CertificationController } from './certification/certification.controlle
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
+      useFactory: (config: ConfigService): JwtModuleOptions => ({
         secret: config.get<string>('JWT_SECRET', 'pccl_secret'),
-        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN', '1d') },
+        signOptions: {
+          expiresIn: config.get<string>('JWT_EXPIRES_IN', '1d') as NonNullable<
+            JwtModuleOptions['signOptions']
+          >['expiresIn'],
+        },
       }),
     }),
     MessagingModule.forGateway(),
   ],
   providers: [JwtStrategy],
-  controllers: [IdentityController, LearningController, CertificationController],
+  controllers: [
+    IdentityController,
+    LearningController,
+    CertificationController,
+  ],
 })
 export class AppModule {}

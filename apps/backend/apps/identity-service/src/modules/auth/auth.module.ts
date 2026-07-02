@@ -16,7 +16,11 @@ import { AuthController } from './auth.controller';
       inject: [ConfigService],
       useFactory: (config: ConfigService): JwtModuleOptions => ({
         secret: config.get<string>('JWT_SECRET', 'pccl_secret'),
-        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN', '1d') },
+        signOptions: {
+          expiresIn: config.get<string>('JWT_EXPIRES_IN', '1d') as NonNullable<
+            JwtModuleOptions['signOptions']
+          >['expiresIn'],
+        },
       }),
     }),
   ],

@@ -1,10 +1,18 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { IDENTITY_PATTERNS } from '@app/contracts';
 import { IDENTITY_CLIENT } from '@app/messaging';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateInscriptionDto, UpdateInscriptionDto } from './dtos/inscription.dto';
+import {
+  CreateInscriptionDto,
+  UpdateInscriptionDto,
+} from './dtos/inscription.dto';
 
 @Injectable()
 export class InscriptionsService {
@@ -15,8 +23,10 @@ export class InscriptionsService {
 
   async create(dto: CreateInscriptionDto, actor: string) {
     const [user, course] = await Promise.all([
-      firstValueFrom(
-        this.identityClient.send(IDENTITY_PATTERNS.USER_FIND_BY_ID, { id: dto.userId }),
+      firstValueFrom<unknown>(
+        this.identityClient.send(IDENTITY_PATTERNS.USER_FIND_BY_ID, {
+          id: dto.userId,
+        }),
       ).catch(() => null),
       this.prisma.course.findUnique({ where: { id: dto.courseId } }),
     ]);
@@ -30,7 +40,12 @@ export class InscriptionsService {
     if (existing) throw new ConflictException('Ya inscrito');
 
     const insc = await this.prisma.inscription.create({
-      data: { userId: dto.userId, courseId: dto.courseId, createdBy: actor, updatedBy: actor },
+      data: {
+        userId: dto.userId,
+        courseId: dto.courseId,
+        createdBy: actor,
+        updatedBy: actor,
+      },
     });
     return this.findOne(insc.id);
   }
@@ -58,7 +73,9 @@ export class InscriptionsService {
       data: {
         ...dto,
         updatedBy: actor,
-        ...(dto.status === 'completed' ? { completedAt: new Date(), progressPercentage: 100 } : {}),
+        ...(dto.status === 'completed'
+          ? { completedAt: new Date(), progressPercentage: 100 }
+          : {}),
       },
     });
     return this.findOne(id);
