@@ -2,15 +2,12 @@
   "name": "pccl",
   "private": true,
   "scripts": {
-    "dev": "pnpm infra:up && turbo run dev",
+    "dev": "pnpm infra:up && pnpm -r --parallel run dev",
     "infra:up": "docker compose -f infra/docker/compose/docker-compose.dev.yml up -d --wait",
     "infra:down": "docker compose -f infra/docker/compose/docker-compose.dev.yml down",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "test": "turbo run test"
-  },
-  "devDependencies": {
-    "turbo": "^2.5.0"
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test"
   },
   "packageManager": "pnpm@11.8.0",
   "engines": {
