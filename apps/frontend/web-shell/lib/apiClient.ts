@@ -81,7 +81,7 @@ function getRetryDelay(attempt: number, retryAfter?: string): number {
 
 function createClient(): AxiosInstance {
   const client = axios.create({
-    baseURL:         process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',
+    baseURL:         process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000',
     timeout:         15_000,
     withCredentials: true,
     headers: {

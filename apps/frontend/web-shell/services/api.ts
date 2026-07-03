@@ -4,7 +4,7 @@
    JSON parsing, manejo de errores uniforme.
    ─────────────────────────────────────────── */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export class ApiError extends Error {
   constructor(

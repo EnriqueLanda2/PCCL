@@ -6,9 +6,9 @@ import { configureHttpApp } from '@app/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
-  configureHttpApp(app, config.get<string>('FRONTEND_URL', 'http://localhost:3001'));
+  configureHttpApp(app, config.get<string>('FRONTEND_URL', 'http://localhost:3002'));
 
-  const port = config.get<number>('PORT', 4000);
+  const port = config.get<number>('PORT', 3000);
   await app.listen(port);
   console.log(`gateway listening on port ${port}`);
 }
