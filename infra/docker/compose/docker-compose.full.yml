@@ -88,9 +88,9 @@ services:
       context: ../../../apps/backend
       dockerfile: ../../infra/docker/images/services/Dockerfile.gateway
     ports:
-      - '3000:3000'
+      - '3010:3010'
     environment:
-      PORT: 3000
+      PORT: 3010
       NATS_URL: nats://nats:4222
       JWT_SECRET: ${JWT_SECRET:-pccl_secret_change_in_prod}
       JWT_EXPIRES_IN: 1d

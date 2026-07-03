@@ -8,7 +8,7 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   configureHttpApp(app, config.get<string>('FRONTEND_URL', 'http://localhost:3002'));
 
-  const port = config.get<number>('PORT', 3000);
+  const port = config.get<number>('PORT', 3010);
   await app.listen(port);
   console.log(`gateway listening on port ${port}`);
 }
