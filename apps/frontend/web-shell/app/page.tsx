@@ -72,19 +72,19 @@ export default function HomePage() {
         alignItems: 'center',
       }}>
         <div>
-          <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600, color: 'var(--blue-600)', display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-            <span style={{ width: '24px', height: '1px', background: 'var(--blue-600)', display: 'inline-block' }} />
+          <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 600, color: 'var(--green-700)', display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '6px 14px 6px 10px', borderRadius: '999px', background: 'var(--green-50)', border: '1px solid var(--green-100)' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--green-500)', display: 'inline-block', boxShadow: '0 0 0 3px rgba(22,163,74,0.18)' }} />
             Nueva cohorte · junio 2026
           </span>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(48px, 6vw, 88px)', lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '40px', maxWidth: '12ch' }}>
-            Aprende algo<br />que <em style={{ fontStyle: 'italic', color: 'var(--blue-600)' }}>importe.</em>
+            Aprende algo<br />que <em style={{ fontStyle: 'italic', background: 'linear-gradient(120deg, var(--blue-600), var(--green-600))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>importe.</em>
           </h1>
           <p style={{ fontSize: '19px', color: 'var(--ink-soft)', lineHeight: 1.55, maxWidth: '46ch', marginBottom: '36px' }}>
             Una plataforma serena para impartir, cursar y certificar conocimiento. Clases, evaluaciones y constancias verificables, todo en un solo lugar.
           </p>
           <div style={{ display: 'flex', gap: '12px', marginBottom: '56px', flexWrap: 'wrap' }}>
-            <Link href={appRoutes.courses} style={{ display: 'inline-flex', alignItems: 'center', height: '52px', padding: '0 28px', borderRadius: '999px', background: 'var(--blue-700)', color: 'var(--panel)', fontSize: '16px', fontWeight: 500, transition: 'background 160ms' }}>
-              Explorar catálogo
+            <Link href={appRoutes.courses} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', height: '52px', padding: '0 30px', borderRadius: '999px', background: 'linear-gradient(120deg, var(--blue-700), var(--green-600))', color: 'var(--panel)', fontSize: '16px', fontWeight: 600, boxShadow: '0 8px 22px -8px rgba(11,114,51,0.55)', transition: 'box-shadow 160ms' }}>
+              Explorar catálogo <span style={{ fontSize: '18px', lineHeight: 1 }}>→</span>
             </Link>
             <Link href={appRoutes.login} style={{ display: 'inline-flex', alignItems: 'center', height: '52px', padding: '0 28px', borderRadius: '999px', background: 'var(--panel)', border: '1px solid var(--neutral-200)', fontSize: '16px', fontWeight: 500 }}>
               Soy instructor
@@ -106,7 +106,7 @@ export default function HomePage() {
           <div style={{ position: 'absolute', top: '-40px', right: '40px', width: '360px', height: '360px', background: 'radial-gradient(circle, rgba(61,108,229,0.18), transparent 60%)', borderRadius: '50%' }} />
           {/* Card curso */}
           <div style={{ position: 'absolute', top: 0, right: 0, width: '300px', boxShadow: 'var(--sh-3)', borderRadius: '16px', overflow: 'hidden', transform: 'rotate(2.5deg)', background: 'var(--panel)', border: '1px solid var(--neutral-100)' }}>
-            <div style={{ height: '160px', background: 'linear-gradient(135deg, #1f3ca8, #289b64)', color: 'var(--panel)', padding: '18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div style={{ height: '160px', background: 'linear-gradient(135deg, var(--blue-700), var(--green-500))', color: 'var(--panel)', padding: '18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '11px', background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '999px', alignSelf: 'flex-start', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>CURSO</span>
               <div style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', lineHeight: 1.1 }}>Fundamentos de visualización de datos</div>
             </div>
@@ -143,7 +143,7 @@ export default function HomePage() {
       {/* ── Value props bento ── */}
       <section style={{ padding: '80px clamp(20px, 4vw, 56px)', borderTop: '1px solid var(--neutral-100)' }}>
         <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(36px,4vw,56px)', maxWidth: '16ch', marginBottom: '56px' }}>
-          Todo lo que necesitas para enseñar, evaluar y <em style={{ color: 'var(--blue-600)' }}>graduar.</em>
+          Todo lo que necesitas para enseñar, evaluar y <em style={{ background: 'linear-gradient(120deg, var(--blue-600), var(--green-600))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>graduar.</em>
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gridTemplateRows: '260px 260px', gap: '20px' }}>
           {VALUE_PROPS.map((vp, i) => (

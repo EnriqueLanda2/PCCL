@@ -86,6 +86,56 @@
   --shadow-xl:  0 20px 25px -5px rgba(23,43,77,.08), 0 8px 10px -6px rgba(23,43,77,.04);
 }
 
+/* ── Design tokens consumidos via var(--x) en los componentes ──
+   (paleta azul + verde bandera más clarito) ── */
+:root {
+  /* Azul */
+  --blue-50:  #EAF2FF;
+  --blue-100: #D3E4FF;
+  --blue-300: #7EB6FF;
+  --blue-400: #4C9AFF;
+  --blue-500: #0065FF;
+  --blue-600: #0052CC;
+  --blue-700: #0747A6;
+  --blue-800: #043584;
+  --blue-900: #062753;
+
+  /* Verde bandera (mas clarito) */
+  --green-50:  #E8F9EE;
+  --green-100: #C8F2D6;
+  --green-300: #6FDB93;
+  --green-400: #34C769;
+  --green-500: #16A34A;
+  --green-600: #0F8C3D;
+  --green-700: #0B7233;
+  --green-900: #054D22;
+
+  /* Rojo / alerta */
+  --red-50:  #FFEBE6;
+  --red-400: #FF5630;
+  --red-500: #DE350B;
+  --red-600: #BF2600;
+  --red-700: #A32000;
+
+  /* Amarillo / warning */
+  --yellow-600: #FF8B00;
+
+  /* Neutrales / texto */
+  --ink:       #172B4D;
+  --ink-soft:  #5E6C84;
+  --ink-muted: #97A0AF;
+  --panel:     #FFFFFF;
+  --bg-dark:   #0B1220;
+  --neutral-100: #F4F5F7;
+  --neutral-200: #EBECF0;
+  --neutral-300: #DFE1E6;
+  --neutral-400: #C1C7D0;
+
+  /* Sombras */
+  --sh-1: var(--shadow-sm);
+  --sh-3: var(--shadow-lg);
+}
+
 /* ── Global base ── */
 @layer base {
   *, *::before, *::after {
