@@ -1,20 +1,39 @@
 /* ───────────────────────────────────────────
    Courses Page — Catálogo de cursos
    Filtros laterales · Chips de nivel/estado
-   Grid de CourseCard · Permiso crear curso
+   Grid de CourseHoloCard · Permiso crear curso
    ─────────────────────────────────────────── */
 
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
-import type { Course } from '@/lib/types';
-import { appRoutes } from '@/lib/routes';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { EmptyState } from '@/components/shared/EmptyState';
-import { CourseCard } from '@/components/shared/CourseCard';
+import type { Course, Inscription } from '@/lib/types';
+import { Card } from '@/app/components/ui/Card';
+import { Badge } from '@/app/components/ui/Badge';
+import { Button } from '@/app/components/ui/Button';
+import { EmptyState } from '@/app/components/shared/EmptyState';
+import { CourseContentView } from '@/app/components/shared/CourseContentView';
+import { CreateCourseModal } from '@/app/components/shared/CreateCourseModal';
+import { CourseHoloCard, type CardCarouselItem } from '@/app/components/shared/CardCarousel';
+import { APP_ICONS, COURSE_COVER_ICONS } from '@/lib/icons';
+
+const COVER_CLASSES = ['cover-1', 'cover-2', 'cover-3', 'cover-4', 'cover-5', 'cover-6'];
+
+function courseIcon(iconName: string) {
+  return <Icon icon={iconName} width={40} height={40} style={{ color: 'rgba(255,255,255,0.9)' }} />;
+}
+
+function getCachedEmail(): string | null {
+  try {
+    const raw = sessionStorage.getItem('pccl_user');
+    if (!raw) return null;
+    return (JSON.parse(raw) as { email?: string }).email ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /* ── Chip helper ── */
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
@@ -102,24 +121,32 @@ const SORT_OPTIONS = [
 ];
 
 export default function CoursesPage() {
-  const [courses,     setCourses]     = useState<Course[]>([]);
-  const [permissions, setPermissions] = useState<string[]>([]);
-  const [loading,     setLoading]     = useState(true);
+  const [courses,      setCourses]      = useState<Course[]>([]);
+  const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
+  const [permissions,  setPermissions]  = useState<string[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [modalOpen,    setModalOpen]    = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  /* Arranca en null en ambos lados — sessionStorage no existe en el servidor */
+  const [myEmail,      setMyEmail]      = useState<string | null>(null);
+  useEffect(() => { setMyEmail(getCachedEmail()); }, []);
 
   /* ── Filters state ── */
   const [levelChip,       setLevelChip]       = useState('Todos');
   const [levelFilters,    setLevelFilters]     = useState<string[]>([]);
   const [statusFilters,   setStatusFilters]    = useState<string[]>([]);
+  const [onlyMine,        setOnlyMine]         = useState(false);
   const [sortBy,          setSortBy]           = useState('newest');
   const [search,          setSearch]           = useState('');
 
   useEffect(() => {
     let alive = true;
-    Promise.all([api.courses(), api.access()])
-      .then(([courseList, access]) => {
+    Promise.all([api.courses(), api.access(), api.inscriptions().catch(() => [])])
+      .then(([courseList, access, inscriptionList]) => {
         if (!alive) return;
         setCourses(courseList);
         setPermissions(access.permissions);
+        setInscriptions(inscriptionList);
       })
       .catch(() => { if (alive) { setCourses([]); setPermissions([]); } })
       .finally(() => { if (alive) setLoading(false); });
@@ -127,6 +154,21 @@ export default function CoursesPage() {
   }, []);
 
   const canCreate = useMemo(() => permissions.includes('courses:create'), [permissions]);
+  const enrolledCourseIds = useMemo(
+    () => new Set(inscriptions.map((i) => i.course?.id).filter((id): id is string => Boolean(id))),
+    [inscriptions],
+  );
+  const progressByCourseId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const i of inscriptions) {
+      if (i.course?.id) map.set(i.course.id, i.progressPercentage ?? 0);
+    }
+    return map;
+  }, [inscriptions]);
+  const myCoursesCount = useMemo(
+    () => (myEmail ? courses.filter((c) => c.createdBy === myEmail).length : 0),
+    [courses, myEmail],
+  );
 
   /* ── Derived counts for filter sidebar ── */
   const levelCounts  = useMemo(() =>
@@ -165,6 +207,10 @@ export default function CoursesPage() {
       list = list.filter((c) => statusFilters.includes(c.status ?? ''));
     }
 
+    if (onlyMine && myEmail) {
+      list = list.filter((c) => c.createdBy === myEmail);
+    }
+
     if (sortBy === 'title') {
       list.sort((a, b) => a.title.localeCompare(b.title));
     } else if (sortBy === 'popular') {
@@ -172,7 +218,7 @@ export default function CoursesPage() {
     }
 
     return list;
-  }, [courses, search, levelChip, levelFilters, statusFilters, sortBy]);
+  }, [courses, search, levelChip, levelFilters, statusFilters, onlyMine, myEmail, sortBy]);
 
   const toggleLevel  = (l: string, on: boolean) =>
     setLevelFilters((prev) => on ? [...prev, l] : prev.filter((x) => x !== l));
@@ -180,6 +226,7 @@ export default function CoursesPage() {
     setStatusFilters((prev) => on ? [...prev, s] : prev.filter((x) => x !== s));
 
   const clearAll = () => {
+    setOnlyMine(false);
     setLevelChip('Todos');
     setLevelFilters([]);
     setStatusFilters([]);
@@ -187,7 +234,12 @@ export default function CoursesPage() {
     setSortBy('newest');
   };
 
-  const hasActiveFilters = levelChip !== 'Todos' || levelFilters.length > 0 || statusFilters.length > 0 || search.trim();
+  const hasActiveFilters = levelChip !== 'Todos' || levelFilters.length > 0 || statusFilters.length > 0 || onlyMine || Boolean(search.trim());
+
+  /* ── Segmento de detalle: reemplaza el catálogo sin navegar de página ── */
+  if (selectedCourse) {
+    return <CourseContentView course={selectedCourse} onBack={() => setSelectedCourse(null)} />;
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -203,19 +255,40 @@ export default function CoursesPage() {
           </p>
         </div>
         {canCreate && (
-          <Button variant="primary" size="md">
+          <Button variant="primary" size="md" onClick={() => setModalOpen(true)}>
             + Nuevo curso
           </Button>
         )}
       </div>
 
+      {/* ── "Mis cursos" toggle (instructor) ── */}
+      {myEmail && myCoursesCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setOnlyMine((v) => !v)}
+          style={{
+            alignSelf: 'flex-start',
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            border: onlyMine ? '1.5px solid var(--green-500)' : '1.5px solid var(--neutral-200)',
+            background: onlyMine ? 'var(--green-50)' : 'var(--panel)',
+            color: onlyMine ? 'var(--green-700)' : 'var(--ink-muted)',
+            borderRadius: 'var(--radius-full)', padding: '7px 16px',
+            fontSize: '13px', fontWeight: onlyMine ? 600 : 500,
+            cursor: 'pointer', fontFamily: 'var(--font-sans)',
+          }}
+        >
+          <Icon icon={APP_ICONS.user} width={14} height={14} /> Mis cursos
+          <span style={{ background: onlyMine ? 'var(--green-600)' : 'var(--neutral-200)', color: onlyMine ? '#fff' : 'var(--ink-muted)', borderRadius: '999px', padding: '1px 7px', fontSize: '11.5px' }}>
+            {myCoursesCount}
+          </span>
+        </button>
+      )}
+
       {/* ── Search + sort bar ── */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Search input */}
         <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: '400px' }}>
-          <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', fontSize: '16px', pointerEvents: 'none' }}>
-            🔍
-          </span>
+          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             placeholder="Buscar cursos o instructor…"
@@ -286,7 +359,7 @@ export default function CoursesPage() {
             onClick={clearAll}
             style={{ fontSize: '13px', color: 'var(--blue-600)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', padding: '4px 6px', borderRadius: '6px', fontWeight: 500 }}
           >
-            ✕ Limpiar filtros
+            <Icon icon={APP_ICONS.close} width={13} height={13} style={{ verticalAlign: '-2px' }} /> Limpiar filtros
           </button>
         )}
       </div>
@@ -365,7 +438,7 @@ export default function CoursesPage() {
             </div>
           ) : filtered.length === 0 ? (
             <EmptyState
-              icon="🔍"
+              icon={APP_ICONS.search}
               title="Sin resultados"
               description={
                 hasActiveFilters
@@ -376,27 +449,39 @@ export default function CoursesPage() {
                 hasActiveFilters
                   ? { label: 'Limpiar filtros', onClick: clearAll }
                   : canCreate
-                  ? { label: '+ Crear primer curso', onClick: () => {} }
+                  ? { label: '+ Crear primer curso', onClick: () => setModalOpen(true) }
                   : undefined
               }
             />
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
-              {filtered.map((course) => (
-                <div key={course.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                  <CourseCard
-                    course={course}
-                    href={`${appRoutes.courses}/${course.id}`}
-                    showRating
-                  />
-                  {/* Status pill below card if draft */}
-                  {course.status === 'draft' && (
-                    <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
-                      <Badge variant="yellow">Borrador</Badge>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {filtered.map((course, i) => {
+                const enrolled = enrolledCourseIds.has(course.id);
+                const item: CardCarouselItem = {
+                  id: course.id,
+                  title: course.title,
+                  description: course.description || 'Explora este curso y comienza cuando quieras.',
+                  eyebrow: course.category ?? course.level,
+                  coverClass: COVER_CLASSES[i % COVER_CLASSES.length],
+                  coverImageUrl: course.coverImageUrl ?? undefined,
+                  icon: courseIcon(COURSE_COVER_ICONS[i % COURSE_COVER_ICONS.length]),
+                  progress: progressByCourseId.get(course.id),
+                  onSelect: () => setSelectedCourse(course),
+                  linkLabel: enrolled ? 'Continuar' : 'Ver curso',
+                };
+                return (
+                  <div key={course.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                    <CourseHoloCard item={item} fluid />
+                    {/* Status pills below card */}
+                    {(course.status === 'draft' || enrolled) && (
+                      <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                        {enrolled && <Badge variant="blue"><Icon icon={APP_ICONS.check} width={12} height={12} style={{ verticalAlign: '-1px' }} /> Ya inscrito</Badge>}
+                        {course.status === 'draft' && <Badge variant="yellow">Borrador</Badge>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -433,6 +518,12 @@ export default function CoursesPage() {
           </button>
         </div>
       )}
+
+      <CreateCourseModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreated={(course) => setCourses((prev) => [course, ...prev])}
+      />
     </div>
   );
 }

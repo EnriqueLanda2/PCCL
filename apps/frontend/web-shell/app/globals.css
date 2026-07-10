@@ -1,29 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 /* ════════════════════════════════════════════════════════════════
-   PCCL — Global Styles · Tailwind v4 + Atlassian/JIRA palette
+  PCCL — Global Styles · Tailwind v4 + cream/green academy palette
    ════════════════════════════════════════════════════════════════ */
 
 /* ── Custom theme tokens ── */
 @theme {
-  /* ─── Atlassian Blue (primary) ─── */
-  --color-primary-50:  #DEEBFF;
-  --color-primary-100: #B3D4FF;
-  --color-primary-200: #4C9AFF;
-  --color-primary-300: #2684FF;
-  --color-primary-400: #0065FF;
-  --color-primary-500: #0052CC;
-  --color-primary-600: #0747A6;
-  --color-primary-700: #043584;
+  /* ─── Primary green ─── */
+  --color-primary-50:  #E9F8EF;
+  --color-primary-100: #CDEFD9;
+  --color-primary-200: #99DEAF;
+  --color-primary-300: #68CC85;
+  --color-primary-400: #33B35E;
+  --color-primary-500: #1F9A4B;
+  --color-primary-600: #147A39;
+  --color-primary-700: #0F5F2D;
 
-  /* ─── Success / Green ─── */
-  --color-success-50:  #E3FCEF;
-  --color-success-100: #ABF5D1;
-  --color-success-200: #79F2C0;
-  --color-success-400: #36B37E;
-  --color-success-500: #00875A;
-  --color-success-600: #006644;
+  /* ─── Success / Deep green ─── */
+  --color-success-50:  #E6F8EA;
+  --color-success-100: #BCECC7;
+  --color-success-200: #8EE0A2;
+  --color-success-400: #33B35E;
+  --color-success-500: #1F9A4B;
+  --color-success-600: #147A39;
 
   /* ─── Warning / Orange ─── */
   --color-warning-50:  #FFFAE6;
@@ -61,14 +61,14 @@
   --color-purple-600: #5243AA;
 
   /* ─── Teal (progress) ─── */
-  --color-teal-50:  #E6FCFF;
-  --color-teal-400: #00C7E6;
-  --color-teal-500: #00B8D9;
+  --color-teal-50:  #EAFBFB;
+  --color-teal-400: #33C7C7;
+  --color-teal-500: #14A6A6;
 
   /* ─── Font families ─── */
   --font-sans:  'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono:  'JetBrains Mono', ui-monospace, monospace;
-  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-serif: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
   /* ─── Border radius ─── */
   --radius-sm:   3px;
@@ -86,29 +86,28 @@
   --shadow-xl:  0 20px 25px -5px rgba(23,43,77,.08), 0 8px 10px -6px rgba(23,43,77,.04);
 }
 
-/* ── Design tokens consumidos via var(--x) en los componentes ──
-   (paleta azul + verde bandera más clarito) ── */
+/* ── Design tokens consumidos via var(--x) en los componentes ── */
 :root {
-  /* Azul */
-  --blue-50:  #EAF2FF;
-  --blue-100: #D3E4FF;
-  --blue-300: #7EB6FF;
-  --blue-400: #4C9AFF;
-  --blue-500: #0065FF;
-  --blue-600: #0052CC;
-  --blue-700: #0747A6;
-  --blue-800: #043584;
-  --blue-900: #062753;
+  /* Azul de apoyo */
+  --blue-50:  #EDF5FF;
+  --blue-100: #D7E8FF;
+  --blue-300: #8DBBFF;
+  --blue-400: #5EA0FF;
+  --blue-500: #2F7EF0;
+  --blue-600: #2566CB;
+  --blue-700: #1E4FA2;
+  --blue-800: #173B77;
+  --blue-900: #112952;
 
-  /* Verde bandera (mas clarito) */
-  --green-50:  #E8F9EE;
-  --green-100: #C8F2D6;
-  --green-300: #6FDB93;
-  --green-400: #34C769;
-  --green-500: #16A34A;
-  --green-600: #0F8C3D;
-  --green-700: #0B7233;
-  --green-900: #054D22;
+  /* Verde principal */
+  --green-50:  #EBFAF0;
+  --green-100: #D2F2DE;
+  --green-300: #8AD8A3;
+  --green-400: #4FC276;
+  --green-500: #25A656;
+  --green-600: #1E8B48;
+  --green-700: #176C38;
+  --green-900: #0F4724;
 
   /* Rojo / alerta */
   --red-50:  #FFEBE6;
@@ -121,15 +120,21 @@
   --yellow-600: #FF8B00;
 
   /* Neutrales / texto */
-  --ink:       #172B4D;
-  --ink-soft:  #5E6C84;
-  --ink-muted: #97A0AF;
+  --ink:       #17324D;
+  --ink-soft:  #66788F;
+  --ink-muted: #97A3B2;
   --panel:     #FFFFFF;
-  --bg-dark:   #0B1220;
-  --neutral-100: #F4F5F7;
-  --neutral-200: #EBECF0;
-  --neutral-300: #DFE1E6;
-  --neutral-400: #C1C7D0;
+  --bg-dark:   #0E1A26;
+  --neutral-100: #EAF0E6;
+  --neutral-200: #DDE7D7;
+  --neutral-300: #C7D4C0;
+  --neutral-400: #A9B8A1;
+
+  --surface: #F4F7EF;
+  --surface-2: #EEF3E8;
+  --surface-3: #E7EEDF;
+  --sidebar: #FFFFFF;
+  --sidebar-border: rgba(23, 50, 77, 0.08);
 
   /* Sombras */
   --sh-1: var(--shadow-sm);
@@ -149,47 +154,50 @@
   }
 
   body {
-    background-color: #F4F5F7;
-    color: #172B4D;
+    background:
+      radial-gradient(circle at top left, rgba(37, 166, 86, 0.08), transparent 34%),
+      radial-gradient(circle at top right, rgba(47, 126, 240, 0.06), transparent 28%),
+      linear-gradient(180deg, #f4f7ef 0%, #eef3e8 100%);
+    color: #17324D;
     font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
     line-height: 1.6;
     font-size: 15px;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Instrument Serif', ui-serif, Georgia, serif;
-    color: #172B4D;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    color: #17324D;
     line-height: 1.25;
   }
 
   /* Custom scrollbar */
   ::-webkit-scrollbar        { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track  { background: transparent; }
-  ::-webkit-scrollbar-thumb  { background: #C1C7D0; border-radius: 9999px; }
-  ::-webkit-scrollbar-thumb:hover { background: #97A0AF; }
+  ::-webkit-scrollbar-thumb  { background: #BFCBB8; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #98A892; }
 
   /* Focus ring */
   :focus-visible {
-    outline: 2px solid #0065FF;
+    outline: 2px solid #25A656;
     outline-offset: 2px;
   }
 
   /* Selection */
   ::selection {
-    background: #B3D4FF;
-    color: #172B4D;
+    background: #D2F2DE;
+    color: #17324D;
   }
 }
 
 /* ── Components ── */
 @layer components {
   /* Course cover gradients */
-  .cover-1 { background: linear-gradient(135deg, #172B4D 0%, #0747A6 100%); }
-  .cover-2 { background: linear-gradient(135deg, #006644 0%, #00B8D9 100%); }
-  .cover-3 { background: linear-gradient(135deg, #BF2600 0%, #FF7452 100%); }
-  .cover-4 { background: linear-gradient(135deg, #FF8B00 0%, #006644 100%); }
-  .cover-5 { background: linear-gradient(135deg, #172B4D 0%, #FF8B00 100%); }
-  .cover-6 { background: linear-gradient(135deg, #5243AA 0%, #00B8D9 100%); }
+  .cover-1 { background: linear-gradient(135deg, #17324D 0%, #1E4FA2 100%); }
+  .cover-2 { background: linear-gradient(135deg, #176C38 0%, #33C7C7 100%); }
+  .cover-3 { background: linear-gradient(135deg, #B34D24 0%, #FF8B00 100%); }
+  .cover-4 { background: linear-gradient(135deg, #FF8B00 0%, #176C38 100%); }
+  .cover-5 { background: linear-gradient(135deg, #17324D 0%, #FF8B00 100%); }
+  .cover-6 { background: linear-gradient(135deg, #5A4AB2 0%, #33C7C7 100%); }
 
   /* Card hover lift */
   .card-hover {
@@ -222,7 +230,7 @@
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
+  50%       { opacity: 0.55; }
 }
 
 @keyframes fadeIn {
@@ -243,3 +251,640 @@
 .animate-fade-in       { animation: fadeIn 200ms ease forwards; }
 .animate-slide-in-left { animation: slideInLeft 200ms ease forwards; }
 .animate-scale-in      { animation: scaleIn 150ms ease forwards; }
+
+/* ════════════════════════════════════════════════════════════════
+   WaveSpinner — loader global
+   ════════════════════════════════════════════════════════════════ */
+@keyframes wave-bar {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.55; }
+  50%      { transform: scaleY(1);    opacity: 1; }
+}
+
+.wave-spinner-bar {
+  transform-origin: center;
+  animation: wave-bar 1s ease-in-out infinite;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CertificateHoloCard — tilt holográfico + flip 3D
+   ════════════════════════════════════════════════════════════════ */
+.holo-scene {
+  perspective: 1400px;
+}
+
+.holo-tilt {
+  transform-style: preserve-3d;
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.holo-flipper {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.holo-flipper.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.holo-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0.1px);
+}
+
+.holo-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg) translateZ(0.1px);
+}
+
+/* Brillo holográfico que sigue al puntero (variables --hx/--hy en %) */
+.holo-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  background:
+    radial-gradient(circle at var(--hx, 50%) var(--hy, 50%), rgba(255, 255, 255, 0.55), transparent 42%),
+    linear-gradient(
+      calc(var(--hx, 50) * 3.6deg),
+      rgba(37, 166, 86, 0.16) 0%,
+      rgba(51, 199, 199, 0.14) 28%,
+      rgba(47, 126, 240, 0.12) 52%,
+      rgba(153, 141, 217, 0.14) 74%,
+      rgba(37, 166, 86, 0.16) 100%
+    );
+  mix-blend-mode: overlay;
+}
+
+.holo-scene:hover .holo-shine { opacity: 1; }
+
+@keyframes sparkle-twinkle {
+  0%, 100% { opacity: 0;   transform: scale(0.4) rotate(0deg); }
+  50%      { opacity: 0.9; transform: scale(1)   rotate(90deg); }
+}
+
+.holo-sparkle {
+  position: absolute;
+  pointer-events: none;
+  color: var(--green-400);
+  animation: sparkle-twinkle 2.6s ease-in-out infinite;
+  text-shadow: 0 0 8px rgba(79, 194, 118, 0.8);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CourseCard — flip 3D en hover (sin JS): frente = portada, reverso = descripción
+   ════════════════════════════════════════════════════════════════ */
+.course-flip-scene {
+  perspective: 1600px;
+}
+
+.course-flip-flipper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 550ms cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.course-flip-scene:hover .course-flip-flipper,
+.course-flip-scene:focus .course-flip-flipper,
+.course-flip-scene:focus-within .course-flip-flipper {
+  transform: rotateY(180deg);
+}
+
+.course-flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.course-flip-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Dashboard FX — reveals con máscara + blur (estilo Loopstack)
+   ════════════════════════════════════════════════════════════════ */
+.reveal-word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.15em;
+  margin-bottom: -0.15em;
+}
+
+.reveal-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(105%);
+  filter: blur(20px);
+  animation: word-reveal-mask 1.3s cubic-bezier(0.05, 0.9, 0.1, 1) forwards;
+}
+
+@keyframes word-reveal-mask {
+  0%   { opacity: 0; transform: translateY(105%); filter: blur(20px); }
+  30%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+.reveal-letter-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  line-height: 0.8;
+}
+
+.reveal-letter {
+  display: inline-block;
+  opacity: 0;
+  transform: translateX(-105%);
+  filter: blur(20px);
+  animation: letter-reveal-mask 1.2s cubic-bezier(0.05, 0.9, 0.1, 1) forwards;
+}
+
+@keyframes letter-reveal-mask {
+  0%   { opacity: 0; transform: translateX(-105%); filter: blur(20px); }
+  25%  { opacity: 1; }
+  100% { opacity: 0.95; transform: translateX(0); filter: blur(0); }
+}
+
+/* Punto verde pulsante con onda expansiva */
+.blinking-dot {
+  width: 9px;
+  height: 9px;
+  background-color: var(--green-400);
+  border-radius: 50%;
+  position: relative;
+  display: inline-block;
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.blinking-dot::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  background-color: rgba(79, 194, 118, 0.45);
+  border-radius: 50%;
+  animation: wave-expand 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(0.85);
+    box-shadow: 0 0 4px rgba(79, 194, 118, 0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: 0 0 12px rgba(79, 194, 118, 0.9);
+  }
+}
+
+@keyframes wave-expand {
+  0%   { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(2.3); opacity: 0; }
+}
+
+/* ── Cursor personalizado: anillo + plaquita de vidrio ── */
+.cursor-ring-outline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid rgba(31, 154, 75, 0.55);
+  border-radius: 50%;
+  z-index: 99998;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  will-change: transform, opacity;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
+}
+
+.cursor-ring-outline.active { opacity: 1; }
+.cursor-ring-outline.expanded { border-color: rgba(31, 154, 75, 0.2); }
+
+.glass-cursor-card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 99999;
+  pointer-events: none;
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(31, 154, 75, 0.22);
+  border-radius: 9999px;
+  box-shadow: 0 12px 28px rgba(23, 50, 77, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  will-change: transform, opacity;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-cursor-card.active { opacity: 1; }
+
+.cursor-card-text {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--green-600);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cursor-card-text .text-ink { color: var(--ink); }
+
+@media (pointer: coarse) {
+  .cursor-ring-outline, .glass-cursor-card { display: none; }
+}
+
+/* ── Libro abriéndose (hero del dashboard) ── */
+.book-scene {
+  perspective: 900px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.book {
+  position: relative;
+  width: 180px;
+  height: 124px;
+  transform-style: preserve-3d;
+  transform: rotateX(28deg) rotateZ(-4deg);
+}
+
+.book-half {
+  position: absolute;
+  top: 0;
+  width: 90px;
+  height: 124px;
+  border-radius: 4px 10px 10px 4px;
+  background: linear-gradient(105deg, #ffffff 0%, #f0f6ea 100%);
+  border: 1px solid rgba(23, 50, 77, 0.08);
+  box-shadow: 0 14px 30px rgba(10, 30, 20, 0.35);
+}
+
+.book-half.left  { left: 0;  border-radius: 10px 4px 4px 10px; transform-origin: right center; transform: rotateY(12deg); }
+.book-half.right { left: 90px; transform-origin: left center; transform: rotateY(-12deg); }
+
+.book-line {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(31, 154, 75, 0.18);
+}
+
+.book-page {
+  position: absolute;
+  top: 3px;
+  left: 90px;
+  width: 84px;
+  height: 118px;
+  border-radius: 4px 8px 8px 4px;
+  background: linear-gradient(100deg, #ffffff 0%, #f6faf1 100%);
+  border: 1px solid rgba(23, 50, 77, 0.06);
+  transform-origin: left center;
+  animation: page-flip 5.2s cubic-bezier(0.45, 0.05, 0.35, 1) infinite;
+  backface-visibility: visible;
+}
+
+@keyframes page-flip {
+  0%       { transform: rotateY(-8deg);   opacity: 1; }
+  38%      { transform: rotateY(-172deg); opacity: 1; }
+  40%      { transform: rotateY(-172deg); opacity: 0; }
+  41%      { transform: rotateY(-8deg);   opacity: 0; }
+  43%, 100% { transform: rotateY(-8deg);  opacity: 1; }
+}
+
+.book-glow {
+  position: absolute;
+  inset: -40px -30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 194, 118, 0.28), transparent 65%);
+  filter: blur(6px);
+  animation: pulse 3.4s ease-in-out infinite;
+}
+
+/* Partículas de conocimiento que suben del libro */
+@keyframes knowledge-rise {
+  0%   { transform: translateY(0) scale(0.6);      opacity: 0; }
+  15%  { opacity: 0.9; }
+  100% { transform: translateY(-90px) scale(1.15); opacity: 0; }
+}
+
+.knowledge-particle {
+  position: absolute;
+  pointer-events: none;
+  color: var(--green-300);
+  font-size: 13px;
+  animation: knowledge-rise 3.6s ease-out infinite;
+}
+
+/* ── Intro del libro (landing /): el libro se abre y
+      se va al fondo poco a poco revelando la página ── */
+.book-intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 166, 86, 0.10), transparent 34%),
+    radial-gradient(circle at top right, rgba(47, 126, 240, 0.07), transparent 28%),
+    linear-gradient(180deg, #f4f7ef 0%, #eef3e8 100%);
+  transition: opacity 1.5s ease;
+}
+
+.book-intro-overlay.receding {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Estado final: el intro se desmonta (ver BookIntro.tsx) y cede
+   el lugar a <AmbientScene3D> — la escena WebGL persistente definida
+   más abajo en "AmbientScene3D — fondo 3D ambiental". */
+
+.book-intro-stage {
+  perspective: 1100px;
+}
+
+/* El libro entra grande y, al retirarse, se encoge, se
+   desenfoca y se hunde: efecto de irse al fondo */
+.book-intro-book {
+  transform: scale(1.7);
+  transition:
+    transform 1.5s cubic-bezier(0.45, 0, 0.2, 1),
+    opacity   1.5s ease,
+    filter    1.5s ease;
+}
+
+.receding .book-intro-book {
+  transform: scale(0.38) translateY(14vh);
+  opacity: 0;
+  filter: blur(10px);
+}
+
+.book-intro-caption {
+  opacity: 0;
+  animation: fadeIn 900ms ease 1s forwards;
+}
+
+.receding .book-intro-text,
+.receding .book-intro-caption {
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   AmbientScene3D — fondo 3D ambiental (three.js)
+   Orbes de bokeh + partículas ascendiendo, fijo detrás de TODA
+   la aplicación. Simple a propósito — nunca debe competir con
+   el contenido real.
+   ════════════════════════════════════════════════════════════════ */
+.ambient-scene-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 2.2s ease;
+}
+
+.ambient-scene-layer.visible {
+  opacity: 1;
+}
+
+.ambient-scene-layer canvas {
+  display: block;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CardCarousel — fila de tarjetas con scroll-snap
+   Varias tarjetas visibles a la vez, "peek" de la siguiente,
+   scrollbar nativa oculta, flechas de navegación.
+   ════════════════════════════════════════════════════════════════ */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Carousel3DRing — anillo de tarjetas girando en 3D
+   Las tarjetas se reparten en un prisma (rotateY + translateZ) y
+   el anillo entero gira despacio y sin parar; se pausa al pasar
+   el mouse. Tamaño moderado y paleta propia a propósito — es un
+   adorno de la portada, no debe robarle protagonismo al resto.
+   ════════════════════════════════════════════════════════════════ */
+.carousel3d-scene {
+  --card-w: 240px;
+  --card-h: 320px;
+  --ring-radius: 166px;
+  perspective: 1500px;
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 32px;
+}
+
+@media (max-width: 640px) {
+  .carousel3d-scene {
+    --card-w: 168px;
+    --card-h: 226px;
+    --ring-radius: 117px;
+  }
+}
+
+.carousel3d-ring {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  transform-style: preserve-3d;
+  animation: carousel3d-spin 34s linear infinite;
+}
+
+.carousel3d-ring.paused {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel3d-ring {
+    animation: none;
+  }
+}
+
+@keyframes carousel3d-spin {
+  from { transform: rotateY(0deg); }
+  to   { transform: rotateY(-360deg); }
+}
+
+.carousel3d-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  box-shadow: 0 14px 30px rgba(23, 50, 77, 0.14);
+  backface-visibility: hidden;
+  transform: rotateY(calc(360deg / var(--ring-count) * var(--i))) translateZ(var(--ring-radius));
+}
+
+.carousel3d-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.45) 100%);
+  pointer-events: none;
+}
+
+.carousel3d-card-eyebrow,
+.carousel3d-card-title {
+  position: relative;
+  z-index: 1;
+}
+
+.carousel3d-card-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.carousel3d-card-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Reveal — entrada escalonada al cargar + al hacer scroll
+   Cada bloque aparece con un fundido + desplazamiento sutil la
+   primera vez que entra en el viewport (ver Reveal.tsx).
+   ════════════════════════════════════════════════════════════════ */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 700ms cubic-bezier(0.16, 1, 0.3, 1), transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Hero — tarjetas flotando en 3D
+   Sin blob de fondo, sombras únicas y limpias; cada tarjeta
+   respira en su propio ciclo (duración/retraso vía variables CSS)
+   para que el conjunto no se sienta sincronizado ni ruidoso.
+   ════════════════════════════════════════════════════════════════ */
+.hero-float-scene {
+  perspective: 1400px;
+}
+
+.hero-float-card {
+  transform: rotate(var(--float-rot, 0deg));
+}
+
+/* ── Punto "en vivo": parpadeo nítido + onda roja expandiéndose ── */
+.live-dot {
+  position: relative;
+  display: inline-block;
+  animation: live-blink 1.15s ease-in-out infinite;
+}
+
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.4);
+  animation: wave-expand 1.6s ease-out infinite;
+}
+
+@keyframes live-blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.2; transform: scale(0.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot, .live-dot::after { animation: none; }
+}
+
+/* Marca de agua gigante del hero */
+.hero-watermark {
+  position: absolute;
+  bottom: -0.18em;
+  right: 12px;
+  font-size: clamp(90px, 12vw, 170px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.8;
+  color: rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-word, .reveal-letter {
+    animation-duration: 0.01ms;
+    animation-delay: 0ms !important;
+  }
+  .book-page, .holo-flipper, .course-flip-flipper, .wave-spinner-bar { animation-duration: 0.01ms; transition-duration: 0.01ms; }
+}
+
+@layer utilities {
+  .surface-page {
+    background:
+      radial-gradient(circle at top left, rgba(37, 166, 86, 0.08), transparent 30%),
+      linear-gradient(180deg, #f4f7ef 0%, #eef3e8 100%);
+  }
+
+  .surface-panel {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(23, 50, 77, 0.06);
+    box-shadow: 0 14px 40px rgba(23, 50, 77, 0.06);
+    backdrop-filter: blur(10px);
+  }
+}

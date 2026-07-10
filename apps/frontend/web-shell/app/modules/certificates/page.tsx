@@ -1,262 +1,149 @@
 /* ───────────────────────────────────────────
-   Certificates Page — Constancias
-   Listado con CertificateRow · Stats row
-   Filtro por estado · Descarga si tiene permiso
+   Certificates Page — Certificaciones
+   Grid de CertificateHoloCard (tilt holográfico
+   + flip 3D con QR de verificación pública)
+   Stats · búsqueda · filtro por estado
    ─────────────────────────────────────────── */
 
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
-import type { Certificate } from '@/lib/types';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { StatCard } from '@/components/shared/StatCard';
-import { EmptyState } from '@/components/shared/EmptyState';
-import { CertificateRow } from '@/components/shared/CertificateRow';
-import { certificateStatus, getVariant, getLabel } from '@/types/status';
+import { DEMO_CERTIFICATES, toCardData } from '@/lib/certificates';
+import { StatCard } from '@/app/components/shared/StatCard';
+import { EmptyState } from '@/app/components/shared/EmptyState';
+import { PageLoader } from '@/app/components/ui/WaveSpinner';
+import { CertificateHoloCard, type CertificateCardData } from '@/app/components/ui/CertificateHoloCard';
+import { APP_ICONS } from '@/lib/icons';
 
-/* ── Skeleton ── */
-function SkeletonCertRow() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 0', borderBottom: '1px solid var(--neutral-100)' }}>
-      <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--neutral-100)', flexShrink: 0 }} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ height: '14px', borderRadius: '6px', background: 'var(--neutral-100)', width: '50%' }} />
-        <div style={{ height: '12px', borderRadius: '6px', background: 'var(--neutral-100)', width: '35%' }} />
-      </div>
-      <div style={{ width: '80px', height: '22px', borderRadius: '999px', background: 'var(--neutral-100)' }} />
-      <div style={{ width: '90px', height: '36px', borderRadius: '8px', background: 'var(--neutral-100)' }} />
-    </div>
-  );
-}
-
-/* Chips: 'all' + las chips del mapa (Vigentes, Expirados, Revocados) */
-const STATUS_CHIPS = [
-  { key: 'all', label: 'Todos' },
-  ...certificateStatus.chips.slice(1).map((label) => ({
-    key:   certificateStatus.chipKey![label] as string,
-    label,
-  })),
+const STATUS_CHIPS: { key: 'all' | CertificateCardData['status']; label: string }[] = [
+  { key: 'all',     label: 'Todos' },
+  { key: 'valid',   label: 'Emitidos' },
+  { key: 'pending', label: 'Pendientes' },
+  { key: 'expired', label: 'Expirados' },
+  { key: 'revoked', label: 'Revocados' },
 ];
 
 export default function CertificatesPage() {
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [permissions,  setPermissions]  = useState<string[]>([]);
+  const [certificates, setCertificates] = useState<CertificateCardData[]>([]);
   const [loading,      setLoading]      = useState(true);
-  const [statusChip,   setStatusChip]   = useState('all');
+  const [statusChip,   setStatusChip]   = useState<'all' | CertificateCardData['status']>('all');
   const [search,       setSearch]       = useState('');
 
   useEffect(() => {
     let alive = true;
-    Promise.all([api.certificates(), api.access()])
-      .then(([list, access]) => {
+    api.certificates()
+      .then((list) => {
         if (!alive) return;
-        setCertificates(list);
-        setPermissions(access.permissions);
+        setCertificates(list.length > 0 ? list.map(toCardData) : DEMO_CERTIFICATES);
       })
-      .catch(() => { if (alive) { setCertificates([]); setPermissions([]); } })
+      .catch(() => { if (alive) setCertificates(DEMO_CERTIFICATES); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
 
-  const canDownload = useMemo(() => permissions.includes('certificates:download'), [permissions]);
+  const issued  = useMemo(() => certificates.filter((c) => c.status === 'valid').length,   [certificates]);
+  const pending = useMemo(() => certificates.filter((c) => c.status === 'pending').length, [certificates]);
+  const rate    = certificates.length > 0 ? Math.round((issued / certificates.length) * 100) : 0;
 
-  /* ── Stats ── */
-  const valid   = useMemo(() => certificates.filter((c) => c.status === 'valid').length,   [certificates]);
-  const expired = useMemo(() => certificates.filter((c) => c.status === 'expired').length, [certificates]);
-  const revoked = useMemo(() => certificates.filter((c) => c.status === 'revoked').length, [certificates]);
-
-  /* ── Filtered ── */
   const filtered = useMemo(() => {
     let list = [...certificates];
     if (statusChip !== 'all') list = list.filter((c) => c.status === statusChip);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((c) =>
-        c.certificateNumber.toLowerCase().includes(q) ||
-        (c.inscription?.course?.title ?? '').toLowerCase().includes(q) ||
-        (c.inscription?.user?.fullName ?? '').toLowerCase().includes(q)
+        c.folio.toLowerCase().includes(q) ||
+        c.courseTitle.toLowerCase().includes(q) ||
+        c.studentName.toLowerCase().includes(q)
       );
     }
     return list;
   }, [certificates, statusChip, search]);
 
+  if (loading) return <PageLoader label="Cargando certificaciones…" />;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="flex flex-col gap-6 pb-8">
 
       {/* ── Header ── */}
-      <div>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-          Constancias <em style={{ color: 'var(--green-500)', fontStyle: 'italic' }}>y certificados</em>
-        </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px' }}>
-          {loading ? 'Cargando…' : `${certificates.length} constancia${certificates.length !== 1 ? 's' : ''} emitidas`}
-        </p>
-      </div>
-
-      {/* ── Stat row ── */}
-      {!loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          <StatCard label="Total"     value={certificates.length} />
-          <StatCard label="Vigentes"  value={valid}   deltaUp />
-          <StatCard label="Expirados" value={expired}  deltaUp={false} />
-          <StatCard label="Revocados" value={revoked}  deltaUp={false} />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[clamp(28px,3vw,42px)] font-extrabold tracking-tight text-[var(--ink)]">
+            Certificaciones
+          </h1>
+          <p className="mt-1 text-[15px] text-[var(--ink-muted)]">
+            Emite y aprueba certificados de tus cursos
+          </p>
         </div>
-      )}
 
-      {/* ── Featured: latest cert ── */}
-      {!loading && valid > 0 && (() => {
-        const latest = [...certificates]
-          .filter((c) => c.status === 'valid')
-          .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))[0];
-        if (!latest) return null;
-        return (
-          <Card variant="dark" padding="default">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
-              {/* Seal */}
-              <div style={{
-                width: '72px', height: '72px', borderRadius: '18px', flexShrink: 0,
-                background: 'linear-gradient(135deg, var(--blue-700), var(--blue-500))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '32px', boxShadow: '0 6px 20px rgba(12,29,92,0.4)',
-              }}>
-                🎓
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '11px', color: 'var(--blue-300)', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 600, marginBottom: '4px' }}>
-                  Última constancia emitida
-                </div>
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', color: 'var(--panel)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {latest.inscription?.course?.title ?? 'Curso completado'}
-                </div>
-                <div style={{ fontSize: '13px', color: 'var(--blue-300)' }}>
-                  Folio: <strong style={{ color: 'var(--panel)', fontFamily: 'var(--font-mono)' }}>{latest.certificateNumber}</strong>
-                  {' · '} Emitida el {new Date(latest.issuedAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
-                </div>
-              </div>
-              {canDownload && (
-                <Button variant="secondary" size="md" style={{ flexShrink: 0 }}>
-                  ↓ Descargar PDF
-                </Button>
-              )}
-            </div>
-          </Card>
-        );
-      })()}
-
-      {/* ── Search + chips ── */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
-          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: 'var(--ink-muted)', pointerEvents: 'none' }}>🔍</span>
+        <div className="relative w-full max-w-[340px]">
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" strokeLinecap="round" /></svg>
+          </span>
           <input
             type="search"
-            placeholder="Buscar folio, curso o alumno…"
+            placeholder="Buscar folio, curso o estudiante…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: '100%', height: '40px', paddingLeft: '40px', paddingRight: '12px',
-              borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)',
-              background: 'var(--blue-50)', fontSize: '13.5px', color: 'var(--ink)',
-              fontFamily: 'var(--font-sans)', outline: 'none',
-            }}
+            className="h-11 w-full rounded-2xl border border-[#E4EBDD] bg-white pl-10 pr-4 text-[13.5px] text-[var(--ink)] shadow-sm outline-none focus:border-[var(--green-400)]"
           />
-        </div>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {STATUS_CHIPS.map((chip) => (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => setStatusChip(chip.key)}
-              style={{
-                border: statusChip === chip.key ? '1.5px solid var(--green-500)' : '1.5px solid var(--neutral-200)',
-                background: statusChip === chip.key ? 'var(--green-50)' : 'var(--panel)',
-                color: statusChip === chip.key ? 'var(--green-700)' : 'var(--ink-muted)',
-                borderRadius: 'var(--radius-full)', padding: '6px 16px',
-                fontSize: '13px', fontWeight: statusChip === chip.key ? 600 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-sans)',
-              }}
-            >
-              {chip.label}
-            </button>
-          ))}
         </div>
       </div>
 
-      {/* ── List ── */}
-      {loading ? (
-        <Card padding="default">
-          {Array.from({ length: 5 }).map((_, i) => <SkeletonCertRow key={i} />)}
-        </Card>
-      ) : filtered.length === 0 ? (
+      {/* ── Stats ── */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Emitidos"              value={issued}  deltaUp icon={<Icon icon={APP_ICONS.diplomaVerified} width={20} height={20} />} variant="green" />
+        <StatCard label="Pendientes de aprobar" value={pending} icon={<Icon icon={APP_ICONS.clock} width={20} height={20} />} variant="yellow" />
+        <StatCard label="Tasa de aprobación"    value={`${rate}%`} deltaUp icon={<Icon icon={APP_ICONS.chart} width={20} height={20} />} variant="blue" />
+      </div>
+
+      {/* ── Chips de estado ── */}
+      <div className="flex flex-wrap gap-1.5">
+        {STATUS_CHIPS.map((chip) => (
+          <button
+            key={chip.key}
+            type="button"
+            onClick={() => setStatusChip(chip.key)}
+            className={
+              statusChip === chip.key
+                ? 'rounded-full border-[1.5px] border-[var(--green-500)] bg-[var(--green-50)] px-4 py-1.5 text-[13px] font-semibold text-[var(--green-700)] cursor-pointer'
+                : 'rounded-full border-[1.5px] border-[#E4EBDD] bg-white px-4 py-1.5 text-[13px] text-[var(--ink-muted)] cursor-pointer hover:border-[var(--green-300)]'
+            }
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Grid de holo cards ── */}
+      {filtered.length === 0 ? (
         <EmptyState
-          icon="🎓"
-          title="Sin constancias"
+          icon={APP_ICONS.diploma}
+          title="Sin certificados"
           description={
             search || statusChip !== 'all'
-              ? 'Ninguna constancia coincide con tu búsqueda.'
-              : 'Aún no se han emitido constancias en el sistema.'
+              ? 'Ningún certificado coincide con tu búsqueda.'
+              : 'Aún no se han emitido certificados en el sistema.'
           }
           action={
             (search || statusChip !== 'all')
-              ? { label: 'Ver todas', onClick: () => { setSearch(''); setStatusChip('all'); } }
+              ? { label: 'Ver todos', onClick: () => { setSearch(''); setStatusChip('all'); } }
               : undefined
           }
         />
       ) : (
-        <Card padding="default">
-          <div style={{ fontSize: '13px', color: 'var(--ink-muted)', marginBottom: '12px' }}>
-            Mostrando <strong style={{ color: 'var(--ink)' }}>{filtered.length}</strong> de {certificates.length}
+        <>
+          <p className="text-[13px] text-[var(--ink-muted)]">
+            Mostrando <strong className="text-[var(--ink)]">{filtered.length}</strong> de {certificates.length} —
+            gira cada tarjeta para ver los datos y el QR de verificación.
+          </p>
+          <div className="grid gap-7 md:grid-cols-2 2xl:grid-cols-3">
+            {filtered.map((cert) => (
+              <CertificateHoloCard key={cert.folio} data={cert} showSparkles />
+            ))}
           </div>
-          {filtered.map((cert, i) => (
-            <div
-              key={cert.id}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '14px',
-                padding: '16px 0',
-                borderBottom: i < filtered.length - 1 ? '1px solid var(--neutral-100)' : 'none',
-              }}
-            >
-              {/* Seal icon */}
-              <div style={{
-                width: '48px', height: '48px', borderRadius: '12px', flexShrink: 0,
-                background: 'linear-gradient(135deg, var(--blue-700), var(--blue-500))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '22px',
-              }}>
-                🎓
-              </div>
-
-              {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ink)', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {cert.inscription?.course?.title ?? 'Curso completado'}
-                </div>
-                <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'var(--ink-muted)', flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)' }}>{cert.certificateNumber}</span>
-                  <span>Emitida: {new Date(cert.issuedAt).toLocaleDateString('es-MX')}</span>
-                  {cert.expiresAt && (
-                    <span>Vence: {new Date(cert.expiresAt).toLocaleDateString('es-MX')}</span>
-                  )}
-                  {cert.inscription?.user?.fullName && (
-                    <span>· {cert.inscription.user.fullName}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Status badge */}
-              <Badge variant={getVariant(certificateStatus, cert.status)}>
-                {getLabel(certificateStatus, cert.status)}
-              </Badge>
-
-              {/* Download */}
-              {canDownload && cert.status === 'valid' && (
-                <Button variant="ghost" size="sm">↓ PDF</Button>
-              )}
-            </div>
-          ))}
-        </Card>
+        </>
       )}
     </div>
   );

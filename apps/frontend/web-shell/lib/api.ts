@@ -4,7 +4,7 @@
  * Import { api } from '@/lib/api' throughout the app.
  */
 
-import { get, post, del } from './apiClient';
+import { get, post, patch, del, uploadFile } from './apiClient';
 import type {
   AccessProfile,
   AuditLog,
@@ -13,6 +13,7 @@ import type {
   Course,
   Inscription,
   Lesson,
+  LiveSession,
   Progress,
   RbacCatalogs,
   SessionUser,
@@ -44,7 +45,20 @@ export const api = {
   courses:       () => get<Course[]>('/courses'),
   createCourse:  (dto: Partial<Course>) => post<Course>('/courses', dto),
 
+  /* ── Uploads (Cloudinary) ─────────────────────────────── */
+  uploadImage:    (file: File) => uploadFile<{ url: string }>('/uploads/image', file),
+  uploadDocument: (file: File) => uploadFile<{ url: string }>('/uploads/document', file),
+  uploadVideo:    (file: File) => uploadFile<{ url: string }>('/uploads/video', file),
+
   lessons:       () => get<Lesson[]>('/lessons'),
+  createLesson:  (dto: Partial<Lesson> & { courseId: string }) => post<Lesson>('/lessons', dto),
+  updateLesson:  (id: string, dto: Partial<Lesson>) => patch<Lesson>(`/lessons/${id}`, dto),
+
+  liveSessions:      () => get<LiveSession[]>('/live-sessions'),
+  nextLiveSession:   () => get<LiveSession | null>('/live-sessions/public'),
+  createLiveSession: (dto: Partial<LiveSession>) => post<LiveSession>('/live-sessions', dto),
+  updateLiveSession: (id: string, dto: Partial<LiveSession>) => patch<LiveSession>(`/live-sessions/${id}`, dto),
+  deleteLiveSession: (id: string) => del(`/live-sessions/${id}`),
 
   inscriptions:  () => get<Inscription[]>('/inscriptions'),
 

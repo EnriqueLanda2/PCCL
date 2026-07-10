@@ -20,6 +20,11 @@
     "prisma:migrate:identity": "prisma migrate dev --schema=apps/identity-service/prisma/schema.prisma",
     "prisma:migrate:learning": "prisma migrate dev --schema=apps/learning-service/prisma/schema.prisma",
     "prisma:migrate:certification": "prisma migrate dev --schema=apps/certification-service/prisma/schema.prisma",
+    "prisma:seed:identity": "prisma db seed --schema=apps/identity-service/prisma/schema.prisma",
+    "seed:learning": "node --env-file=.env apps/learning-service/prisma/seed.js",
+    "seed:certification": "node --env-file=.env apps/certification-service/prisma/seed.js",
+    "seed:all": "npm run prisma:seed:identity && npm run seed:learning && npm run seed:certification",
+    "predev": "npm run seed:all",
     "start:gateway": "nest start gateway --watch",
     "start:identity": "nest start identity-service --watch",
     "start:learning": "nest start learning-service --watch",
@@ -34,6 +39,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage"
   },
+  "prisma": {
+    "seed": "node apps/identity-service/prisma/seed.js"
+  },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -47,8 +55,10 @@
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.6",
     "helmet": "^7.1.0",
+    "multer": "^2.2.0",
     "nats": "^2.29.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -66,6 +76,7 @@
     "@types/cookie-parser": "^1.4.7",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.2.0",
     "@types/node": "^24.0.0",
     "@types/passport": "^1.0.16",
     "@types/passport-jwt": "^4.0.1",

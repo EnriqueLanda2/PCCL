@@ -21,9 +21,12 @@ model Course {
   description     String       @db.Text
   status          String       @default("draft") @db.VarChar(20)
   level           String       @default("basic") @db.VarChar(40)
+  coverImageUrl   String?      @map("cover_image_url") @db.Text
+  durationMinutes Int?         @map("duration_minutes")
   lessons         Lesson[]
   inscriptions    Inscription[]
   evaluations     Evaluation[]
+  liveSessions    LiveSession[]
 
   @@map("courses")
 }
@@ -40,6 +43,9 @@ model Lesson {
   title           String         @db.VarChar(140)
   content         String         @db.Text
   contentType     String         @default("text") @map("content_type") @db.VarChar(20)
+  /** URL de Cloudinary del adjunto (video o documento) cuando contentType es 'video' o 'file' */
+  fileUrl         String?        @map("file_url") @db.Text
+  durationMinutes Int?           @map("duration_minutes")
   courseId        String         @map("course_id") @db.Uuid
   course          Course         @relation(fields: [courseId], references: [id])
   califications   Calification[]
@@ -123,6 +129,25 @@ model Evaluation {
   attempts        EvaluationAttempt[]
 
   @@map("evaluations")
+}
+
+model LiveSession {
+  id              String   @id @default(uuid()) @db.Uuid
+  transactionDate DateTime @default(now()) @map("transaction_date") @db.Timestamp(6)
+  createdBy       String?  @map("created_by") @db.VarChar(100)
+  updatedBy       String?  @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  title           String   @db.VarChar(140)
+  hostName        String   @map("host_name") @db.VarChar(120)
+  scheduledAt     DateTime @map("scheduled_at") @db.Timestamp(6)
+  durationMinutes Int      @default(60) @map("duration_minutes")
+  joinUrl         String?  @map("join_url") @db.Text
+  status          String   @default("scheduled") @db.VarChar(20) // scheduled | live | ended | canceled
+  courseId        String?  @map("course_id") @db.Uuid
+  course          Course?  @relation(fields: [courseId], references: [id])
+
+  @@map("live_sessions")
 }
 
 model EvaluationAttempt {

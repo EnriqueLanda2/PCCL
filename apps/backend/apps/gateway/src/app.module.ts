@@ -7,6 +7,7 @@ import { JwtStrategy } from './auth/jwt.strategy';
 import { IdentityController } from './identity/identity.controller';
 import { LearningController } from './learning/learning.controller';
 import { CertificationController } from './certification/certification.controller';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CertificationController } from './certification/certification.controlle
       }),
     }),
     MessagingModule.forGateway(),
+    UploadsModule,
   ],
   providers: [JwtStrategy],
   controllers: [

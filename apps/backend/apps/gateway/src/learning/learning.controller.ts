@@ -15,6 +15,7 @@ import { firstValueFrom } from 'rxjs';
 import { LEARNING_PATTERNS } from '@app/contracts';
 import { LEARNING_CLIENT } from '@app/messaging';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequestUser } from '../auth/interfaces/request-user.interface';
 
@@ -28,6 +29,14 @@ export class LearningController {
   }
 
   /* ─── COURSES ─── */
+  @Public()
+  @Get('courses/public')
+  findPublishedCourses() {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.COURSE_FIND_PUBLISHED, {}),
+    );
+  }
+
   @Post('courses')
   createCourse(@Body() dto: unknown, @CurrentUser() u: RequestUser) {
     return firstValueFrom(
@@ -252,6 +261,61 @@ export class LearningController {
         ...dto,
         evaluationId: id,
       }),
+    );
+  }
+
+  /* ─── LIVE SESSIONS ─── */
+  @Public()
+  @Get('live-sessions/public')
+  findNextPublicLiveSession() {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.LIVE_SESSION_FIND_NEXT_PUBLIC, {}),
+    );
+  }
+
+  @Post('live-sessions')
+  createLiveSession(@Body() dto: unknown, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.LIVE_SESSION_CREATE, {
+        dto,
+        actor: this.actor(u),
+      }),
+    );
+  }
+
+  @Get('live-sessions')
+  findAllLiveSessions() {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.LIVE_SESSION_FIND_ALL, {}),
+    );
+  }
+
+  @Get('live-sessions/:id')
+  findOneLiveSession(@Param('id') id: string) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.LIVE_SESSION_FIND_ONE, { id }),
+    );
+  }
+
+  @Patch('live-sessions/:id')
+  updateLiveSession(
+    @Param('id') id: string,
+    @Body() dto: unknown,
+    @CurrentUser() u: RequestUser,
+  ) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.LIVE_SESSION_UPDATE, {
+        id,
+        dto,
+        actor: this.actor(u),
+      }),
+    );
+  }
+
+  @Delete('live-sessions/:id')
+  removeLiveSession(@Param('id') id: string) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.LIVE_SESSION_DELETE, { id }),
     );
   }
 }

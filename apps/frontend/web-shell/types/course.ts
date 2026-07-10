@@ -10,6 +10,9 @@ export interface Course {
   description: string;
   status: CourseStatus;
   level: string;
+  /** URL de Cloudinary de la portada, si el instructor subió una */
+  coverImageUrl?: string | null;
+  createdBy?: string | null;
   instructorName?: string;
   totalLessons?: number;
   durationMinutes?: number;
@@ -18,6 +21,8 @@ export interface Course {
   category?: string;
   rating?: number;
   studentsCount?: number;
+  /** Lecciones anidadas — el endpoint GET /courses las incluye */
+  lessons?: Lesson[];
 }
 
 export interface Module {
@@ -32,7 +37,7 @@ export interface Lesson {
   id: string;
   title: string;
   content: string;
-  contentType: 'text' | 'video' | 'link' | 'file';
+  contentType: 'text' | 'video' | 'link' | 'file' | 'quiz' | 'practice' | 'reading' | 'live';
   durationMinutes?: number;
   moduleId?: string;
   order?: number;

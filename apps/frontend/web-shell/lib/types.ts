@@ -18,6 +18,9 @@ export interface Course {
   description: string;
   status: 'draft' | 'published';
   level: string;
+  /** URL de Cloudinary de la portada, si el instructor subió una */
+  coverImageUrl?: string | null;
+  createdBy?: string | null;
   /* optional display fields */
   category?: string;
   instructorName?: string;
@@ -27,6 +30,8 @@ export interface Course {
   studentsCount?: number;
   coverVariant?: number;
   coverIcon?: string;
+  /** Lecciones anidadas — el endpoint GET /courses las incluye */
+  lessons?: Lesson[];
 }
 
 export interface Lesson {
@@ -34,6 +39,8 @@ export interface Lesson {
   title: string;
   content: string;
   contentType: 'text' | 'video' | 'link' | 'file' | 'quiz' | 'practice' | 'reading' | 'live';
+  /** URL de Cloudinary del adjunto (video o documento) cuando contentType es 'video' o 'file' */
+  fileUrl?: string | null;
   /* optional display fields */
   courseId?: string;
   courseName?: string;
@@ -78,6 +85,20 @@ export interface Progress {
   averageScore: number;
   lastAccessAt: string | null;
   inscription?: Inscription;
+}
+
+export interface LiveSession {
+  id: string;
+  title: string;
+  hostName: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  status: 'scheduled' | 'live' | 'ended' | 'canceled';
+  /** URL de la videollamada, si la sesión ya tiene una asignada */
+  joinUrl?: string | null;
+  /** Curso asociado, si aplica */
+  courseId?: string | null;
+  course?: { title: string } | null;
 }
 
 export interface AuditLog {

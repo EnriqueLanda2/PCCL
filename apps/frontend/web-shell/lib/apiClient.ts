@@ -183,6 +183,20 @@ export async function del<T = void>(url: string, config?: AxiosRequestConfig): P
   return res.data;
 }
 
+/**
+ * Sube un archivo como multipart/form-data. Se limpia el header
+ * Content-Type: application/json por defecto del cliente para que
+ * el navegador/axios agregue el boundary del multipart correcto.
+ */
+export async function uploadFile<T>(url: string, file: File, fieldName = 'file'): Promise<T> {
+  const formData = new FormData();
+  formData.append(fieldName, file);
+  const res = await apiClient.post<T>(url, formData, {
+    headers: { 'Content-Type': undefined },
+  });
+  return res.data;
+}
+
 /* ─────────────────── Error type guards ─────────────────────────────── */
 
 export function isApiError(err: unknown): err is ApiError {

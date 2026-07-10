@@ -11,7 +11,7 @@ export class LessonsService {
     const course = await this.prisma.course.findUnique({ where: { id: dto.courseId } });
     if (!course) throw new NotFoundException('Curso no encontrado');
     const lesson = await this.prisma.lesson.create({
-      data: { title: dto.title, content: dto.content, contentType: dto.contentType, courseId: dto.courseId, createdBy: actor, updatedBy: actor },
+      data: { title: dto.title, content: dto.content, contentType: dto.contentType, fileUrl: dto.fileUrl, durationMinutes: dto.durationMinutes, courseId: dto.courseId, createdBy: actor, updatedBy: actor },
     });
     return this.findOne(lesson.id);
   }
@@ -34,7 +34,7 @@ export class LessonsService {
     }
     await this.prisma.lesson.update({
       where: { id },
-      data: { title: dto.title ?? lesson.title, content: dto.content ?? lesson.content, contentType: dto.contentType ?? lesson.contentType, courseId: dto.courseId ?? lesson.courseId, updatedBy: actor },
+      data: { title: dto.title ?? lesson.title, content: dto.content ?? lesson.content, contentType: dto.contentType ?? lesson.contentType, fileUrl: dto.fileUrl ?? lesson.fileUrl, durationMinutes: dto.durationMinutes ?? lesson.durationMinutes, courseId: dto.courseId ?? lesson.courseId, updatedBy: actor },
     });
     return this.findOne(id);
   }

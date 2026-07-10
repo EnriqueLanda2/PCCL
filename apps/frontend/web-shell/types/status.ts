@@ -142,11 +142,11 @@ export interface ContentTypeMap {
 
 export const lessonType: ContentTypeMap = {
   icon: {
-    video:    '▶',
-    quiz:     '📝',
-    practice: '✏️',
-    reading:  '📖',
-    live:     '📡',
+    video:    'solar:play-circle-bold-duotone',
+    quiz:     'solar:document-text-bold-duotone',
+    practice: 'solar:pen-2-bold-duotone',
+    reading:  'solar:book-bookmark-bold-duotone',
+    live:     'solar:videocamera-record-bold-duotone',
   },
   label: {
     video:    'Video',
@@ -182,9 +182,9 @@ export interface CalificationTypeMap {
 
 export const calificationType: CalificationTypeMap = {
   icon: {
-    quiz: '📝',
-    task: '✏️',
-    exam: '🎓',
+    quiz: 'solar:document-text-bold-duotone',
+    task: 'solar:pen-2-bold-duotone',
+    exam: 'solar:diploma-bold-duotone',
   },
   label: {
     quiz: 'Quiz',
@@ -268,12 +268,12 @@ export function getLabel(
 }
 
 /**
- * Devuelve el ícono de un ContentTypeMap dado un key.
+ * Devuelve el nombre de ícono (Iconify) de un ContentTypeMap dado un key.
  */
 export function getIcon(
   map: { icon: Record<string, string> },
   key: string,
-  fallback = '▪',
+  fallback = 'solar:question-circle-bold',
 ): string {
   return map.icon[key] ?? fallback;
 }

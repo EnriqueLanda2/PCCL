@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { PortalShell } from '@/components/layout/PortalShell';
+import { PortalShell } from '@/app/components/layout/PortalShell';
 import { PUBLIC_ROUTES } from '@/lib/routes';
 
 export default function ModulesLayout({ children }: Readonly<{ children: React.ReactNode }>) {

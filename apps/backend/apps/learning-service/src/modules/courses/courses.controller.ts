@@ -17,6 +17,9 @@ export class CoursesController {
   @MessagePattern(LEARNING_PATTERNS.COURSE_FIND_ALL)
   findAll() { return this.service.findAll(); }
 
+  @MessagePattern(LEARNING_PATTERNS.COURSE_FIND_PUBLISHED)
+  findPublished() { return this.service.findPublished(); }
+
   @MessagePattern(LEARNING_PATTERNS.COURSE_FIND_ONE)
   findOne(@Payload() p: { id: string }) { return this.service.findOne(p.id); }
 

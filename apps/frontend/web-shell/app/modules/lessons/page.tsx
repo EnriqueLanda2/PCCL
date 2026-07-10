@@ -7,16 +7,17 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
 import type { Lesson } from '@/lib/types';
-import { appRoutes } from '@/lib/routes';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { ProgressBar } from '@/components/ui/ProgressBar';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { Card } from '@/app/components/ui/Card';
+import { Badge } from '@/app/components/ui/Badge';
+import { Button } from '@/app/components/ui/Button';
+import { ProgressBar } from '@/app/components/ui/ProgressBar';
+import { EmptyState } from '@/app/components/shared/EmptyState';
+import { CreateLessonModal } from '@/app/components/shared/CreateLessonModal';
 import { lessonType, getIcon, getLabel, getVariant } from '@/types/status';
+import { APP_ICONS } from '@/lib/icons';
 
 /* ── Group lessons by course ── */
 function groupByCourse(lessons: Lesson[]): Map<string, Lesson[]> {
@@ -44,15 +45,25 @@ function SkeletonRow() {
 }
 
 /* ── Accordion course group ── */
-function CourseGroup({ courseId, lessons, open, onToggle }: {
+function CourseGroup({ courseId, lessons, open, onToggle, canCreate, onAddLesson, onEditLesson }: {
   courseId: string;
   lessons: Lesson[];
   open: boolean;
   onToggle: () => void;
+  canCreate: boolean;
+  onAddLesson: (courseId: string) => void;
+  onEditLesson: (lesson: Lesson) => void;
 }) {
   const done = lessons.filter((l) => l.completed).length;
   const pct  = Math.round((done / lessons.length) * 100);
   const courseName = lessons[0]?.courseName ?? `Curso ${courseId.slice(0, 6)}`;
+  const [expandedVideos, setExpandedVideos] = useState<Set<string>>(new Set());
+  const toggleVideo = (id: string) =>
+    setExpandedVideos((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   return (
     <Card padding="default" style={{ marginBottom: '12px' }}>
@@ -68,10 +79,10 @@ function CourseGroup({ courseId, lessons, open, onToggle }: {
       >
         <div style={{
           width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
-          background: 'var(--blue-900)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: '20px',
+          background: 'var(--blue-900)', color: 'var(--panel)', display: 'flex', alignItems: 'center',
+          justifyContent: 'center',
         }}>
-          📚
+          <Icon icon={APP_ICONS.book} width={22} height={22} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -93,6 +104,13 @@ function CourseGroup({ courseId, lessons, open, onToggle }: {
       {/* Lessons list */}
       {open && (
         <div style={{ marginTop: '16px', borderTop: '1px solid var(--neutral-100)', paddingTop: '4px' }}>
+          {canCreate && courseId !== 'Sin curso' && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 0' }}>
+              <Button type="button" variant="secondary" size="sm" onClick={() => onAddLesson(courseId)}>
+                + Agregar lección
+              </Button>
+            </div>
+          )}
           {lessons.map((lesson, i) => {
             const icon    = getIcon(lessonType,    lesson.contentType);
             const label   = getLabel(lessonType,   lesson.contentType);
@@ -102,54 +120,109 @@ function CourseGroup({ courseId, lessons, open, onToggle }: {
                           : lesson.contentType === 'practice' ? 'var(--bg-dark)'
                           : 'var(--blue-50)';
             const fgColor = lesson.contentType === 'practice' ? 'var(--panel)' : 'var(--blue-700)';
+            const isVideo = lesson.contentType === 'video';
+            const videoOpen = isVideo && expandedVideos.has(lesson.id);
 
             return (
-              <Link
-                key={lesson.id}
-                href={`${appRoutes.lessons}/${lesson.id}`}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '14px',
-                  padding: '13px 0', textDecoration: 'none', color: 'inherit',
-                  borderBottom: isLast ? 'none' : '1px solid var(--neutral-100)',
-                  opacity: lesson.locked ? 0.5 : 1,
-                  pointerEvents: lesson.locked ? 'none' : undefined,
-                }}
-              >
-                {/* Icon */}
-                <span style={{
-                  width: '38px', height: '38px', borderRadius: '10px',
-                  background: bgColor, color: fgColor,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, fontSize: '14px',
-                }}>
-                  {lesson.completed ? '✓' : icon}
-                </span>
-
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: '14px', fontWeight: 500, color: lesson.completed ? 'var(--ink-muted)' : 'var(--ink)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    textDecoration: lesson.completed ? 'line-through' : 'none',
+              <div key={lesson.id} style={{ borderBottom: isLast ? 'none' : '1px solid var(--neutral-100)' }}>
+                <div
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '14px',
+                    padding: '13px 0',
+                    opacity: lesson.locked ? 0.5 : 1,
+                  }}
+                >
+                  {/* Icon */}
+                  <span style={{
+                    width: '38px', height: '38px', borderRadius: '10px',
+                    background: bgColor, color: fgColor,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
                   }}>
-                    {lesson.title}
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '2px', display: 'flex', gap: '6px' }}>
-                    <span>{label}</span>
-                    {lesson.durationMinutes && <span>· {lesson.durationMinutes} min</span>}
-                    {lesson.locked && <span style={{ color: 'var(--yellow-600)' }}>· 🔒 Bloqueada</span>}
-                  </div>
-                </div>
+                    <Icon icon={lesson.completed ? APP_ICONS.check : icon} width={16} height={16} />
+                  </span>
 
-                {/* Badge */}
-                {lesson.completed ? (
-                  <Badge variant="green">Completada</Badge>
-                ) : lesson.locked ? (
-                  <Badge variant="yellow">Bloqueada</Badge>
-                ) : (
-                  <Badge variant={variant}>{label}</Badge>
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: '14px', fontWeight: 500, color: lesson.completed ? 'var(--ink-muted)' : 'var(--ink)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      textDecoration: lesson.completed ? 'line-through' : 'none',
+                    }}>
+                      {lesson.title}
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '2px', display: 'flex', gap: '6px' }}>
+                      <span>{label}</span>
+                      {lesson.durationMinutes && <span>· {lesson.durationMinutes} min</span>}
+                      {lesson.locked && (
+                        <span style={{ color: 'var(--yellow-600)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          · <Icon icon={APP_ICONS.lock} width={11} height={11} /> Bloqueada
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Adjunto */}
+                  {lesson.fileUrl && (
+                    isVideo ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleVideo(lesson.id)}
+                        style={{ fontSize: '12.5px', color: 'var(--blue-600)', fontWeight: 500, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+                      >
+                        {videoOpen ? '▲ Ocultar video' : '▶ Ver video'}
+                      </button>
+                    ) : (
+                      <a
+                        href={lesson.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '12.5px', color: 'var(--blue-600)', fontWeight: 500, flexShrink: 0, textDecoration: 'none' }}
+                      >
+                        ↗ Ver documento
+                      </a>
+                    )
+                  )}
+
+                  {/* Badge */}
+                  {lesson.completed ? (
+                    <Badge variant="green">Completada</Badge>
+                  ) : lesson.locked ? (
+                    <Badge variant="yellow">Bloqueada</Badge>
+                  ) : (
+                    <Badge variant={variant}>{label}</Badge>
+                  )}
+
+                  {/* Editar */}
+                  {canCreate && (
+                    <button
+                      type="button"
+                      onClick={() => onEditLesson(lesson)}
+                      aria-label={`Editar ${lesson.title}`}
+                      style={{
+                        flexShrink: 0, width: '28px', height: '28px', borderRadius: '8px',
+                        border: '1px solid var(--neutral-100)', background: 'var(--panel)',
+                        color: 'var(--ink-muted)', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {videoOpen && lesson.fileUrl && (
+                  <video
+                    controls
+                    preload="metadata"
+                    src={lesson.fileUrl}
+                    style={{ width: '100%', maxHeight: '420px', borderRadius: 'var(--radius-md)', background: '#000', marginBottom: '13px' }}
+                  >
+                    <track kind="captions" />
+                  </video>
                 )}
-              </Link>
+              </div>
             );
           })}
         </div>
@@ -165,6 +238,9 @@ export default function LessonsPage() {
   const [openGroups,  setOpenGroups]  = useState<Set<string>>(new Set());
   const [search,      setSearch]      = useState('');
   const [typeFilter,  setTypeFilter]  = useState('Todos');
+  const [modalOpen,      setModalOpen]      = useState(false);
+  const [modalCourseId,  setModalCourseId]  = useState<string | null>(null);
+  const [editingLesson,  setEditingLesson]  = useState<Lesson | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -209,6 +285,15 @@ export default function LessonsPage() {
   const expandAll  = () => setOpenGroups(new Set(grouped.keys()));
   const collapseAll = () => setOpenGroups(new Set());
 
+  const openAddLesson = (courseId: string) => { setModalCourseId(courseId); setEditingLesson(null); setModalOpen(true); };
+  const openEditLesson = (lesson: Lesson) => { setModalCourseId(lesson.courseId ?? null); setEditingLesson(lesson); setModalOpen(true); };
+  const handleLessonSaved = (saved: Lesson) => {
+    setLessons((prev) => {
+      const exists = prev.some((l) => l.id === saved.id);
+      return exists ? prev.map((l) => (l.id === saved.id ? saved : l)) : [...prev, saved];
+    });
+  };
+
   /* ── Stats ── */
   const totalCompleted = lessons.filter((l) => l.completed).length;
   const totalPct = lessons.length ? Math.round((totalCompleted / lessons.length) * 100) : 0;
@@ -228,9 +313,6 @@ export default function LessonsPage() {
             {loading ? 'Cargando…' : `${totalCompleted} de ${lessons.length} completadas · ${totalPct}% progreso general`}
           </p>
         </div>
-        {canCreate && (
-          <Button variant="primary" size="md">+ Nueva lección</Button>
-        )}
       </div>
 
       {/* ── Overall progress bar ── */}
@@ -255,9 +337,7 @@ export default function LessonsPage() {
       {/* ── Search + type chips + expand/collapse ── */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
-          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', pointerEvents: 'none', color: 'var(--ink-muted)' }}>
-            🔍
-          </span>
+          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--ink-muted)' }} />
           <input
             type="search"
             placeholder="Buscar lección…"
@@ -310,7 +390,7 @@ export default function LessonsPage() {
         </Card>
       ) : grouped.size === 0 ? (
         <EmptyState
-          icon="📖"
+          icon={APP_ICONS.reading}
           title="Sin lecciones"
           description={
             search || typeFilter !== 'Todos'
@@ -334,9 +414,22 @@ export default function LessonsPage() {
               lessons={courseLessons}
               open={openGroups.has(courseId)}
               onToggle={() => toggleGroup(courseId)}
+              canCreate={canCreate}
+              onAddLesson={openAddLesson}
+              onEditLesson={openEditLesson}
             />
           ))}
         </div>
+      )}
+
+      {modalCourseId && (
+        <CreateLessonModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          courseId={modalCourseId}
+          lesson={editingLesson}
+          onSaved={handleLessonSaved}
+        />
       )}
     </div>
   );

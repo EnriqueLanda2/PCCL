@@ -4,6 +4,7 @@ export const appRoutes = {
   register:      '/identity/register',
   dashboard:     '/learning/dashboard',
   courses:       '/learning/courses',
+  liveClasses:   '/learning/live',
   lessons:       '/learning/lessons',
   inscriptions:  '/learning/inscriptions',
   califications: '/learning/califications',
@@ -12,6 +13,7 @@ export const appRoutes = {
   audit:         '/certification/audit',
   users:         '/identity/users',
   rbac:          '/identity/rbac',
+  scan:          '/validate',
   /* Microfrontend overview pages */
   identity:      '/identity',
   learning:      '/learning',

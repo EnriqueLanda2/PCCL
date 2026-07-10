@@ -1,0 +1,136 @@
+/* ───────────────────────────────────────────
+   Layout · Topbar
+  Header público (landing).
+  Franja de acento verde + nav.
+   ─────────────────────────────────────────── */
+
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { Logo } from './Logo';
+import { appRoutes } from '@/lib/routes';
+
+type TopbarProps = Readonly<{
+  activeHref?: string;
+}>;
+
+const navLinks = [
+  { label: 'Catálogo', href: appRoutes.courses },
+  { label: 'Para equipos', href: '#equipos' },
+  { label: 'Precios', href: '#precios' },
+  { label: 'Historias', href: '#historias' },
+];
+
+export function Topbar(props: TopbarProps) {
+  const { activeHref } = props;
+  const [hovered, setHovered] = React.useState<string | null>(null);
+
+  return (
+    <>
+      {/* Franja de acento */}
+      <div
+        style={{
+          height: '4px',
+          background: 'linear-gradient(90deg, var(--green-700) 0%, var(--green-500) 100%)',
+        }}
+      />
+
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '32px',
+          padding: '16px clamp(20px, 4vw, 56px)',
+          borderBottom: '1px solid rgba(23, 50, 77, 0.08)',
+          background: 'rgba(247, 250, 243, 0.82)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          backdropFilter: 'blur(10px)',
+        }}
+      >
+        <Logo href={appRoutes.home} />
+
+        <nav
+          style={{
+            display: 'flex',
+            gap: '4px',
+            fontSize: '14.5px',
+            marginLeft: '8px',
+          }}
+        >
+          {navLinks.map((link) => {
+            const active = activeHref === link.href || hovered === link.label;
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                onMouseEnter={() => setHovered(link.label)}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  position: 'relative',
+                  padding: '8px 14px',
+                  borderRadius: '999px',
+                  color: active ? 'var(--green-700)' : 'var(--ink-soft)',
+                  fontWeight: active ? 600 : 450,
+                  background: active ? 'var(--green-50)' : 'transparent',
+                  transition: 'color 160ms, background 160ms',
+                }}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div
+          style={{
+            marginLeft: 'auto',
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+          }}
+        >
+          <Link
+            href={appRoutes.login}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: '40px',
+              padding: '0 18px',
+              borderRadius: '999px',
+              fontSize: '14px',
+              fontWeight: 500,
+              color: 'var(--green-700)',
+              background: 'transparent',
+              transition: 'background 160ms',
+            }}
+          >
+            Iniciar sesión
+          </Link>
+          <Link
+            href={appRoutes.register}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              height: '40px',
+              padding: '0 20px',
+              borderRadius: '999px',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: 'var(--panel)',
+              background: 'linear-gradient(120deg, var(--green-700), var(--green-500))',
+              boxShadow: '0 8px 22px -8px rgba(31,154,75,0.45)',
+              transition: 'box-shadow 160ms, transform 160ms',
+            }}
+          >
+            Comenzar
+            <span style={{ fontSize: '16px', lineHeight: 1 }}>→</span>
+          </Link>
+        </div>
+      </header>
+    </>
+  );
+}

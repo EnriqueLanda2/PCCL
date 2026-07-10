@@ -4,10 +4,12 @@ import type React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Field, Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+import { Icon } from '@iconify/react';
+import { Field, Input } from '@/app/components/ui/Input';
+import { Button } from '@/app/components/ui/Button';
 import { api, ApiError } from '@/lib/api';
 import { appRoutes } from '@/lib/routes';
+import { APP_ICONS } from '@/lib/icons';
 
 /* Mapa módulo backend → ruta frontend */
 const MODULE_ROUTE: Record<string, string> = {
@@ -79,12 +81,12 @@ export default function LoginPage() {
           {/* Feature pills */}
           <div className="flex flex-col gap-3">
             {[
-              { icon: '📚', text: 'Cursos, lecciones y evaluaciones' },
-              { icon: '📊', text: 'Progreso y certificados en tiempo real' },
-              { icon: '🛡️', text: 'Permisos granulares por rol' },
+              { icon: APP_ICONS.book, text: 'Cursos, lecciones y evaluaciones' },
+              { icon: APP_ICONS.chart, text: 'Progreso y certificados en tiempo real' },
+              { icon: APP_ICONS.shield, text: 'Permisos granulares por rol' },
             ].map((f) => (
               <div key={f.text} className="flex items-center gap-3 text-sm text-neutral-300">
-                <span className="text-base">{f.icon}</span>
+                <Icon icon={f.icon} width={18} height={18} className="flex-shrink-0" />
                 {f.text}
               </div>
             ))}
@@ -99,8 +101,8 @@ export default function LoginPage() {
         <div className="w-full max-w-sm mx-auto">
 
           {/* Icon */}
-          <div className="w-12 h-12 rounded-lg bg-primary-500 flex items-center justify-center text-2xl mb-8 shadow-md">
-            🎓
+          <div className="w-12 h-12 rounded-lg bg-primary-500 flex items-center justify-center text-white mb-8 shadow-md">
+            <Icon icon={APP_ICONS.diploma} width={26} height={26} />
           </div>
 
           <h2 className="font-serif text-3xl text-neutral-900 mb-1">Iniciar sesión</h2>

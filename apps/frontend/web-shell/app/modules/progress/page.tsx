@@ -7,14 +7,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
 import type { Progress } from '@/lib/types';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { ProgressBar } from '@/components/ui/ProgressBar';
-import { StatCard } from '@/components/shared/StatCard';
-import { EmptyState } from '@/components/shared/EmptyState';
-import { Avatar, getInitials } from '@/components/ui/Avatar';
+import { Card } from '@/app/components/ui/Card';
+import { Badge } from '@/app/components/ui/Badge';
+import { ProgressBar } from '@/app/components/ui/ProgressBar';
+import { StatCard } from '@/app/components/shared/StatCard';
+import { EmptyState } from '@/app/components/shared/EmptyState';
+import { Avatar, getInitials } from '@/app/components/ui/Avatar';
+import { APP_ICONS } from '@/lib/icons';
 
 /* ── Skeleton row ── */
 function SkeletonRow() {
@@ -69,9 +71,17 @@ function ProgressRow({ item, isLast }: { item: Progress; isLast: boolean }) {
         </div>
         <ProgressBar value={pct} color={color} />
         <div style={{ display: 'flex', gap: '16px', marginTop: '6px', fontSize: '11.5px', color: 'var(--ink-muted)' }}>
-          <span>📖 {item.lessonsCompleted} lecciones</span>
-          <span>📝 {item.evaluationsCompleted} evaluaciones</span>
-          {item.averageScore > 0 && <span>⭐ {item.averageScore.toFixed(1)} promedio</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Icon icon={APP_ICONS.reading} width={13} height={13} /> {item.lessonsCompleted} lecciones
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Icon icon={APP_ICONS.quiz} width={13} height={13} /> {item.evaluationsCompleted} evaluaciones
+          </span>
+          {item.averageScore > 0 && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Icon icon={APP_ICONS.star} width={13} height={13} /> {item.averageScore.toFixed(1)} promedio
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -151,10 +161,10 @@ export default function ProgressPage() {
       {/* ── Stat row ── */}
       {!loading && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          <StatCard label="Promedio"     value={avg}       unit="%" />
-          <StatCard label="Completados"  value={completed} delta={completed > 0 ? `de ${progressItems.length}` : undefined} deltaUp />
-          <StatCard label="Activos (7d)" value={active}    />
-          <StatCard label="En riesgo"    value={atRisk}    deltaUp={false} />
+          <StatCard label="Promedio"     value={avg}       unit="%" icon={<Icon icon={APP_ICONS.chart} width={20} height={20} />} />
+          <StatCard label="Completados"  value={completed} delta={completed > 0 ? `de ${progressItems.length}` : undefined} deltaUp icon={<Icon icon={APP_ICONS.checkFilled} width={20} height={20} />} variant="green" />
+          <StatCard label="Activos (7d)" value={active}    icon={<Icon icon={APP_ICONS.liveDot} width={20} height={20} />} variant="blue" />
+          <StatCard label="En riesgo"    value={atRisk}    deltaUp={false} icon={<Icon icon={APP_ICONS.warning} width={20} height={20} />} variant="red" />
         </div>
       )}
 
@@ -171,9 +181,15 @@ export default function ProgressPage() {
           </div>
           <ProgressBar value={avg} color={avg >= 70 ? 'green' : 'blue'} />
           <div style={{ display: 'flex', gap: '24px', marginTop: '12px', fontSize: '12.5px', color: 'var(--blue-300)' }}>
-            <span>✅ {completed} completados al 100%</span>
-            <span>⚠️ {atRisk} en riesgo ({'<'}20%)</span>
-            <span>🟢 {active} activos esta semana</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Icon icon={APP_ICONS.check} width={14} height={14} /> {completed} completados al 100%
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Icon icon={APP_ICONS.warning} width={14} height={14} /> {atRisk} en riesgo ({'<'}20%)
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Icon icon={APP_ICONS.liveDot} width={14} height={14} /> {active} activos esta semana
+            </span>
           </div>
         </Card>
       )}
@@ -181,7 +197,7 @@ export default function ProgressPage() {
       {/* ── Search + chips ── */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
-          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: 'var(--ink-muted)', pointerEvents: 'none' }}>🔍</span>
+          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             placeholder="Buscar alumno o curso…"
@@ -239,7 +255,7 @@ export default function ProgressPage() {
         </Card>
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon="📊"
+          icon={APP_ICONS.chart}
           title="Sin registros"
           description={
             search || rangeFilter !== 'all'

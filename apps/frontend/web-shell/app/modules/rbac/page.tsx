@@ -7,12 +7,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
 import type { RbacCatalogs, RbacRole, RbacModule, RbacPrivilege } from '@/lib/types';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { StatCard } from '@/components/shared/StatCard';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { Card } from '@/app/components/ui/Card';
+import { Badge } from '@/app/components/ui/Badge';
+import { StatCard } from '@/app/components/shared/StatCard';
+import { EmptyState } from '@/app/components/shared/EmptyState';
+import { APP_ICONS } from '@/lib/icons';
 
 /* ── Section panel ── */
 function Section({ title, icon, count, children }: { title: string; icon: string; count: number; children: React.ReactNode }) {
@@ -20,8 +22,8 @@ function Section({ title, icon, count, children }: { title: string; icon: string
     <Card padding="default" style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--blue-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-            {icon}
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--blue-50)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon icon={icon} width={18} height={18} />
           </div>
           <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '20px', color: 'var(--ink)' }}>{title}</h2>
         </div>
@@ -142,15 +144,15 @@ export default function RbacPage() {
       {/* ── Stats ── */}
       {!loading && catalogs && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-          <StatCard label="Roles"       value={catalogs.roles.length}      />
-          <StatCard label="Módulos"     value={catalogs.modules.length}    />
-          <StatCard label="Privilegios" value={catalogs.privileges.length} />
+          <StatCard label="Roles"       value={catalogs.roles.length}      icon={<Icon icon={APP_ICONS.users} width={20} height={20} />} />
+          <StatCard label="Módulos"     value={catalogs.modules.length}    icon={<Icon icon={APP_ICONS.folder} width={20} height={20} />} variant="blue" />
+          <StatCard label="Privilegios" value={catalogs.privileges.length} icon={<Icon icon={APP_ICONS.key} width={20} height={20} />} variant="purple" />
         </div>
       )}
 
       {/* ── Search ── */}
       <div style={{ position: 'relative', maxWidth: '380px' }}>
-        <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: 'var(--ink-muted)', pointerEvents: 'none' }}>🔍</span>
+        <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
         <input
           type="search"
           placeholder="Filtrar roles, módulos o privilegios…"
@@ -174,14 +176,14 @@ export default function RbacPage() {
         </div>
       ) : !catalogs ? (
         <EmptyState
-          icon="⚙️"
+          icon={APP_ICONS.settings}
           title="Error al cargar"
           description="No se pudieron cargar los catálogos RBAC. Verifica tu conexión al backend."
         />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', alignItems: 'start' }}>
           {/* Roles */}
-          <Section title="Roles" icon="🎭" count={filteredRoles.length}>
+          <Section title="Roles" icon={APP_ICONS.users} count={filteredRoles.length}>
             {filteredRoles.length === 0 ? (
               <p style={{ fontSize: '13px', color: 'var(--ink-muted)', padding: '8px 0' }}>Sin coincidencias</p>
             ) : (
@@ -192,7 +194,7 @@ export default function RbacPage() {
           </Section>
 
           {/* Modules */}
-          <Section title="Módulos" icon="🗂️" count={filteredModules.length}>
+          <Section title="Módulos" icon={APP_ICONS.folder} count={filteredModules.length}>
             {filteredModules.length === 0 ? (
               <p style={{ fontSize: '13px', color: 'var(--ink-muted)', padding: '8px 0' }}>Sin coincidencias</p>
             ) : (
@@ -203,7 +205,7 @@ export default function RbacPage() {
           </Section>
 
           {/* Privileges */}
-          <Section title="Privilegios" icon="🔑" count={filteredPrivileges.length}>
+          <Section title="Privilegios" icon={APP_ICONS.key} count={filteredPrivileges.length}>
             {filteredPrivileges.length === 0 ? (
               <p style={{ fontSize: '13px', color: 'var(--ink-muted)', padding: '8px 0' }}>Sin coincidencias</p>
             ) : (

@@ -7,12 +7,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
 import type { AuditLog } from '@/lib/types';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { Card } from '@/app/components/ui/Card';
+import { Badge } from '@/app/components/ui/Badge';
+import { EmptyState } from '@/app/components/shared/EmptyState';
 import { httpMethod, getVariant } from '@/types/status';
+import { APP_ICONS } from '@/lib/icons';
 
 /* ── Status code color ── */
 function statusColor(code: number | null) {
@@ -40,7 +42,6 @@ const METHODS = ['Todos', ...httpMethod.chips];
 
 export default function AuditPage() {
   const [logs,        setLogs]        = useState<AuditLog[]>([]);
-  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState('');
   const [methodChip,  setMethodChip]  = useState('Todos');
@@ -49,21 +50,12 @@ export default function AuditPage() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([api.audit(), api.access()])
-      .then(([auditLogs, access]) => {
-        if (!alive) return;
-        setLogs(auditLogs);
-        setPermissions(access.permissions);
-      })
-      .catch(() => { if (alive) { setLogs([]); setPermissions([]); } })
+    api.audit()
+      .then((auditLogs) => { if (alive) setLogs(auditLogs); })
+      .catch(() => { if (alive) setLogs([]); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
-
-  const canRead = useMemo(
-    () => permissions.includes('reports:audit') || permissions.includes('audit:read'),
-    [permissions],
-  );
 
   /* ── Filtered ── */
   const filtered = useMemo(() => {
@@ -83,24 +75,6 @@ export default function AuditPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  /* Permission guard */
-  if (!loading && !canRead) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-            Bitácora <em style={{ color: 'var(--blue-600)', fontStyle: 'italic' }}>del sistema</em>
-          </h1>
-        </div>
-        <EmptyState
-          icon="🔒"
-          title="Acceso restringido"
-          description="No tienes permisos para ver el registro de auditoría."
-        />
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
@@ -117,7 +91,7 @@ export default function AuditPage() {
       {/* ── Search + method chips ── */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '380px' }}>
-          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: 'var(--ink-muted)', pointerEvents: 'none' }}>🔍</span>
+          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             placeholder="Buscar endpoint, actor o descripción…"
@@ -164,7 +138,7 @@ export default function AuditPage() {
         </Card>
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon="📋"
+          icon={APP_ICONS.clipboard}
           title="Sin registros"
           description={search || methodChip !== 'Todos' ? 'Ningún evento coincide con los filtros.' : 'La bitácora está vacía.'}
           action={(search || methodChip !== 'Todos') ? { label: 'Ver todos', onClick: () => { setSearch(''); setMethodChip('Todos'); } } : undefined}

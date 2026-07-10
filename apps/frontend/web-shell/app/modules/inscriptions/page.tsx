@@ -7,16 +7,18 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
 import type { Inscription } from '@/lib/types';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Avatar, getInitials } from '@/components/ui/Avatar';
-import { ProgressBar } from '@/components/ui/ProgressBar';
-import { StatCard } from '@/components/shared/StatCard';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { Card } from '@/app/components/ui/Card';
+import { Badge } from '@/app/components/ui/Badge';
+import { Button } from '@/app/components/ui/Button';
+import { Avatar, getInitials } from '@/app/components/ui/Avatar';
+import { ProgressBar } from '@/app/components/ui/ProgressBar';
+import { StatCard } from '@/app/components/shared/StatCard';
+import { EmptyState } from '@/app/components/shared/EmptyState';
 import { inscriptionStatus, getVariant, getLabel } from '@/types/status';
+import { APP_ICONS } from '@/lib/icons';
 
 /* ── Skeleton row ── */
 function SkeletonRow() {
@@ -104,17 +106,17 @@ export default function InscriptionsPage() {
       {/* ── Stats ── */}
       {!loading && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          <StatCard label="Total"        value={total}     />
-          <StatCard label="En progreso"  value={active}    />
-          <StatCard label="Completados"  value={completed} deltaUp />
-          <StatCard label="Abandonados"  value={dropped}   deltaUp={false} />
+          <StatCard label="Total"        value={total}     icon={<Icon icon={APP_ICONS.clipboard} width={20} height={20} />} />
+          <StatCard label="En progreso"  value={active}    icon={<Icon icon={APP_ICONS.chart} width={20} height={20} />} variant="blue" />
+          <StatCard label="Completados"  value={completed} deltaUp icon={<Icon icon={APP_ICONS.checkFilled} width={20} height={20} />} variant="green" />
+          <StatCard label="Abandonados"  value={dropped}   deltaUp={false} icon={<Icon icon={APP_ICONS.warning} width={20} height={20} />} variant="red" />
         </div>
       )}
 
       {/* ── Search + chips + sort ── */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
-          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: 'var(--ink-muted)', pointerEvents: 'none' }}>🔍</span>
+          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             placeholder="Buscar alumno o curso…"
@@ -172,7 +174,7 @@ export default function InscriptionsPage() {
         </Card>
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon="📋"
+          icon={APP_ICONS.clipboard}
           title="Sin inscripciones"
           description={
             search || statusChip !== 'Todos'

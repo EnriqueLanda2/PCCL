@@ -7,81 +7,46 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
 import type { Calification } from '@/lib/types';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { StatCard } from '@/components/shared/StatCard';
-import { EmptyState } from '@/components/shared/EmptyState';
-import { calificationType, getIcon, getLabel, getVariant } from '@/types/status';
+import { Button } from '@/app/components/ui/Button';
+import { StatCard } from '@/app/components/shared/StatCard';
+import { EmptyState } from '@/app/components/shared/EmptyState';
+import { CourseHoloCard, type CardCarouselItem } from '@/app/components/shared/CardCarousel';
+import { calificationType, getIcon, getLabel } from '@/types/status';
+import { APP_ICONS } from '@/lib/icons';
 
-function CalificationCard({ cal, canCreate }: { cal: Calification; canCreate: boolean }) {
-  const icon    = getIcon(calificationType,    cal.type, '📄');
-  const label   = getLabel(calificationType,   cal.type);
-  const variant = getVariant(calificationType, cal.type);
+const COVER_CLASSES = ['cover-1', 'cover-2', 'cover-3', 'cover-4', 'cover-5', 'cover-6'];
 
-  return (
-    <Card padding="default" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-        <div style={{
-          width: '46px', height: '46px', borderRadius: '12px', flexShrink: 0,
-          background: 'var(--blue-50)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: '22px',
-        }}>
-          {icon}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink)', lineHeight: 1.3, marginBottom: '4px' }}>
-            {cal.title}
-          </div>
-          {cal.lesson?.title && (
-            <div style={{ fontSize: '12.5px', color: 'var(--ink-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              Lección: {cal.lesson.title}
-            </div>
-          )}
-        </div>
-        <Badge variant={variant}>{label}</Badge>
-      </div>
-
-      {/* Meta */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-        <div style={{ background: 'var(--blue-50)', borderRadius: '10px', padding: '10px 12px', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', color: 'var(--blue-700)' }}>{cal.totalPoints}</div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>Puntos</div>
-        </div>
-        <div style={{ background: 'var(--green-50)', borderRadius: '10px', padding: '10px 12px', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', color: 'var(--green-700)' }}>{cal.maxAttempts}</div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>Intentos</div>
-        </div>
-      </div>
-
-      {/* Action */}
-      {canCreate && (
-        <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--neutral-100)', paddingTop: '12px' }}>
-          <Button variant="ghost" size="sm" style={{ flex: 1 }}>Editar</Button>
-          <Button variant="danger" size="sm" style={{ flex: 1 }}>Eliminar</Button>
-        </div>
-      )}
-    </Card>
-  );
+function calificationIcon(iconName: string) {
+  return <Icon icon={iconName} width={40} height={40} style={{ color: 'rgba(255,255,255,0.9)' }} />;
 }
 
-/* ── Skeleton card ── */
+function toCarouselItem(cal: Calification, i: number): CardCarouselItem {
+  const label = getLabel(calificationType, cal.type);
+  const icon  = getIcon(calificationType, cal.type, APP_ICONS.file);
+  return {
+    id: cal.id,
+    title: cal.title,
+    description: cal.lesson?.title
+      ? `${cal.totalPoints} puntos · ${cal.maxAttempts} intentos · Lección: ${cal.lesson.title}`
+      : `${cal.totalPoints} puntos · ${cal.maxAttempts} intentos`,
+    eyebrow: label,
+    coverClass: COVER_CLASSES[i % COVER_CLASSES.length],
+    icon: calificationIcon(icon),
+  };
+}
+
+/* ── Skeleton card — mismo alto (420px) que CourseHoloCard, para que el grid no salte al cargar ── */
 function SkeletonCalCard() {
   return (
-    <div style={{ borderRadius: 'var(--radius-lg)', border: '1px solid var(--neutral-100)', padding: '20px', background: 'var(--panel)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      <div style={{ display: 'flex', gap: '12px' }}>
-        <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'var(--neutral-100)', flexShrink: 0 }} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ height: '16px', borderRadius: '6px', background: 'var(--neutral-100)', width: '70%' }} />
-          <div style={{ height: '12px', borderRadius: '6px', background: 'var(--neutral-100)', width: '45%' }} />
-        </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-        <div style={{ height: '60px', borderRadius: '10px', background: 'var(--neutral-100)' }} />
-        <div style={{ height: '60px', borderRadius: '10px', background: 'var(--neutral-100)' }} />
+    <div style={{ height: '420px', borderRadius: '20px', border: '1px solid #E4EBDD', overflow: 'hidden', background: 'var(--panel)', animation: 'pulse 1.4s ease-in-out infinite' }}>
+      <div style={{ height: '150px', background: 'var(--neutral-100)' }} />
+      <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ height: '12px', borderRadius: '6px', background: 'var(--neutral-100)', width: '35%' }} />
+        <div style={{ height: '18px', borderRadius: '6px', background: 'var(--neutral-100)', width: '80%' }} />
+        <div style={{ height: '13px', borderRadius: '6px', background: 'var(--neutral-100)', width: '60%' }} />
       </div>
     </div>
   );
@@ -150,17 +115,17 @@ export default function CalificationsPage() {
       {/* ── Stat row ── */}
       {!loading && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          <StatCard label="Total"    value={total}   />
-          <StatCard label="Quizzes"  value={quizzes} />
-          <StatCard label="Tareas"   value={tasks}   />
-          <StatCard label="Exámenes" value={exams}   />
+          <StatCard label="Total"    value={total}   icon={<Icon icon={APP_ICONS.chart} width={20} height={20} />} />
+          <StatCard label="Quizzes"  value={quizzes} icon={<Icon icon={APP_ICONS.trophy} width={20} height={20} />} variant="blue" />
+          <StatCard label="Tareas"   value={tasks}   icon={<Icon icon={APP_ICONS.folder} width={20} height={20} />} variant="yellow" />
+          <StatCard label="Exámenes" value={exams}   icon={<Icon icon={APP_ICONS.diplomaVerified} width={20} height={20} />} variant="purple" />
         </div>
       )}
 
       {/* ── Search + chips ── */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
-          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: 'var(--ink-muted)', pointerEvents: 'none' }}>🔍</span>
+          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
           <input
             type="search"
             placeholder="Buscar evaluación…"
@@ -197,12 +162,12 @@ export default function CalificationsPage() {
 
       {/* ── Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCalCard key={i} />)}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon="📝"
+          icon={APP_ICONS.quiz}
           title="Sin evaluaciones"
           description={
             search || typeChip !== 'Todos'
@@ -218,9 +183,17 @@ export default function CalificationsPage() {
           }
         />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-          {filtered.map((cal) => (
-            <CalificationCard key={cal.id} cal={cal} canCreate={canCreate} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
+          {filtered.map((cal, i) => (
+            <div key={cal.id} style={{ display: 'flex', flexDirection: 'column' }}>
+              <CourseHoloCard item={toCarouselItem(cal, i)} fluid />
+              {canCreate && (
+                <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                  <Button variant="ghost" size="sm" style={{ flex: 1 }} leftIcon={<Icon icon={APP_ICONS.edit} width={14} height={14} />}>Editar</Button>
+                  <Button variant="danger" size="sm" style={{ flex: 1 }} leftIcon={<Icon icon={APP_ICONS.trash} width={14} height={14} />}>Eliminar</Button>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}

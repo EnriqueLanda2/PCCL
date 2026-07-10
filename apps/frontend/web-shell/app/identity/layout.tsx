@@ -2,7 +2,7 @@
 
 import type React from 'react';
 import { usePathname } from 'next/navigation';
-import { PortalShell } from '@/components/layout/PortalShell';
+import { PortalShell } from '@/app/components/layout/PortalShell';
 
 const PUBLIC_PATHS = ['/identity/auth', '/identity/register'];
 

@@ -17,6 +17,15 @@ export class CoursesService {
     return this.prisma.course.findMany({ include: { lessons: true }, orderBy: { createdAt: 'desc' } });
   }
 
+  /** Cursos publicados, con campos mínimos — para el carrusel público del landing. */
+  findPublished() {
+    return this.prisma.course.findMany({
+      where: { status: 'published' },
+      select: { id: true, title: true, level: true, coverImageUrl: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findOne(id: string) {
     const course = await this.prisma.course.findUnique({ where: { id }, include: { lessons: true } });
     if (!course) throw new NotFoundException('Curso no encontrado');

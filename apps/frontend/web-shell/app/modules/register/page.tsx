@@ -4,10 +4,12 @@ import type React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Field, Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+import { Icon } from '@iconify/react';
+import { Field, Input } from '@/app/components/ui/Input';
+import { Button } from '@/app/components/ui/Button';
 import { api, ApiError } from '@/lib/api';
 import { appRoutes } from '@/lib/routes';
+import { APP_ICONS } from '@/lib/icons';
 
 const MODULE_ROUTE: Record<string, string> = {
   dashboard: appRoutes.dashboard, courses: appRoutes.courses,
@@ -90,12 +92,12 @@ export default function RegisterPage() {
 
           <div className="flex flex-col gap-3">
             {[
-              { icon: '✅', text: 'Acceso inmediato al catálogo de cursos' },
-              { icon: '📈', text: 'Seguimiento de progreso automático' },
-              { icon: '🎓', text: 'Descarga tus constancias al completar' },
+              { icon: APP_ICONS.checkFilled, text: 'Acceso inmediato al catálogo de cursos' },
+              { icon: APP_ICONS.chart, text: 'Seguimiento de progreso automático' },
+              { icon: APP_ICONS.diploma, text: 'Descarga tus constancias al completar' },
             ].map((f) => (
               <div key={f.text} className="flex items-center gap-3 text-sm text-neutral-300">
-                <span>{f.icon}</span>
+                <Icon icon={f.icon} width={18} height={18} className="flex-shrink-0" />
                 {f.text}
               </div>
             ))}
@@ -110,7 +112,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm mx-auto">
 
           <div className="w-12 h-12 rounded-lg bg-success-500 flex items-center justify-center text-2xl mb-8 shadow-md">
-            ✨
+            P
           </div>
 
           <h2 className="font-serif text-3xl text-neutral-900 mb-1">Crear cuenta</h2>

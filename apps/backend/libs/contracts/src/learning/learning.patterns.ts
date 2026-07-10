@@ -1,6 +1,7 @@
 export const LEARNING_PATTERNS = {
   COURSE_CREATE: 'learning.course.create',
   COURSE_FIND_ALL: 'learning.course.find_all',
+  COURSE_FIND_PUBLISHED: 'learning.course.find_published',
   COURSE_FIND_ONE: 'learning.course.find_one',
   COURSE_UPDATE: 'learning.course.update',
   COURSE_DELETE: 'learning.course.delete',
@@ -32,4 +33,11 @@ export const LEARNING_PATTERNS = {
   EVALUATION_SUBMIT_ATTEMPT: 'learning.evaluation.submit_attempt',
 
   EVT_INSCRIPTION_COMPLETED: 'learning.inscription.completed',
+
+  LIVE_SESSION_CREATE: 'learning.live_session.create',
+  LIVE_SESSION_FIND_ALL: 'learning.live_session.find_all',
+  LIVE_SESSION_FIND_ONE: 'learning.live_session.find_one',
+  LIVE_SESSION_UPDATE: 'learning.live_session.update',
+  LIVE_SESSION_DELETE: 'learning.live_session.delete',
+  LIVE_SESSION_FIND_NEXT_PUBLIC: 'learning.live_session.find_next_public',
 } as const;

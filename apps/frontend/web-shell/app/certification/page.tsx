@@ -1,4 +1,4 @@
-import { DomainPage } from '@/components/domain-page';
+import { DomainPage } from '@/app/components/domain-page';
 import { getMicrofrontend } from '@/lib/microfrontends';
 import { appRoutes } from '@/lib/routes';
 
