@@ -8,22 +8,8 @@ import { Icon } from '@iconify/react';
 import { Field, Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
 import { api, ApiError } from '@/lib/api';
-import { appRoutes } from '@/lib/routes';
+import { appRoutes, firstRoute } from '@/lib/routes';
 import { APP_ICONS } from '@/lib/icons';
-
-/* Mapa módulo backend → ruta frontend */
-const MODULE_ROUTE: Record<string, string> = {
-  dashboard: appRoutes.dashboard, courses: appRoutes.courses,
-  lessons: appRoutes.lessons, inscriptions: appRoutes.inscriptions,
-  califications: appRoutes.califications, certificates: appRoutes.certificates,
-  progress: appRoutes.progress, audit: appRoutes.audit,
-  users: appRoutes.users, rbac: appRoutes.rbac,
-};
-
-function firstRoute(menu: { module: string; visible: boolean }[]): string {
-  const first = menu.find((m) => m.visible && MODULE_ROUTE[m.module]);
-  return first ? MODULE_ROUTE[first.module] : appRoutes.dashboard;
-}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -63,10 +49,12 @@ export default function LoginPage() {
         <div className="absolute -right-32 -top-24 w-96 h-96 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -left-24 -bottom-32 w-80 h-80 rounded-full bg-warning-500/10 blur-3xl pointer-events-none" />
 
-        {/* Logo */}
+        {/* Logo — clic lleva al dashboard (si hay sesión activa, entra; si no, proxy.ts redirige de vuelta al login) */}
         <div className="relative z-10">
-          <span className="font-serif text-2xl text-white font-bold tracking-tight">PCCL</span>
-          <span className="ml-2 text-xs font-semibold uppercase tracking-widest text-primary-300/80">Plataforma</span>
+          <Link href={appRoutes.dashboard} className="no-underline inline-flex items-center hover:opacity-90 transition-opacity">
+            <span className="font-serif text-2xl text-white font-bold tracking-tight">PCCL</span>
+            <span className="ml-2 text-xs font-semibold uppercase tracking-widest text-primary-300/80">Plataforma</span>
+          </Link>
         </div>
 
         {/* Hero copy */}

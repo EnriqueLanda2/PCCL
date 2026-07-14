@@ -14,6 +14,7 @@ import type {
   Inscription,
   Lesson,
   LiveSession,
+  Note,
   Progress,
   RbacCatalogs,
   SessionUser,
@@ -63,6 +64,11 @@ export const api = {
   inscriptions:  () => get<Inscription[]>('/inscriptions'),
 
   califications: () => get<Calification[]>('/califications'),
+
+  notes:       (lessonId: string) => get<Note[]>(`/lessons/${lessonId}/notes`),
+  createNote:  (lessonId: string, content: string) => post<Note>(`/lessons/${lessonId}/notes`, { content }),
+  updateNote:  (id: string, content: string) => patch<Note>(`/notes/${id}`, { content }),
+  deleteNote:  (id: string) => del(`/notes/${id}`),
 
   progress:      () => get<Progress[]>('/progress'),
 

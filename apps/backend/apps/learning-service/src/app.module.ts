@@ -8,6 +8,7 @@ import { ProgressModule } from './modules/progress/progress.module';
 import { CalificationsModule } from './modules/califications/califications.module';
 import { EvaluationsModule } from './modules/evaluations/evaluations.module';
 import { LiveSessionsModule } from './modules/live-sessions/live-sessions.module';
+import { NotesModule } from './modules/notes/notes.module';
 import { MessagingModule } from '@app/messaging';
 
 @Module({
@@ -22,6 +23,7 @@ import { MessagingModule } from '@app/messaging';
     CalificationsModule,
     EvaluationsModule,
     LiveSessionsModule,
+    NotesModule,
   ],
 })
 export class AppModule {}

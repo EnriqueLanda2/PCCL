@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { NavigatorBridge } from '@/app/components/shared/NavigatorBridge';
 
 export const metadata: Metadata = {
   title: 'Rumbo Profesores — PCCL',
@@ -18,6 +19,7 @@ export default function RootLayout({
         <noscript>
           <style>{'.reveal-on-scroll{opacity:1 !important;transform:none !important;}'}</style>
         </noscript>
+        <NavigatorBridge />
         {children}
       </body>
     </html>

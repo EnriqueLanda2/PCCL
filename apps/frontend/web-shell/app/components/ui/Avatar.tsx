@@ -4,7 +4,7 @@ import { cn } from '@/lib/cn';
 type AvatarSize    = 'xs' | 'sm' | 'md' | 'lg';
 type AvatarVariant = 'blue' | 'green' | 'dark' | 'purple';
 
-interface AvatarProps {
+export interface AvatarProps {
   initials: string;
   size?: AvatarSize;
   variant?: AvatarVariant;

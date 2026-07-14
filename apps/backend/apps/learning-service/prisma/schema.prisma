@@ -49,6 +49,7 @@ model Lesson {
   courseId        String         @map("course_id") @db.Uuid
   course          Course         @relation(fields: [courseId], references: [id])
   califications   Calification[]
+  notes           Note[]
 
   @@map("lessons")
 }
@@ -111,6 +112,21 @@ model Calification {
   lesson          Lesson    @relation(fields: [lessonId], references: [id])
 
   @@map("califications")
+}
+
+model Note {
+  id              String   @id @default(uuid()) @db.Uuid
+  transactionDate DateTime @default(now()) @map("transaction_date") @db.Timestamp(6)
+  createdBy       String?  @map("created_by") @db.VarChar(100)
+  updatedBy       String?  @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  /** Contenido enriquecido serializado (JSON de TipTap, stringify) con soporte LaTeX */
+  content         String   @db.Text
+  lessonId        String   @map("lesson_id") @db.Uuid
+  lesson          Lesson   @relation(fields: [lessonId], references: [id])
+
+  @@map("notes")
 }
 
 model Evaluation {

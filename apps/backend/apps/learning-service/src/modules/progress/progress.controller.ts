@@ -11,4 +11,9 @@ export class ProgressController {
   findByInscription(@Payload() p: { inscriptionId: string }) {
     return this.service.findByInscription(p.inscriptionId);
   }
+
+  @MessagePattern(LEARNING_PATTERNS.PROGRESS_FIND_ALL)
+  findAll() {
+    return this.service.findAll();
+  }
 }

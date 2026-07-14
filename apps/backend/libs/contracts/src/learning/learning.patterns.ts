@@ -20,12 +20,18 @@ export const LEARNING_PATTERNS = {
   INSCRIPTION_DELETE: 'learning.inscription.delete',
 
   PROGRESS_FIND_BY_INSCRIPTION: 'learning.progress.find_by_inscription',
+  PROGRESS_FIND_ALL: 'learning.progress.find_all',
 
   CALIFICATION_CREATE: 'learning.calification.create',
   CALIFICATION_FIND_ALL: 'learning.calification.find_all',
   CALIFICATION_FIND_ONE: 'learning.calification.find_one',
   CALIFICATION_UPDATE: 'learning.calification.update',
   CALIFICATION_DELETE: 'learning.calification.delete',
+
+  NOTE_CREATE: 'learning.note.create',
+  NOTE_FIND_BY_LESSON: 'learning.note.find_by_lesson',
+  NOTE_UPDATE: 'learning.note.update',
+  NOTE_DELETE: 'learning.note.delete',
 
   EVALUATION_CREATE: 'learning.evaluation.create',
   EVALUATION_FIND_ALL: 'learning.evaluation.find_all',

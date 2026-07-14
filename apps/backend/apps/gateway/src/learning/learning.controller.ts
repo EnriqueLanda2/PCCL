@@ -188,6 +188,11 @@ export class LearningController {
   }
 
   /* ─── PROGRESS ─── */
+  @Get('progress')
+  findAllProgress() {
+    return firstValueFrom(this.client.send(LEARNING_PATTERNS.PROGRESS_FIND_ALL, {}));
+  }
+
   @Get('progress/:inscriptionId')
   getProgress(@Param('inscriptionId') inscriptionId: string) {
     return firstValueFrom(
@@ -226,6 +231,53 @@ export class LearningController {
   removeCalification(@Param('id') id: string) {
     return firstValueFrom(
       this.client.send(LEARNING_PATTERNS.CALIFICATION_DELETE, { id }),
+    );
+  }
+
+  /* ─── NOTES ─── */
+  @Post('lessons/:lessonId/notes')
+  createNote(
+    @Param('lessonId') lessonId: string,
+    @Body() dto: unknown,
+    @CurrentUser() u: RequestUser,
+  ) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.NOTE_CREATE, {
+        dto: { ...(dto as object), lessonId },
+        actor: this.actor(u),
+      }),
+    );
+  }
+
+  @Get('lessons/:lessonId/notes')
+  findNotesByLesson(@Param('lessonId') lessonId: string) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.NOTE_FIND_BY_LESSON, { lessonId }),
+    );
+  }
+
+  @Patch('notes/:id')
+  updateNote(
+    @Param('id') id: string,
+    @Body() dto: unknown,
+    @CurrentUser() u: RequestUser,
+  ) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.NOTE_UPDATE, {
+        id,
+        dto,
+        actor: this.actor(u),
+      }),
+    );
+  }
+
+  @Delete('notes/:id')
+  removeNote(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.NOTE_DELETE, {
+        id,
+        actor: this.actor(u),
+      }),
     );
   }
 

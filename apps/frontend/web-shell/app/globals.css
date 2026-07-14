@@ -718,6 +718,26 @@
   }
 }
 
+/* Visor de lección (video/PDF) + panel de notas — se apilan en pantallas chicas */
+@media (max-width: 860px) {
+  .lesson-viewer-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Contenido de notas renderizado por TipTap (solo lectura y editor) */
+.notes-panel-content .ProseMirror,
+.notes-panel-content p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.notes-panel-content .ProseMirror {
+  outline: none;
+}
+
 .carousel3d-ring {
   position: relative;
   width: var(--card-w);

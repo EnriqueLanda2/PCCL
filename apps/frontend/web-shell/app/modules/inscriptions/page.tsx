@@ -1,7 +1,9 @@
 /* ───────────────────────────────────────────
    Inscriptions Page — Inscripciones
-   Tabla con alumno, curso, estado, progreso
-   ProgressBar inline · filtro por estado
+   Grilla de tarjetas por alumno (avatar Ready
+   Player Me + fallback de iniciales) agrupando
+   sus inscripciones reales · paginado de 12 ·
+   panel lateral con el detalle por curso.
    ─────────────────────────────────────────── */
 
 'use client';
@@ -11,25 +13,72 @@ import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
 import type { Inscription } from '@/lib/types';
 import { Card } from '@/app/components/ui/Card';
-import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
-import { Avatar, getInitials } from '@/app/components/ui/Avatar';
-import { ProgressBar } from '@/app/components/ui/ProgressBar';
+import { Pagination } from '@/app/components/ui/Pagination';
 import { StatCard } from '@/app/components/shared/StatCard';
 import { EmptyState } from '@/app/components/shared/EmptyState';
+import { StudentSummaryCard, StudentSummaryDetailPanel, type StudentCardSummary } from '@/app/components/shared/StudentSummaryCard';
 import { inscriptionStatus, getVariant, getLabel } from '@/types/status';
 import { APP_ICONS } from '@/lib/icons';
 
-/* ── Skeleton row ── */
-function SkeletonRow() {
+const PAGE_SIZE = 12;
+
+/* Prioridad para decidir el badge "resumen" de la tarjeta cuando el alumno
+   tiene varias inscripciones con estados distintos (peor estado primero). */
+const STATUS_PRIORITY: Record<string, number> = { dropped: 0, 'in-progress': 1, enrolled: 2, completed: 3 };
+
+interface StudentEnrollments {
+  userId: string;
+  fullName: string;
+  inscriptions: Inscription[];
+}
+
+function groupInscriptionsByStudent(list: Inscription[]): StudentEnrollments[] {
+  const map = new Map<string, StudentEnrollments>();
+  for (const ins of list) {
+    if (!ins.user) continue; // sin usuario resuelto — se omite
+    const existing = map.get(ins.user.id);
+    if (existing) existing.inscriptions.push(ins);
+    else map.set(ins.user.id, { userId: ins.user.id, fullName: ins.user.fullName, inscriptions: [ins] });
+  }
+  return Array.from(map.values());
+}
+
+function toCardSummary(s: StudentEnrollments): StudentCardSummary {
+  // progressPercentage llega como Decimal serializado (string) desde Prisma —
+  // hay que forzar Number() antes de sumar o "+" concatena strings en vez de sumar.
+  const avgPct = Math.round(
+    s.inscriptions.reduce((sum, i) => sum + Number(i.progressPercentage ?? 0), 0) / s.inscriptions.length,
+  );
+  const worst = [...s.inscriptions].sort(
+    (a, b) => (STATUS_PRIORITY[a.status] ?? 9) - (STATUS_PRIORITY[b.status] ?? 9),
+  )[0];
+  return {
+    userId: s.userId,
+    fullName: s.fullName,
+    headerValue: `${avgPct}%`,
+    headerProgressPct: avgPct,
+    headerBadge: { label: getLabel(inscriptionStatus, worst.status), variant: getVariant(inscriptionStatus, worst.status) },
+    entries: s.inscriptions.map((ins) => ({
+      key: ins.id,
+      title: ins.course?.title ?? 'Curso sin título',
+      subtitle: ins.completedAt
+        ? `Completado ${new Date(ins.completedAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}`
+        : undefined,
+      badge: { label: getLabel(inscriptionStatus, ins.status), variant: getVariant(inscriptionStatus, ins.status) },
+      pct: Number(ins.progressPercentage ?? 0),
+    })),
+  };
+}
+
+/* ── Skeleton card ── */
+function SkeletonCard() {
   return (
-    <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-      {[44, 52, 20, 70, 22].map((w, i) => (
-        <td key={i} style={{ padding: '14px 16px' }}>
-          <div style={{ height: '13px', borderRadius: '5px', background: 'var(--neutral-100)', width: `${w}%` }} />
-        </td>
-      ))}
-    </tr>
+    <div style={{ padding: '18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--neutral-100)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+      <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'var(--neutral-100)' }} />
+      <div style={{ height: '13px', width: '70%', borderRadius: '6px', background: 'var(--neutral-100)' }} />
+      <div style={{ height: '10px', width: '50%', borderRadius: '6px', background: 'var(--neutral-100)' }} />
+    </div>
   );
 }
 
@@ -42,7 +91,9 @@ export default function InscriptionsPage() {
   const [loading,      setLoading]      = useState(true);
   const [search,       setSearch]       = useState('');
   const [statusChip,   setStatusChip]   = useState('Todos');
-  const [sortBy,       setSortBy]       = useState<'progress' | 'name' | 'status'>('status');
+  const [sortBy,       setSortBy]       = useState<'progress' | 'name' | 'status' | 'risk'>('status');
+  const [page,         setPage]         = useState(1);
+  const [selected,     setSelected]     = useState<StudentEnrollments | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -64,6 +115,12 @@ export default function InscriptionsPage() {
   const active     = useMemo(() => inscriptions.filter((i) => i.status === 'in-progress').length, [inscriptions]);
   const completed  = useMemo(() => inscriptions.filter((i) => i.status === 'completed').length,   [inscriptions]);
   const dropped    = useMemo(() => inscriptions.filter((i) => i.status === 'dropped').length,     [inscriptions]);
+  /* Riesgo de abandono estimado (heurístico, no un modelo predictivo real):
+     alumnos en curso con menos de 30% de avance. */
+  const atRiskInscriptions = useMemo(
+    () => inscriptions.filter((i) => i.status === 'in-progress' && (i.progressPercentage ?? 0) < 30),
+    [inscriptions],
+  );
 
   /* ── Filtered + sorted ── */
   const filtered = useMemo(() => {
@@ -80,10 +137,18 @@ export default function InscriptionsPage() {
       );
     }
     if (sortBy === 'progress') list.sort((a, b) => (b.progressPercentage ?? 0) - (a.progressPercentage ?? 0));
+    if (sortBy === 'risk')     list.sort((a, b) => (a.progressPercentage ?? 0) - (b.progressPercentage ?? 0));
     if (sortBy === 'name')     list.sort((a, b) => (a.user?.fullName ?? '').localeCompare(b.user?.fullName ?? ''));
     if (sortBy === 'status')   list.sort((a, b) => a.status.localeCompare(b.status));
     return list;
   }, [inscriptions, search, statusChip, sortBy]);
+
+  const students = useMemo(() => groupInscriptionsByStudent(filtered), [filtered]);
+  const totalPages = Math.max(1, Math.ceil(students.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const paginated = students.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+  const resetToPage1 = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -106,11 +171,40 @@ export default function InscriptionsPage() {
       {/* ── Stats ── */}
       {!loading && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-          <StatCard label="Total"        value={total}     icon={<Icon icon={APP_ICONS.clipboard} width={20} height={20} />} />
-          <StatCard label="En progreso"  value={active}    icon={<Icon icon={APP_ICONS.chart} width={20} height={20} />} variant="blue" />
-          <StatCard label="Completados"  value={completed} deltaUp icon={<Icon icon={APP_ICONS.checkFilled} width={20} height={20} />} variant="green" />
-          <StatCard label="Abandonados"  value={dropped}   deltaUp={false} icon={<Icon icon={APP_ICONS.warning} width={20} height={20} />} variant="red" />
+          <StatCard size="lg" label="Total"        value={total}     icon={<Icon icon={APP_ICONS.clipboard} width={22} height={22} />} />
+          <StatCard size="lg" label="En progreso"  value={active}    delta={`${atRiskInscriptions.length} en riesgo`} deltaUp={false} icon={<Icon icon={APP_ICONS.chart} width={22} height={22} />} variant="blue" />
+          <StatCard size="lg" label="Completados"  value={completed} deltaUp icon={<Icon icon={APP_ICONS.checkFilled} width={22} height={22} />} variant="green" />
+          <StatCard size="lg" label="Abandonados"  value={dropped}   deltaUp={false} icon={<Icon icon={APP_ICONS.warning} width={22} height={22} />} variant="red" />
         </div>
+      )}
+
+      {/* ── Alerta de riesgo de abandono ── */}
+      {!loading && atRiskInscriptions.length > 0 && (
+        <Card variant="danger" padding="default" style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+          <span style={{
+            width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+            background: '#F7C7B9', color: 'var(--red-600)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Icon icon={APP_ICONS.warning} width={20} height={20} />
+          </span>
+          <div style={{ flex: 1, minWidth: '220px' }}>
+            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink)' }}>
+              {atRiskInscriptions.length} alumno{atRiskInscriptions.length === 1 ? '' : 's'} con riesgo estimado de abandono
+            </p>
+            <p style={{ fontSize: '12.5px', color: 'var(--ink-muted)' }}>
+              En curso con menos de 30% de avance — vale la pena dar seguimiento.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => { resetToPage1(setStatusChip)('En progreso'); setSortBy('risk'); }}
+          >
+            Ver alumnos en riesgo
+          </Button>
+        </Card>
       )}
 
       {/* ── Search + chips + sort ── */}
@@ -121,7 +215,7 @@ export default function InscriptionsPage() {
             type="search"
             placeholder="Buscar alumno o curso…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => resetToPage1(setSearch)(e.target.value)}
             style={{
               width: '100%', height: '40px', paddingLeft: '40px', paddingRight: '12px',
               borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)',
@@ -135,7 +229,7 @@ export default function InscriptionsPage() {
             <button
               key={chip}
               type="button"
-              onClick={() => setStatusChip(chip)}
+              onClick={() => resetToPage1(setStatusChip)(chip)}
               style={{
                 border: statusChip === chip ? '1.5px solid var(--blue-600)' : '1.5px solid var(--neutral-200)',
                 background: statusChip === chip ? 'var(--blue-50)' : 'var(--panel)',
@@ -161,18 +255,17 @@ export default function InscriptionsPage() {
         >
           <option value="status">Por estado</option>
           <option value="progress">Mayor avance</option>
+          <option value="risk">Menor avance (riesgo)</option>
           <option value="name">Nombre A→Z</option>
         </select>
       </div>
 
-      {/* ── Table ── */}
+      {/* ── Grid ── */}
       {loading ? (
-        <Card padding="tight">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>{Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}</tbody>
-          </table>
-        </Card>
-      ) : filtered.length === 0 ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '14px' }}>
+          {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : students.length === 0 ? (
         <EmptyState
           icon={APP_ICONS.clipboard}
           title="Sin inscripciones"
@@ -185,76 +278,26 @@ export default function InscriptionsPage() {
           }
           action={
             (search || statusChip !== 'Todos')
-              ? { label: 'Ver todas', onClick: () => { setSearch(''); setStatusChip('Todos'); } }
+              ? { label: 'Ver todas', onClick: () => { resetToPage1(setSearch)(''); setStatusChip('Todos'); } }
               : undefined
           }
         />
       ) : (
-        <Card padding="tight" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
-                {['Alumno', 'Curso', 'Estado', 'Progreso', 'Completado'].map((h) => (
-                  <th key={h} style={{
-                    padding: '11px 16px', textAlign: 'left',
-                    fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em',
-                    fontWeight: 600, color: 'var(--ink-muted)', background: 'var(--blue-50)',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((ins, i) => {
-                const pct = ins.progressPercentage ?? 0;
-                return (
-                  <tr key={ins.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid var(--neutral-100)' : 'none' }}>
-                    {/* Alumno */}
-                    <td style={{ padding: '13px 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                        <Avatar initials={getInitials(ins.user?.fullName ?? 'A')} size="sm" />
-                        <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ink)' }}>
-                          {ins.user?.fullName ?? '—'}
-                        </span>
-                      </div>
-                    </td>
-                    {/* Curso */}
-                    <td style={{ padding: '13px 16px', fontSize: '13.5px', color: 'var(--ink)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {ins.course?.title ?? '—'}
-                    </td>
-                    {/* Estado */}
-                    <td style={{ padding: '13px 16px' }}>
-                      <Badge variant={getVariant(inscriptionStatus, ins.status)}>
-                        {getLabel(inscriptionStatus, ins.status)}
-                      </Badge>
-                    </td>
-                    {/* Progreso */}
-                    <td style={{ padding: '13px 16px', minWidth: '140px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <ProgressBar
-                          value={pct}
-                          color={pct >= 100 ? 'green' : pct >= 50 ? 'blue' : 'yellow'}
-                          style={{ flex: 1 }}
-                        />
-                        <span style={{ fontSize: '12px', color: 'var(--ink-muted)', minWidth: '34px', textAlign: 'right' }}>
-                          {pct}%
-                        </span>
-                      </div>
-                    </td>
-                    {/* Completado */}
-                    <td style={{ padding: '13px 16px', fontSize: '12.5px', color: 'var(--ink-muted)' }}>
-                      {ins.completedAt
-                        ? new Date(ins.completedAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
-                        : <span style={{ color: 'var(--neutral-300)' }}>—</span>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </Card>
+        <>
+          <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+            Mostrando <strong style={{ color: 'var(--ink)' }}>{paginated.length}</strong> de {students.length} alumnos
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '14px' }}>
+            {paginated.map((student) => (
+              <StudentSummaryCard key={student.userId} student={toCardSummary(student)} onOpen={() => setSelected(student)} />
+            ))}
+          </div>
+          <Pagination page={pageSafe} totalPages={totalPages} onChange={setPage} />
+        </>
+      )}
+
+      {selected && (
+        <StudentSummaryDetailPanel student={toCardSummary(selected)} entriesLabel="Sus inscripciones" onClose={() => setSelected(null)} />
       )}
     </div>
   );

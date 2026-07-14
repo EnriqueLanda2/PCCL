@@ -50,6 +50,17 @@ export interface Lesson {
   order?: number;
 }
 
+export interface Note {
+  id: string;
+  lessonId: string;
+  /** HTML serializado del editor TipTap (soporta LaTeX vía KaTeX) */
+  content: string;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Inscription {
   id: string;
   status: 'enrolled' | 'in-progress' | 'completed' | 'dropped';

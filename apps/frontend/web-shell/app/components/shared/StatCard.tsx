@@ -11,6 +11,8 @@ interface StatCardProps {
   deltaUp?:   boolean;
   icon?:      React.ReactNode;
   variant?:   StatVariant;
+  /** 'lg' agranda padding/tipografía — para filas de stats destacadas */
+  size?:      'default' | 'lg';
   loading?:   boolean;
   className?: string;
 }
@@ -69,29 +71,31 @@ export function StatCard({
   deltaUp = true,
   icon,
   variant = 'default',
+  size = 'default',
   loading = false,
   className,
-}: StatCardProps) {
+}: Readonly<StatCardProps>) {
   if (loading) return <SkeletonStatCard />;
 
   const t = variantTokens[variant];
+  const lg = size === 'lg';
 
   return (
-    <div className={cn('rounded-[24px] p-5 shadow-[0_12px_28px_rgba(23,50,77,0.05)]', t.card, className)}>
+    <div className={cn('rounded-[24px] shadow-[0_12px_28px_rgba(23,50,77,0.05)]', lg ? 'p-6 lg:p-7' : 'p-5', t.card, className)}>
       {/* Label + icon row */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--ink-muted)] select-none">
+      <div className={cn('flex items-center justify-between', lg ? 'mb-4' : 'mb-3')}>
+        <p className={cn('font-semibold uppercase tracking-widest text-[var(--ink-muted)] select-none', lg ? 'text-[12px]' : 'text-[11px]')}>
           {label}
         </p>
         {icon && (
-          <span className={cn('w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0', t.icon)}>
+          <span className={cn('rounded-lg flex items-center justify-center flex-shrink-0', t.icon, lg ? 'w-11 h-11 text-lg' : 'w-9 h-9 text-base')}>
             {icon}
           </span>
         )}
       </div>
 
       {/* Value */}
-      <p className={cn('font-sans text-3xl lg:text-4xl leading-none font-extrabold', t.value)}>
+      <p className={cn('font-sans leading-none font-extrabold', lg ? 'text-4xl lg:text-5xl' : 'text-3xl lg:text-4xl', t.value)}>
         {value}
         {unit && (
           <small className="text-xl lg:text-2xl text-neutral-400 font-normal ml-1">{unit}</small>

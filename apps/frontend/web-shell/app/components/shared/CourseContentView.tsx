@@ -16,6 +16,7 @@ import { Button } from '@/app/components/ui/Button';
 import { courseLevel, getVariant } from '@/types/status';
 import { contentTypeMeta, formatDuration } from '@/lib/lessonContentTypes';
 import { CreateLessonModal } from '@/app/components/shared/CreateLessonModal';
+import { useLessonFileViewer } from '@/app/components/shared/LessonFileViewer';
 import { APP_ICONS } from '@/lib/icons';
 
 interface CourseContentViewProps {
@@ -28,15 +29,7 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
   const [canManage, setCanManage] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
-  const [expandedVideos, setExpandedVideos] = useState<Set<string>>(new Set());
   const duration = formatDuration(course.durationMinutes);
-
-  const toggleVideo = (id: string) =>
-    setExpandedVideos((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
 
   useEffect(() => {
     let alive = true;
@@ -166,87 +159,9 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {filteredLessons.map((lesson, i) => {
-            const meta = contentTypeMeta(lesson.contentType);
-            const isVideo = lesson.contentType === 'video';
-            const videoOpen = isVideo && expandedVideos.has(lesson.id);
-            return (
-              <div key={lesson.id} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '14px',
-                    padding: '14px 16px', borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--neutral-100)', background: 'var(--panel)',
-                  }}
-                >
-                  <span style={{
-                    flexShrink: 0, width: '32px', height: '32px', borderRadius: '999px',
-                    background: 'var(--blue-50)', color: 'var(--blue-600)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600,
-                  }}>
-                    {i + 1}
-                  </span>
-                  <Icon icon={meta.icon} width={18} height={18} style={{ flexShrink: 0, color: 'var(--ink-muted)' }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '14.5px', fontWeight: 500, color: 'var(--ink)' }}>{lesson.title}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>{meta.label}</div>
-                  </div>
-                  {lesson.fileUrl && (
-                    isVideo ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleVideo(lesson.id)}
-                        style={{ fontSize: '12.5px', color: 'var(--blue-600)', fontWeight: 500, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
-                      >
-                        {videoOpen ? '▲ Ocultar video' : '▶ Ver video'}
-                      </button>
-                    ) : (
-                      <a
-                        href={lesson.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontSize: '12.5px', color: 'var(--blue-600)', fontWeight: 500, flexShrink: 0, textDecoration: 'none' }}
-                      >
-                        ↗ Ver documento
-                      </a>
-                    )
-                  )}
-                  {lesson.durationMinutes ? (
-                    <span style={{ fontSize: '12.5px', color: 'var(--ink-muted)', flexShrink: 0 }}>
-                      {formatDuration(lesson.durationMinutes)}
-                    </span>
-                  ) : null}
-                  {canManage && (
-                    <button
-                      type="button"
-                      onClick={() => openEdit(lesson)}
-                      aria-label={`Editar ${lesson.title}`}
-                      style={{
-                        flexShrink: 0, width: '28px', height: '28px', borderRadius: '8px',
-                        border: '1px solid var(--neutral-100)', background: 'var(--panel)',
-                        color: 'var(--ink-muted)', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                {videoOpen && lesson.fileUrl && (
-                  <video
-                    controls
-                    preload="metadata"
-                    src={lesson.fileUrl}
-                    style={{ width: '100%', maxHeight: '420px', borderRadius: 'var(--radius-md)', background: '#000' }}
-                  >
-                    <track kind="captions" />
-                  </video>
-                )}
-              </div>
-            );
-          })}
+          {filteredLessons.map((lesson, i) => (
+            <LessonRow key={lesson.id} lesson={lesson} index={i} canManage={canManage} onEdit={openEdit} />
+          ))}
         </div>
       )}
 
@@ -257,6 +172,65 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
         lesson={editingLesson}
         onSaved={handleSaved}
       />
+    </div>
+  );
+}
+
+function LessonRow({ lesson, index, canManage, onEdit }: {
+  lesson: Lesson;
+  index: number;
+  canManage: boolean;
+  onEdit: (lesson: Lesson) => void;
+}) {
+  const meta = contentTypeMeta(lesson.contentType);
+  const { controls, content } = useLessonFileViewer(lesson);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', gap: '14px',
+          padding: '14px 16px', borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--neutral-100)', background: 'var(--panel)',
+        }}
+      >
+        <span style={{
+          flexShrink: 0, width: '32px', height: '32px', borderRadius: '999px',
+          background: 'var(--blue-50)', color: 'var(--blue-600)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600,
+        }}>
+          {index + 1}
+        </span>
+        <Icon icon={meta.icon} width={18} height={18} style={{ flexShrink: 0, color: 'var(--ink-muted)' }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '14.5px', fontWeight: 500, color: 'var(--ink)' }}>{lesson.title}</div>
+          <div style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>{meta.label}</div>
+        </div>
+        {controls}
+        {lesson.durationMinutes ? (
+          <span style={{ fontSize: '12.5px', color: 'var(--ink-muted)', flexShrink: 0 }}>
+            {formatDuration(lesson.durationMinutes)}
+          </span>
+        ) : null}
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => onEdit(lesson)}
+            aria-label={`Editar ${lesson.title}`}
+            style={{
+              flexShrink: 0, width: '28px', height: '28px', borderRadius: '8px',
+              border: '1px solid var(--neutral-100)', background: 'var(--panel)',
+              color: 'var(--ink-muted)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+      </div>
+      {content}
     </div>
   );
 }

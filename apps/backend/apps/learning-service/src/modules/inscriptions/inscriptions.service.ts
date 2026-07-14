@@ -9,6 +9,7 @@ import { firstValueFrom } from 'rxjs';
 import { IDENTITY_PATTERNS } from '@app/contracts';
 import { IDENTITY_CLIENT } from '@app/messaging';
 import { PrismaService } from '../../prisma/prisma.service';
+import { buildUserDirectory } from '../../common/user-directory';
 import {
   CreateInscriptionDto,
   UpdateInscriptionDto,
@@ -50,11 +51,18 @@ export class InscriptionsService {
     return this.findOne(insc.id);
   }
 
-  findAll() {
-    return this.prisma.inscription.findMany({
-      include: { course: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll() {
+    const [inscriptions, directory] = await Promise.all([
+      this.prisma.inscription.findMany({
+        include: { course: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      buildUserDirectory(this.identityClient),
+    ]);
+    return inscriptions.map((insc) => ({
+      ...insc,
+      user: directory.get(insc.userId) ?? null,
+    }));
   }
 
   async findOne(id: string) {

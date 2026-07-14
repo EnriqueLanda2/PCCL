@@ -16,6 +16,7 @@ import { Button } from '@/app/components/ui/Button';
 import { ProgressBar } from '@/app/components/ui/ProgressBar';
 import { EmptyState } from '@/app/components/shared/EmptyState';
 import { CreateLessonModal } from '@/app/components/shared/CreateLessonModal';
+import { useLessonFileViewer } from '@/app/components/shared/LessonFileViewer';
 import { lessonType, getIcon, getLabel, getVariant } from '@/types/status';
 import { APP_ICONS } from '@/lib/icons';
 
@@ -44,6 +45,97 @@ function SkeletonRow() {
   );
 }
 
+/* ── Single lesson row (accordion body) ── */
+function LessonListItem({ lesson, isLast, canCreate, onEditLesson }: {
+  lesson: Lesson;
+  isLast: boolean;
+  canCreate: boolean;
+  onEditLesson: (lesson: Lesson) => void;
+}) {
+  const icon    = getIcon(lessonType,    lesson.contentType);
+  const label   = getLabel(lessonType,   lesson.contentType);
+  const variant = getVariant(lessonType, lesson.contentType);
+  const bgColor = lesson.contentType === 'quiz'     ? 'var(--blue-100)'
+                : lesson.contentType === 'practice' ? 'var(--bg-dark)'
+                : 'var(--blue-50)';
+  const fgColor = lesson.contentType === 'practice' ? 'var(--panel)' : 'var(--blue-700)';
+  const { controls, content } = useLessonFileViewer(lesson);
+
+  return (
+    <div style={{ borderBottom: isLast ? 'none' : '1px solid var(--neutral-100)' }}>
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', gap: '14px',
+          padding: '13px 0',
+          opacity: lesson.locked ? 0.5 : 1,
+        }}
+      >
+        {/* Icon */}
+        <span style={{
+          width: '38px', height: '38px', borderRadius: '10px',
+          background: bgColor, color: fgColor,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Icon icon={lesson.completed ? APP_ICONS.check : icon} width={16} height={16} />
+        </span>
+
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: '14px', fontWeight: 500, color: lesson.completed ? 'var(--ink-muted)' : 'var(--ink)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            textDecoration: lesson.completed ? 'line-through' : 'none',
+          }}>
+            {lesson.title}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '2px', display: 'flex', gap: '6px' }}>
+            <span>{label}</span>
+            {lesson.durationMinutes && <span>· {lesson.durationMinutes} min</span>}
+            {lesson.locked && (
+              <span style={{ color: 'var(--yellow-600)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                · <Icon icon={APP_ICONS.lock} width={11} height={11} /> Bloqueada
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Adjunto */}
+        {controls}
+
+        {/* Badge */}
+        {lesson.completed ? (
+          <Badge variant="green">Completada</Badge>
+        ) : lesson.locked ? (
+          <Badge variant="yellow">Bloqueada</Badge>
+        ) : (
+          <Badge variant={variant}>{label}</Badge>
+        )}
+
+        {/* Editar */}
+        {canCreate && (
+          <button
+            type="button"
+            onClick={() => onEditLesson(lesson)}
+            aria-label={`Editar ${lesson.title}`}
+            style={{
+              flexShrink: 0, width: '28px', height: '28px', borderRadius: '8px',
+              border: '1px solid var(--neutral-100)', background: 'var(--panel)',
+              color: 'var(--ink-muted)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+      </div>
+      {content && <div style={{ marginBottom: '13px' }}>{content}</div>}
+    </div>
+  );
+}
+
 /* ── Accordion course group ── */
 function CourseGroup({ courseId, lessons, open, onToggle, canCreate, onAddLesson, onEditLesson }: {
   courseId: string;
@@ -57,13 +149,6 @@ function CourseGroup({ courseId, lessons, open, onToggle, canCreate, onAddLesson
   const done = lessons.filter((l) => l.completed).length;
   const pct  = Math.round((done / lessons.length) * 100);
   const courseName = lessons[0]?.courseName ?? `Curso ${courseId.slice(0, 6)}`;
-  const [expandedVideos, setExpandedVideos] = useState<Set<string>>(new Set());
-  const toggleVideo = (id: string) =>
-    setExpandedVideos((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
 
   return (
     <Card padding="default" style={{ marginBottom: '12px' }}>
@@ -111,120 +196,15 @@ function CourseGroup({ courseId, lessons, open, onToggle, canCreate, onAddLesson
               </Button>
             </div>
           )}
-          {lessons.map((lesson, i) => {
-            const icon    = getIcon(lessonType,    lesson.contentType);
-            const label   = getLabel(lessonType,   lesson.contentType);
-            const variant = getVariant(lessonType, lesson.contentType);
-            const isLast  = i === lessons.length - 1;
-            const bgColor = lesson.contentType === 'quiz'     ? 'var(--blue-100)'
-                          : lesson.contentType === 'practice' ? 'var(--bg-dark)'
-                          : 'var(--blue-50)';
-            const fgColor = lesson.contentType === 'practice' ? 'var(--panel)' : 'var(--blue-700)';
-            const isVideo = lesson.contentType === 'video';
-            const videoOpen = isVideo && expandedVideos.has(lesson.id);
-
-            return (
-              <div key={lesson.id} style={{ borderBottom: isLast ? 'none' : '1px solid var(--neutral-100)' }}>
-                <div
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '14px',
-                    padding: '13px 0',
-                    opacity: lesson.locked ? 0.5 : 1,
-                  }}
-                >
-                  {/* Icon */}
-                  <span style={{
-                    width: '38px', height: '38px', borderRadius: '10px',
-                    background: bgColor, color: fgColor,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <Icon icon={lesson.completed ? APP_ICONS.check : icon} width={16} height={16} />
-                  </span>
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: '14px', fontWeight: 500, color: lesson.completed ? 'var(--ink-muted)' : 'var(--ink)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      textDecoration: lesson.completed ? 'line-through' : 'none',
-                    }}>
-                      {lesson.title}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '2px', display: 'flex', gap: '6px' }}>
-                      <span>{label}</span>
-                      {lesson.durationMinutes && <span>· {lesson.durationMinutes} min</span>}
-                      {lesson.locked && (
-                        <span style={{ color: 'var(--yellow-600)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                          · <Icon icon={APP_ICONS.lock} width={11} height={11} /> Bloqueada
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Adjunto */}
-                  {lesson.fileUrl && (
-                    isVideo ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleVideo(lesson.id)}
-                        style={{ fontSize: '12.5px', color: 'var(--blue-600)', fontWeight: 500, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
-                      >
-                        {videoOpen ? '▲ Ocultar video' : '▶ Ver video'}
-                      </button>
-                    ) : (
-                      <a
-                        href={lesson.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontSize: '12.5px', color: 'var(--blue-600)', fontWeight: 500, flexShrink: 0, textDecoration: 'none' }}
-                      >
-                        ↗ Ver documento
-                      </a>
-                    )
-                  )}
-
-                  {/* Badge */}
-                  {lesson.completed ? (
-                    <Badge variant="green">Completada</Badge>
-                  ) : lesson.locked ? (
-                    <Badge variant="yellow">Bloqueada</Badge>
-                  ) : (
-                    <Badge variant={variant}>{label}</Badge>
-                  )}
-
-                  {/* Editar */}
-                  {canCreate && (
-                    <button
-                      type="button"
-                      onClick={() => onEditLesson(lesson)}
-                      aria-label={`Editar ${lesson.title}`}
-                      style={{
-                        flexShrink: 0, width: '28px', height: '28px', borderRadius: '8px',
-                        border: '1px solid var(--neutral-100)', background: 'var(--panel)',
-                        color: 'var(--ink-muted)', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                {videoOpen && lesson.fileUrl && (
-                  <video
-                    controls
-                    preload="metadata"
-                    src={lesson.fileUrl}
-                    style={{ width: '100%', maxHeight: '420px', borderRadius: 'var(--radius-md)', background: '#000', marginBottom: '13px' }}
-                  >
-                    <track kind="captions" />
-                  </video>
-                )}
-              </div>
-            );
-          })}
+          {lessons.map((lesson, i) => (
+            <LessonListItem
+              key={lesson.id}
+              lesson={lesson}
+              isLast={i === lessons.length - 1}
+              canCreate={canCreate}
+              onEditLesson={onEditLesson}
+            />
+          ))}
         </div>
       )}
     </Card>

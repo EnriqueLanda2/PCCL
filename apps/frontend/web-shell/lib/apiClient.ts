@@ -69,6 +69,26 @@ const STATUS_MESSAGES: Record<number, string> = {
 const RETRYABLE_STATUSES = new Set([429, 503]);
 const MAX_RETRIES = 2;
 
+/**
+ * Next router singleton. El interceptor de axios vive fuera del árbol de
+ * React y no puede usar useRouter(), así que PortalShell/AuthLayout lo
+ * registran una vez con router.replace para que un 401 navegue por SPA
+ * en vez de forzar un full reload con window.location.
+ */
+let navigate: ((path: string) => void) | null = null;
+
+export function setNavigator(fn: (path: string) => void): void {
+  navigate = fn;
+}
+
+function redirectToLogin(): void {
+  if (navigate) {
+    navigate('/identity/auth');
+  } else if (typeof window !== 'undefined') {
+    window.location.href = '/identity/auth';
+  }
+}
+
 function getRetryDelay(attempt: number, retryAfter?: string): number {
   if (retryAfter) {
     const seconds = parseInt(retryAfter, 10);
@@ -132,7 +152,7 @@ function createClient(): AxiosInstance {
 
       /* ── 401 → redirect to login (client-side only) ── */
       if (status === 401 && typeof window !== 'undefined') {
-        window.location.href = '/identity/auth';
+        redirectToLogin();
         return Promise.reject(new ApiError(401, 'UNAUTHORIZED', STATUS_MESSAGES[401]));
       }
 

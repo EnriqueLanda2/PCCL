@@ -8,21 +8,8 @@ import { Icon } from '@iconify/react';
 import { Field, Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
 import { api, ApiError } from '@/lib/api';
-import { appRoutes } from '@/lib/routes';
+import { appRoutes, firstRoute } from '@/lib/routes';
 import { APP_ICONS } from '@/lib/icons';
-
-const MODULE_ROUTE: Record<string, string> = {
-  dashboard: appRoutes.dashboard, courses: appRoutes.courses,
-  lessons: appRoutes.lessons, inscriptions: appRoutes.inscriptions,
-  califications: appRoutes.califications, certificates: appRoutes.certificates,
-  progress: appRoutes.progress, audit: appRoutes.audit,
-  users: appRoutes.users, rbac: appRoutes.rbac,
-};
-
-function firstRoute(menu: { module: string; visible: boolean }[]): string {
-  const first = menu.find((m) => m.visible && MODULE_ROUTE[m.module]);
-  return first ? MODULE_ROUTE[first.module] : appRoutes.dashboard;
-}
 
 export default function RegisterPage() {
   const router = useRouter();
