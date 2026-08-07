@@ -7,6 +7,8 @@ import { JwtStrategy } from './auth/jwt.strategy';
 import { IdentityController } from './identity/identity.controller';
 import { LearningController } from './learning/learning.controller';
 import { CertificationController } from './certification/certification.controller';
+import { PaymentController } from './payment/payment.controller';
+import { StatsController } from './stats/stats.controller';
 import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
@@ -33,6 +35,8 @@ import { UploadsModule } from './uploads/uploads.module';
     IdentityController,
     LearningController,
     CertificationController,
+    PaymentController,
+    StatsController,
   ],
 })
 export class AppModule {}

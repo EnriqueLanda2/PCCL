@@ -63,3 +63,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # vercel
 .vercel
+
+# avatares: GLB intermedios de Blender antes de optimizar. Se regeneran con
+# `avatar:build` y lo que se publica es la versión optimizada en public/.
+/assets/avatar-source/glb-raw/

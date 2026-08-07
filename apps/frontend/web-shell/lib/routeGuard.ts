@@ -33,3 +33,25 @@ export function requiredModuleFor(pathname: string): string | null {
   const match = ORDERED_ROUTES.find((route) => pathname === route || pathname.startsWith(`${route}/`));
   return match ? ROUTE_MODULES[match] : null;
 }
+
+/**
+ * Rutas de gestión docente. El privilegio por sí solo no basta: un alumno
+ * conserva 'inscriptions:create' para poder inscribirse, pero el padrón de
+ * inscripciones lista datos de otros alumnos y es una vista de profesor.
+ */
+const ROUTE_ROLES: Record<string, string[]> = {
+  [appRoutes.inscriptions]: ['admin', 'instructor'],
+  [appRoutes.earnings]: ['admin', 'instructor'],
+  /* "Estudiantes": seguimiento del avance del alumnado. Debe ir en pareja con
+     STAFF_ONLY_KEYS del Sidebar — si solo se ocultara el enlace, la ruta seguiría
+     abierta escribiendo la URL. */
+  [appRoutes.progress]: ['admin', 'instructor'],
+};
+
+const ORDERED_ROLE_ROUTES = Object.keys(ROUTE_ROLES).sort((a, b) => b.length - a.length);
+
+/** Roles admitidos en una ruta, o null si no está restringida por rol. */
+export function requiredRolesFor(pathname: string): string[] | null {
+  const match = ORDERED_ROLE_ROUTES.find((route) => pathname === route || pathname.startsWith(`${route}/`));
+  return match ? ROUTE_ROLES[match] : null;
+}

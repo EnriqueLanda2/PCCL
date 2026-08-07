@@ -1,5 +1,22 @@
+/* ───────────────────────────────────────────
+   Button — fachada sobre el RaisedButton del
+   registry. Se conserva la firma original
+   { variant, size, pill, block, loading, … } para
+   que los ~40 puntos que ya lo usan adopten el
+   componente nuevo sin tocarlos uno por uno.
+
+   El estilo pedido (blanco en reposo, gris al
+   hover) es el del botón por defecto; las variantes
+   con intención — primaria, peligro — conservan su
+   color para no aplanar la jerarquía visual.
+   ─────────────────────────────────────────── */
+
+'use client';
+
 import React from 'react';
 import { cn } from '@/lib/cn';
+import { RaisedButton } from '@/registry/new-york/ui/raised-button';
+import { WaveSpinner } from '@/app/components/ui/WaveSpinner';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'link';
 type ButtonSize    = 'xs' | 'sm' | 'md' | 'lg';
@@ -14,26 +31,27 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   rightIcon?: React.ReactNode;
 }
 
-const variantCls: Record<ButtonVariant, string> = {
-  primary:
-    'bg-[var(--green-600)] hover:bg-[var(--green-500)] active:bg-[var(--green-700)] text-white border border-[var(--green-600)] shadow-[0_12px_24px_rgba(31,154,75,0.16)] hover:shadow-[0_16px_28px_rgba(31,154,75,0.2)]',
-  secondary:
-    'bg-white hover:bg-[#F7FAF3] active:bg-[#EEF3E8] text-[var(--ink)] border border-[#DDE7D7] shadow-sm',
-  ghost:
-    'bg-transparent hover:bg-[#F1F6EB] active:bg-[#E7EEDF] text-[var(--ink-soft)] border border-transparent',
-  danger:
-    'bg-[#FFF1ED] hover:bg-[#FFE6DF] active:bg-[#FFD9CF] text-[#BF2600] border border-[#F4C8B8]',
-  success:
-    'bg-[var(--green-600)] hover:bg-[var(--green-500)] active:bg-[var(--green-700)] text-white border border-[var(--green-600)] shadow-sm',
-  link:
-    'bg-transparent text-[var(--green-700)] hover:text-[var(--green-600)] border border-transparent underline-offset-4 hover:underline p-0 h-auto',
+/** Color que recibe RaisedButton por variante. `undefined` = blanco/gris. */
+const variantColor: Record<ButtonVariant, string | undefined> = {
+  primary:   '#1F9A4B',
+  success:   '#1F9A4B',
+  danger:    '#DB5F57',
+  secondary: undefined,
+  ghost:     undefined,
+  link:      undefined,
 };
 
-const sizeCls: Record<ButtonSize, string> = {
-  xs: 'h-7 px-3 text-xs gap-1.5',
-  sm: 'h-9 px-4 text-sm gap-1.5',
-  md: 'h-10 px-5 text-sm gap-2',
-  lg: 'h-12 px-6 text-base gap-2',
+/** Blanco en reposo, gris al hover — el aspecto pedido para el botón neutro. */
+const NEUTRAL_CLS =
+  'bg-white text-[var(--ink)] border-[var(--neutral-200)] hover:bg-[var(--neutral-100)] ' +
+  'dark:bg-white dark:text-[var(--ink)]';
+
+/** RaisedButton solo trae default/sm/lg/icon; xs se ajusta a mano. */
+const sizeMap: Record<ButtonSize, 'default' | 'sm' | 'lg'> = {
+  xs: 'sm',
+  sm: 'sm',
+  md: 'default',
+  lg: 'lg',
 };
 
 export function Button({
@@ -51,35 +69,48 @@ export function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
+  /* `link` no es un botón elevado: es texto pulsable y debe seguir siéndolo. */
+  if (variant === 'link') {
+    return (
+      <button
+        disabled={isDisabled}
+        aria-busy={loading}
+        className={cn(
+          'inline-flex cursor-pointer items-center gap-2 border-none bg-transparent p-0 font-medium',
+          'text-[var(--green-700)] underline-offset-4 hover:text-[var(--green-600)] hover:underline',
+          'disabled:cursor-not-allowed disabled:opacity-60',
+          className,
+        )}
+        {...props}
+      >
+        {leftIcon}
+        {children}
+        {rightIcon}
+      </button>
+    );
+  }
+
+  const neutral = variantColor[variant] === undefined;
+
   return (
-    <button
+    <RaisedButton
+      color={variantColor[variant]}
+      size={sizeMap[size]}
       disabled={isDisabled}
       aria-busy={loading}
       className={cn(
-        'inline-flex items-center justify-center font-medium cursor-pointer select-none',
-        'transition-all duration-150 whitespace-nowrap',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-400)] focus-visible:ring-offset-2',
-        'disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none',
-        pill ? 'rounded-full' : 'rounded-xl',
-        variantCls[variant],
-        variant !== 'link' && sizeCls[size],
+        pill && 'rounded-full before:rounded-full',
         block && 'w-full',
+        size === 'xs' && 'h-7 px-3 text-xs',
+        neutral && NEUTRAL_CLS,
         className,
       )}
       {...props}
     >
-      {loading ? (
-        <span
-          aria-hidden
-          className="w-4 h-4 border-2 border-current border-t-transparent rounded-full flex-shrink-0"
-          style={{ animation: 'spin 0.6s linear infinite' }}
-        />
-      ) : (
-        leftIcon && <span aria-hidden className="flex-shrink-0">{leftIcon}</span>
-      )}
-      {children && <span>{children}</span>}
-      {!loading && rightIcon && <span aria-hidden className="flex-shrink-0">{rightIcon}</span>}
-    </button>
+      {loading ? <WaveSpinner size="xs" label="Procesando…" /> : leftIcon}
+      {children}
+      {!loading && rightIcon}
+    </RaisedButton>
   );
 }
 
@@ -101,29 +132,28 @@ export function IconButton({
   className,
   ...props
 }: IconButtonProps) {
-  const sizeMap: Record<ButtonSize, string> = {
-    xs: 'w-7 h-7',
-    sm: 'w-9 h-9',
-    md: 'w-10 h-10',
-    lg: 'w-12 h-12',
+  const sizeCls: Record<ButtonSize, string> = {
+    xs: 'h-7 w-7',
+    sm: 'h-9 w-9',
+    md: 'h-10 w-10',
+    lg: 'h-12 w-12',
   };
+  const neutral = variantColor[variant] === undefined;
 
   return (
-    <button
+    <RaisedButton
+      color={variantColor[variant]}
+      size="icon"
       aria-label={label}
       className={cn(
-        'inline-flex items-center justify-center cursor-pointer select-none flex-shrink-0',
-        'transition-all duration-150',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-400)] focus-visible:ring-offset-2',
-        'disabled:opacity-60 disabled:cursor-not-allowed',
-        pill ? 'rounded-full' : 'rounded-xl',
-        variantCls[variant],
-        sizeMap[size],
+        pill ? 'rounded-full before:rounded-full' : 'rounded-xl before:rounded-xl',
+        sizeCls[size],
+        neutral && NEUTRAL_CLS,
         className,
       )}
       {...props}
     >
       {icon}
-    </button>
+    </RaisedButton>
   );
 }

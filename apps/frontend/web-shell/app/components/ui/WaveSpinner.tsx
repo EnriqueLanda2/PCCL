@@ -1,12 +1,19 @@
 /* ───────────────────────────────────────────
-   WaveSpinner — loader global de la plataforma
-   Barras verdes que ondulan en secuencia.
-   Tamaños: sm · md · lg · xl
+   WaveSpinner — loader global de la plataforma.
+
+   La implementación real vive en el componente del
+   registry (registry/new-york/ui/wave-spinner). Este
+   archivo se conserva como fachada para no tocar los
+   ~14 puntos de carga que ya lo importan con la firma
+   { size, label }: cambiar el motor aquí los actualiza
+   a todos de golpe.
    ─────────────────────────────────────────── */
 
-import { cn } from '@/lib/cn';
+'use client';
 
-type WaveSpinnerSize = 'sm' | 'md' | 'lg' | 'xl';
+import { WaveSpinner as RegistryWaveSpinner } from '@/registry/new-york/ui/wave-spinner';
+
+type WaveSpinnerSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 interface WaveSpinnerProps {
   size?: WaveSpinnerSize;
@@ -15,30 +22,18 @@ interface WaveSpinnerProps {
   className?: string;
 }
 
-const sizeTokens: Record<WaveSpinnerSize, { bar: string; gap: string; height: string }> = {
-  sm: { bar: 'w-[3px]', gap: 'gap-[3px]', height: 'h-4'  },
-  md: { bar: 'w-1',     gap: 'gap-1',     height: 'h-6'  },
-  lg: { bar: 'w-1.5',   gap: 'gap-1.5',   height: 'h-9'  },
-  xl: { bar: 'w-2',     gap: 'gap-2',     height: 'h-12' },
-};
-
-const BARS = [0, 1, 2, 3, 4];
-
 export function WaveSpinner({ size = 'md', label = 'Cargando…', className }: Readonly<WaveSpinnerProps>) {
-  const t = sizeTokens[size];
   return (
-    <output
+    <RegistryWaveSpinner
+      size={size}
+      /* Verde de marca en vez del azul por defecto del registry */
+      color="var(--green-500)"
+      pattern="square3x3"
+      animation="ripple"
+      dotShape="rounded"
       aria-label={label}
-      className={cn('inline-flex items-center justify-center', t.gap, t.height, className)}
-    >
-      {BARS.map((i) => (
-        <span
-          key={i}
-          className={cn('h-full rounded-full bg-[var(--green-500)] wave-spinner-bar', t.bar)}
-          style={{ animationDelay: `${i * 0.12}s` }}
-        />
-      ))}
-    </output>
+      className={className}
+    />
   );
 }
 

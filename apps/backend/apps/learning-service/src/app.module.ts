@@ -9,6 +9,8 @@ import { CalificationsModule } from './modules/califications/califications.modul
 import { EvaluationsModule } from './modules/evaluations/evaluations.module';
 import { LiveSessionsModule } from './modules/live-sessions/live-sessions.module';
 import { NotesModule } from './modules/notes/notes.module';
+import { CommentsModule } from './modules/comments/comments.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 import { MessagingModule } from '@app/messaging';
 
 @Module({
@@ -24,6 +26,8 @@ import { MessagingModule } from '@app/messaging';
     EvaluationsModule,
     LiveSessionsModule,
     NotesModule,
+    TasksModule,
+    CommentsModule,
   ],
 })
 export class AppModule {}

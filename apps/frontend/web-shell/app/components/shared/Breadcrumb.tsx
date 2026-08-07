@@ -17,7 +17,7 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ items }: BreadcrumbProps) {
   return (
-    <nav aria-label="breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--ink-muted)', marginBottom: '16px' }}>
+    <nav aria-label="breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: '1rem' }}>
       {items.map((item, i) => (
         <React.Fragment key={i}>
           {i > 0 && <span style={{ color: 'var(--neutral-300)' }}>/</span>}

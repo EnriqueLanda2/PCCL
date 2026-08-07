@@ -18,12 +18,17 @@ model Certificate {
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
   inscriptionId     String    @map("inscription_id") @db.Uuid
+  /** Dueño del certificado, copiado desde Inscription.userId al emitirlo.
+   *  Desnormalizado a propósito: identity y learning viven en otras bases,
+   *  así que sin esta columna no se puede filtrar por alumno en SQL. */
+  userId            String?   @map("user_id") @db.Uuid
   certificateNumber String    @unique @map("certificate_number") @db.VarChar(100)
   issuedAt          DateTime  @map("issued_at") @db.Timestamp(6)
   expiresAt         DateTime? @map("expires_at") @db.Timestamp(6)
   status            String    @default("valid") @db.VarChar(20)
   pdfUrl            String?   @map("pdf_url") @db.Text
 
+  @@index([userId])
   @@map("certificates")
 }
 

@@ -12,21 +12,34 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { requiredModuleFor } from '@/lib/routeGuard';
+import { requiredModuleFor, requiredRolesFor } from '@/lib/routeGuard';
 import { api } from '@/lib/api';
+import type { AccessProfile } from '@/lib/types';
 import { EmptyState } from './EmptyState';
 import { APP_ICONS } from '@/lib/icons';
 
 type GuardState = 'checking' | 'allowed' | 'denied';
 
-function getCachedPermissions(): string[] | null {
+function getCachedAccess(): Pick<AccessProfile, 'permissions' | 'roles'> | null {
   try {
     const raw = sessionStorage.getItem('pccl_access');
     if (!raw) return null;
-    return (JSON.parse(raw) as { permissions?: string[] }).permissions ?? [];
+    const parsed = JSON.parse(raw) as Partial<AccessProfile>;
+    return { permissions: parsed.permissions ?? [], roles: parsed.roles ?? [] };
   } catch {
     return null;
   }
+}
+
+/** Una ruta se permite si cumple el privilegio de módulo Y el rol exigido. */
+function isAllowed(
+  access: Pick<AccessProfile, 'permissions' | 'roles'>,
+  requiredModule: string | null,
+  requiredRoles: string[] | null,
+): boolean {
+  if (requiredModule && !access.permissions.some((p) => p.startsWith(`${requiredModule}:`))) return false;
+  if (requiredRoles && !access.roles.some((r) => requiredRoles.includes(r))) return false;
+  return true;
 }
 
 export function RouteGuard({ children }: Readonly<{ children: ReactNode }>) {
@@ -34,30 +47,39 @@ export function RouteGuard({ children }: Readonly<{ children: ReactNode }>) {
   const [state, setState] = useState<GuardState>('checking');
 
   useEffect(() => {
+    let alive = true;
     const requiredModule = requiredModuleFor(pathname);
+    const requiredRoles  = requiredRolesFor(pathname);
 
-    if (!requiredModule) {
-      setState('allowed');
-      return;
+    const resolveState = (nextState: GuardState) => {
+      if (alive) setState(nextState);
+    };
+
+    if (!requiredModule && !requiredRoles) {
+      const accessCheck = requestAnimationFrame(() => resolveState('allowed'));
+      return () => {
+        alive = false;
+        cancelAnimationFrame(accessCheck);
+      };
     }
 
-    const cached = getCachedPermissions();
+    const cached = getCachedAccess();
     if (cached !== null) {
-      const ok = cached.some((p) => p.startsWith(`${requiredModule}:`));
-      setState(ok ? 'allowed' : 'denied');
-      return;
+      const accessCheck = requestAnimationFrame(() => resolveState(isAllowed(cached, requiredModule, requiredRoles) ? 'allowed' : 'denied'));
+      return () => {
+        alive = false;
+        cancelAnimationFrame(accessCheck);
+      };
     }
 
     /* Sin perfil cacheado aún (primer render tras login/reload) — proxy.ts ya
        exige sesión, pero eso no basta para RBAC por módulo, así que se pide
        el perfil real en vez de asumir acceso permitido. */
-    let alive = true;
     api.access()
       .then((access) => {
         if (!alive) return;
         sessionStorage.setItem('pccl_access', JSON.stringify(access));
-        const ok = access.permissions.some((p) => p.startsWith(`${requiredModule}:`));
-        setState(ok ? 'allowed' : 'denied');
+        setState(isAllowed(access, requiredModule, requiredRoles) ? 'allowed' : 'denied');
       })
       .catch(() => { if (alive) setState('denied'); });
     return () => { alive = false; };

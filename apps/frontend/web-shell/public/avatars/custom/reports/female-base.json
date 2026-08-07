@@ -1,0 +1,84 @@
+{
+  "variant": "feminine",
+  "bodyId": "female-base",
+  "rigId": "pccl-human-rig-v1",
+  "blend": "C:\\Users\\fcere\\OneDrive\\Documentos\\ULISES\\PCCL\\PCCL\\assets\\avatar-source\\blender\\avatar-female.blend",
+  "glb": "/avatars/custom/bodies/female-base.glb",
+  "bytes": 2427416,
+  "trianglesVisible": 56092,
+  "trianglesByObject": {
+    "Body_Skin": 23000,
+    "Head_Face": 12392,
+    "Top_A": 6500,
+    "Bottom_A": 6500,
+    "Shoes_A": 3200,
+    "Hair_chunky-short": 4500
+  },
+  "bones": [
+    "Head",
+    "Hips",
+    "LeftArm",
+    "LeftFoot",
+    "LeftForeArm",
+    "LeftHand",
+    "LeftLeg",
+    "LeftShoulder",
+    "LeftUpLeg",
+    "Neck",
+    "RightArm",
+    "RightFoot",
+    "RightForeArm",
+    "RightHand",
+    "RightLeg",
+    "RightShoulder",
+    "RightUpLeg",
+    "Root",
+    "Spine",
+    "Spine1"
+  ],
+  "morphTargets": [
+    "blinkLeft",
+    "blinkRight",
+    "browUp",
+    "mouthOpen",
+    "sad",
+    "smile",
+    "surprised"
+  ],
+  "animations": [
+    "Breathing",
+    "Idle",
+    "Presentation",
+    "Wave"
+  ],
+  "modular": {
+    "layered-bob": {
+      "url": "/avatars/custom/hair/female-base__layered-bob.glb",
+      "triangles": 4500,
+      "bytes": 213912
+    },
+    "top-b": {
+      "url": "/avatars/custom/clothing/female-base__top-b.glb",
+      "triangles": 6500,
+      "bytes": 242488
+    },
+    "bottom-b": {
+      "url": "/avatars/custom/clothing/female-base__bottom-b.glb",
+      "triangles": 6500,
+      "bytes": 242812
+    },
+    "shoes-b": {
+      "url": "/avatars/custom/clothing/female-base__shoes-b.glb",
+      "triangles": 3200,
+      "bytes": 131052
+    }
+  },
+  "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+  "qaImages": [
+    "C:\\Users\\fcere\\OneDrive\\Documentos\\ULISES\\PCCL\\PCCL\\assets\\avatar-source\\qa\\female-base-front.png",
+    "C:\\Users\\fcere\\OneDrive\\Documentos\\ULISES\\PCCL\\PCCL\\assets\\avatar-source\\qa\\female-base-three-quarter.png",
+    "C:\\Users\\fcere\\OneDrive\\Documentos\\ULISES\\PCCL\\PCCL\\assets\\avatar-source\\qa\\female-base-side.png",
+    "C:\\Users\\fcere\\OneDrive\\Documentos\\ULISES\\PCCL\\PCCL\\assets\\avatar-source\\qa\\female-base-back.png"
+  ],
+  "rescuedVertices": 0
+}

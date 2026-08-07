@@ -1,8 +1,10 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { DataScope } from '@app/contracts';
 import { IDENTITY_CLIENT } from '@app/messaging';
 import { PrismaService } from '../../prisma/prisma.service';
 import { buildUserDirectory } from '../../common/user-directory';
+import { inscriptionWhereFor } from '../../common/scope-filter';
 
 @Injectable()
 export class ProgressService {
@@ -29,9 +31,10 @@ export class ProgressService {
     return prog;
   }
 
-  async findAll() {
+  async findAll(scope?: DataScope) {
     const [items, directory] = await Promise.all([
       this.prisma.progress.findMany({
+        where: { inscription: inscriptionWhereFor(scope) },
         include: { inscription: { include: { course: true } } },
         orderBy: { updatedAt: 'desc' },
       }),

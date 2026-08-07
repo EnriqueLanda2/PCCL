@@ -30,29 +30,29 @@ export function CertificateRow({ certificate, href, onDownload }: CertificateRow
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: '14px',
-      padding: '16px',
+      gap: '0.875rem',
+      padding: '1rem',
       background: 'var(--blue-50)',
-      borderRadius: '12px',
+      borderRadius: '0.75rem',
       cursor: href ? 'pointer' : 'default',
       transition: 'background 160ms',
     }}>
       {/* Sello */}
       <div style={{
-        width: '56px', height: '44px', borderRadius: '8px', flexShrink: 0,
+        width: '3.5rem', height: '2.75rem', borderRadius: '0.5rem', flexShrink: 0,
         background: 'linear-gradient(135deg, var(--blue-700), var(--blue-500))',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: 'var(--panel)', fontFamily: 'var(--font-serif)', fontSize: '22px',
+        color: 'var(--panel)', fontFamily: 'var(--font-serif)', fontSize: '1.375rem',
       }}>
         ★
       </div>
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 500, fontSize: '14.5px', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontWeight: 500, fontSize: '0.9063rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {certificate.courseTitle ?? certificate.certificateNumber}
         </div>
-        <div style={{ fontSize: '12.5px', color: 'var(--ink-muted)', marginTop: '2px' }}>
+        <div style={{ fontSize: '0.7813rem', color: 'var(--ink-muted)', marginTop: '2px' }}>
           Emitido · {issued}
         </div>
       </div>
@@ -65,7 +65,7 @@ export function CertificateRow({ certificate, href, onDownload }: CertificateRow
         <button
           onClick={(e) => { e.preventDefault(); onDownload(certificate.id); }}
           style={{
-            width: '36px', height: '36px', borderRadius: '8px',
+            width: '2.25rem', height: '2.25rem', borderRadius: '0.5rem',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'transparent', border: '1px solid var(--neutral-200)',
             color: 'var(--ink-soft)', cursor: 'pointer', transition: 'background 160ms',

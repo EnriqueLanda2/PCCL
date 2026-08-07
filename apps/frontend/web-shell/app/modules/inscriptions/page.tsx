@@ -1,7 +1,7 @@
 /* ───────────────────────────────────────────
    Inscriptions Page — Inscripciones
-   Grilla de tarjetas por alumno (avatar Ready
-   Player Me + fallback de iniciales) agrupando
+   Grilla de tarjetas por alumno (avatar 3D
+   NOVA Folks procedural) agrupando
    sus inscripciones reales · paginado de 12 ·
    panel lateral con el detalle por curso.
    ─────────────────────────────────────────── */
@@ -10,18 +10,21 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
+import MenuItem from '@mui/material/MenuItem';
 import { api } from '@/lib/api';
 import type { Inscription } from '@/lib/types';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
-import { Pagination } from '@/app/components/ui/Pagination';
+import { AppButton, AppInput, AppSelect } from '@/app/components/ui/AppControls';
+import { DEFAULT_PAGE_SIZE, Pagination } from '@/app/components/ui/Pagination';
 import { StatCard } from '@/app/components/shared/StatCard';
 import { EmptyState } from '@/app/components/shared/EmptyState';
+import { PageHeader } from '@/app/components/shared/PageHeader';
 import { StudentSummaryCard, StudentSummaryDetailPanel, type StudentCardSummary } from '@/app/components/shared/StudentSummaryCard';
 import { inscriptionStatus, getVariant, getLabel } from '@/types/status';
 import { APP_ICONS } from '@/lib/icons';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 /* Prioridad para decidir el badge "resumen" de la tarjeta cuando el alumno
    tiene varias inscripciones con estados distintos (peor estado primero). */
@@ -30,6 +33,7 @@ const STATUS_PRIORITY: Record<string, number> = { dropped: 0, 'in-progress': 1, 
 interface StudentEnrollments {
   userId: string;
   fullName: string;
+  avatarUrl?: string | null;
   inscriptions: Inscription[];
 }
 
@@ -37,9 +41,15 @@ function groupInscriptionsByStudent(list: Inscription[]): StudentEnrollments[] {
   const map = new Map<string, StudentEnrollments>();
   for (const ins of list) {
     if (!ins.user) continue; // sin usuario resuelto — se omite
+    if (ins.user.active === false) continue; // solo cuentas activas
     const existing = map.get(ins.user.id);
     if (existing) existing.inscriptions.push(ins);
-    else map.set(ins.user.id, { userId: ins.user.id, fullName: ins.user.fullName, inscriptions: [ins] });
+    else map.set(ins.user.id, {
+      userId: ins.user.id,
+      fullName: ins.user.fullName,
+      avatarUrl: ins.user.avatarUrl ?? null,
+      inscriptions: [ins],
+    });
   }
   return Array.from(map.values());
 }
@@ -56,6 +66,7 @@ function toCardSummary(s: StudentEnrollments): StudentCardSummary {
   return {
     userId: s.userId,
     fullName: s.fullName,
+    avatarUrl: s.avatarUrl,
     headerValue: `${avgPct}%`,
     headerProgressPct: avgPct,
     headerBadge: { label: getLabel(inscriptionStatus, worst.status), variant: getVariant(inscriptionStatus, worst.status) },
@@ -74,10 +85,10 @@ function toCardSummary(s: StudentEnrollments): StudentCardSummary {
 /* ── Skeleton card ── */
 function SkeletonCard() {
   return (
-    <div style={{ padding: '18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--neutral-100)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-      <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'var(--neutral-100)' }} />
-      <div style={{ height: '13px', width: '70%', borderRadius: '6px', background: 'var(--neutral-100)' }} />
-      <div style={{ height: '10px', width: '50%', borderRadius: '6px', background: 'var(--neutral-100)' }} />
+    <div style={{ padding: '1.125rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--neutral-100)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.625rem' }}>
+      <div style={{ width: '4.5rem', height: '4.5rem', borderRadius: '50%', background: 'var(--neutral-100)' }} />
+      <div style={{ height: '0.8125rem', width: '70%', borderRadius: '0.375rem', background: 'var(--neutral-100)' }} />
+      <div style={{ height: '0.625rem', width: '50%', borderRadius: '0.375rem', background: 'var(--neutral-100)' }} />
     </div>
   );
 }
@@ -151,26 +162,18 @@ export default function InscriptionsPage() {
   const resetToPage1 = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-            Inscripciones <em style={{ color: 'var(--blue-600)', fontStyle: 'italic' }}>de alumnos</em>
-          </h1>
-          <p style={{ color: 'var(--ink-muted)', fontSize: '15px' }}>
-            {loading ? 'Cargando…' : `${total} inscripci${total !== 1 ? 'ones' : 'ón'} registrada${total !== 1 ? 's' : ''}`}
-          </p>
-        </div>
-        {canCreate && (
-          <Button variant="primary" size="md">+ Nueva inscripción</Button>
-        )}
-      </div>
+      <PageHeader
+        title={<>Inscripciones de alumnos</>}
+        subtitle={loading ? 'Cargando…' : `${total} inscripci${total !== 1 ? 'ones' : 'ón'} registrada${total !== 1 ? 's' : ''}`}
+        action={canCreate ? <Button variant="primary" size="md">+ Nueva inscripción</Button> : undefined}
+      />
 
       {/* ── Stats ── */}
       {!loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))', gap: '1rem' }}>
           <StatCard size="lg" label="Total"        value={total}     icon={<Icon icon={APP_ICONS.clipboard} width={22} height={22} />} />
           <StatCard size="lg" label="En progreso"  value={active}    delta={`${atRiskInscriptions.length} en riesgo`} deltaUp={false} icon={<Icon icon={APP_ICONS.chart} width={22} height={22} />} variant="blue" />
           <StatCard size="lg" label="Completados"  value={completed} deltaUp icon={<Icon icon={APP_ICONS.checkFilled} width={22} height={22} />} variant="green" />
@@ -180,19 +183,19 @@ export default function InscriptionsPage() {
 
       {/* ── Alerta de riesgo de abandono ── */}
       {!loading && atRiskInscriptions.length > 0 && (
-        <Card variant="danger" padding="default" style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+        <Card variant="danger" padding="default" style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
           <span style={{
-            width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+            width: '2.5rem', height: '2.5rem', borderRadius: '0.625rem', flexShrink: 0,
             background: '#F7C7B9', color: 'var(--red-600)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <Icon icon={APP_ICONS.warning} width={20} height={20} />
           </span>
-          <div style={{ flex: 1, minWidth: '220px' }}>
-            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink)' }}>
+          <div style={{ flex: 1, minWidth: '13.75rem' }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink)' }}>
               {atRiskInscriptions.length} alumno{atRiskInscriptions.length === 1 ? '' : 's'} con riesgo estimado de abandono
             </p>
-            <p style={{ fontSize: '12.5px', color: 'var(--ink-muted)' }}>
+            <p style={{ fontSize: '0.7813rem', color: 'var(--ink-muted)' }}>
               En curso con menos de 30% de avance — vale la pena dar seguimiento.
             </p>
           </div>
@@ -208,61 +211,49 @@ export default function InscriptionsPage() {
       )}
 
       {/* ── Search + chips + sort ── */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
-          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
-          <input
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 240px', minWidth: '15rem', maxWidth: '23.75rem' }}>
+          <AppInput
             type="search"
             placeholder="Buscar alumno o curso…"
             value={search}
             onChange={(e) => resetToPage1(setSearch)(e.target.value)}
-            style={{
-              width: '100%', height: '40px', paddingLeft: '40px', paddingRight: '12px',
-              borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)',
-              background: 'var(--blue-50)', fontSize: '13.5px', color: 'var(--ink)',
-              fontFamily: 'var(--font-sans)', outline: 'none',
-            }}
+            withSearchIcon
           />
         </div>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
           {STATUSES.map((chip) => (
-            <button
+            <AppButton
               key={chip}
               type="button"
               onClick={() => resetToPage1(setStatusChip)(chip)}
-              style={{
-                border: statusChip === chip ? '1.5px solid var(--blue-600)' : '1.5px solid var(--neutral-200)',
-                background: statusChip === chip ? 'var(--blue-50)' : 'var(--panel)',
+              variant={statusChip === chip ? 'contained' : 'outlined'}
+              sx={{
+                borderColor: statusChip === chip ? 'var(--blue-500)' : 'var(--neutral-200)',
+                bgcolor: statusChip === chip ? 'var(--blue-50)' : 'var(--panel)',
                 color: statusChip === chip ? 'var(--blue-700)' : 'var(--ink-muted)',
-                borderRadius: 'var(--radius-full)', padding: '5px 13px',
-                fontSize: '12.5px', fontWeight: statusChip === chip ? 600 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                px: 1.7,
               }}
             >
               {chip}
-            </button>
+            </AppButton>
           ))}
         </div>
-        <select
+        <AppSelect
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-          style={{
-            height: '40px', padding: '0 12px', borderRadius: 'var(--radius-md)',
-            border: '1.5px solid var(--neutral-200)', background: 'var(--panel)',
-            color: 'var(--ink)', fontSize: '13.5px', fontFamily: 'var(--font-sans)',
-            cursor: 'pointer', outline: 'none', marginLeft: 'auto',
-          }}
+          sx={{ maxWidth: 220, marginLeft: 'auto' }}
         >
-          <option value="status">Por estado</option>
-          <option value="progress">Mayor avance</option>
-          <option value="risk">Menor avance (riesgo)</option>
-          <option value="name">Nombre A→Z</option>
-        </select>
+          <MenuItem value="status">Por estado</MenuItem>
+          <MenuItem value="progress">Mayor avance</MenuItem>
+          <MenuItem value="risk">Menor avance (riesgo)</MenuItem>
+          <MenuItem value="name">Nombre A→Z</MenuItem>
+        </AppSelect>
       </div>
 
       {/* ── Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '14px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '0.875rem' }}>
           {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : students.length === 0 ? (
@@ -284,10 +275,10 @@ export default function InscriptionsPage() {
         />
       ) : (
         <>
-          <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
             Mostrando <strong style={{ color: 'var(--ink)' }}>{paginated.length}</strong> de {students.length} alumnos
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '0.875rem' }}>
             {paginated.map((student) => (
               <StudentSummaryCard key={student.userId} student={toCardSummary(student)} onOpen={() => setSelected(student)} />
             ))}

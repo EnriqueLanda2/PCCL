@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, EventPattern, Payload } from '@nestjs/microservices';
-import { CERTIFICATION_PATTERNS, LEARNING_PATTERNS } from '@app/contracts';
+import { CERTIFICATION_PATTERNS, DataScope, LEARNING_PATTERNS } from '@app/contracts';
 import { CertificatesService } from './certificates.service';
 
 @Controller()
@@ -13,10 +13,13 @@ export class CertificatesController {
   }
 
   @MessagePattern(CERTIFICATION_PATTERNS.CERT_FIND_ALL)
-  findAll() { return this.service.findAll(); }
+  findAll(@Payload() p: { scope?: DataScope }) { return this.service.findAll(p?.scope); }
 
   @MessagePattern(CERTIFICATION_PATTERNS.CERT_FIND_ONE)
   findOne(@Payload() p: { id: string }) { return this.service.findOne(p.id); }
+
+  @MessagePattern(CERTIFICATION_PATTERNS.CERT_VERIFY_FOLIO)
+  verifyByFolio(@Payload() p: { folio: string }) { return this.service.verifyByFolio(p.folio); }
 
   @MessagePattern(CERTIFICATION_PATTERNS.CERT_DOWNLOAD_PDF)
   downloadPdf(@Payload() p: { id: string }) { return this.service.downloadPdf(p.id); }

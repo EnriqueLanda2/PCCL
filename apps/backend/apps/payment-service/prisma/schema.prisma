@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/prisma/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PAYMENT_DATABASE_URL")
+}
+
+model Order {
+  id                      String    @id @default(uuid()) @db.Uuid
+  transactionDate         DateTime  @default(now()) @map("transaction_date") @db.Timestamp(6)
+  startDate               DateTime? @map("start_date") @db.Timestamp(6)
+  endDate                 DateTime? @map("end_date") @db.Timestamp(6)
+  createdBy               String?   @map("created_by") @db.VarChar(100)
+  updatedBy               String?   @map("updated_by") @db.VarChar(100)
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  userId                  String    @map("user_id") @db.Uuid
+  courseId                String    @map("course_id") @db.Uuid
+  amount                  Decimal   @db.Decimal(10, 2)
+  currency                String    @db.VarChar(3)
+  accessType              String    @default("permanent") @map("access_type") @db.VarChar(20)
+  accessEndsAt            DateTime? @map("access_ends_at") @db.Timestamp(6)
+  status                  String    @default("pending") @db.VarChar(20)
+  provider                String    @default("stripe") @db.VarChar(40)
+  providerPaymentIntentId String?   @unique @map("provider_payment_intent_id") @db.VarChar(160)
+  payment                 Payment?
+
+  @@map("orders")
+}
+
+model Payment {
+  id                String    @id @default(uuid()) @db.Uuid
+  transactionDate   DateTime  @default(now()) @map("transaction_date") @db.Timestamp(6)
+  startDate         DateTime? @map("start_date") @db.Timestamp(6)
+  endDate           DateTime? @map("end_date") @db.Timestamp(6)
+  createdBy         String?   @map("created_by") @db.VarChar(100)
+  updatedBy         String?   @map("updated_by") @db.VarChar(100)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  orderId           String    @unique @map("order_id") @db.Uuid
+  order             Order     @relation(fields: [orderId], references: [id])
+  providerPaymentId String    @map("provider_payment_id") @db.VarChar(160)
+  status            String    @db.VarChar(20)
+  paidAt            DateTime? @map("paid_at") @db.Timestamp(6)
+  rawPayload         Json     @map("raw_payload")
+
+  @@map("payments")
+}

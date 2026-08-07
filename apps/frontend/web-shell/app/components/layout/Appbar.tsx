@@ -3,7 +3,8 @@
 import React, { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Avatar, getInitials } from '@/app/components/ui/Avatar';
+import { StudentAvatar } from '@/app/components/shared/StudentAvatar';
+import { AppInput } from '@/app/components/ui/AppControls';
 import { appRoutes } from '@/lib/routes';
 
 /* ── Breadcrumb from pathname ── */
@@ -79,23 +80,16 @@ function SearchBar() {
 
   return (
     <div className="relative flex-1 max-w-xs lg:max-w-sm">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" aria-hidden>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8" strokeLinecap="round"/>
-          <path d="M21 21l-4.35-4.35" strokeLinecap="round"/>
-        </svg>
-      </span>
-      <input
-        ref={inputRef}
+      <AppInput
+        inputRef={inputRef}
         type="search"
         placeholder="Buscar…"
         aria-label="Buscar cursos y lecciones"
-        className="w-full h-9 pl-9 pr-10 text-sm bg-neutral-50 border border-neutral-200 rounded-lg outline-none
-          focus:bg-white focus:border-primary-400 focus:ring-2 focus:ring-primary-100
-          text-neutral-900 placeholder:text-neutral-400 transition-all duration-150"
+        withSearchIcon
+        sx={{ '& .MuiOutlinedInput-root': { minHeight: 38, height: 38, paddingRight: '3.375rem' } }}
       />
       <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5
-        px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 bg-neutral-100 border border-neutral-200 rounded">
+        px-1.5 py-0.5 text-[0.625rem] font-mono text-neutral-400 bg-neutral-100 border border-neutral-200 rounded">
         ⌘K
       </kbd>
     </div>
@@ -111,18 +105,21 @@ export function Appbar() {
   const [roleLabel, setRoleLabel] = React.useState('');
 
   useEffect(() => {
-    try {
-      const u = sessionStorage.getItem('pccl_user');
-      if (u) setUserName((JSON.parse(u) as { fullName: string }).fullName);
-    } catch {
-      // conserva el valor por defecto
-    }
-    try {
-      const a = sessionStorage.getItem('pccl_access');
-      if (a) setRoleLabel((JSON.parse(a) as { roles: string[] }).roles[0] ?? '');
-    } catch {
-      // conserva el valor por defecto
-    }
+    const timer = window.setTimeout(() => {
+      try {
+        const u = sessionStorage.getItem('pccl_user');
+        if (u) setUserName((JSON.parse(u) as { fullName: string }).fullName);
+      } catch {
+        // conserva el valor por defecto
+      }
+      try {
+        const a = sessionStorage.getItem('pccl_access');
+        if (a) setRoleLabel((JSON.parse(a) as { roles: string[] }).roles[0] ?? '');
+      } catch {
+        // conserva el valor por defecto
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (
@@ -143,15 +140,11 @@ export function Appbar() {
 
         {/* User info */}
         <div className="flex items-center gap-2.5 pl-1">
-          <Avatar
-            initials={userName ? getInitials(userName) : 'US'}
-            size="sm"
-            variant="blue"
-          />
+          <StudentAvatar userId={userName ?? ''} fullName={userName || 'Usuario'} size="sm" />
           <div className="hidden md:block leading-tight">
             <p className="text-sm font-semibold text-neutral-900">{userName || 'Usuario'}</p>
             {roleLabel && (
-              <p className="text-[11px] text-neutral-500">{roleLabel}</p>
+              <p className="text-[0.6875rem] text-neutral-500">{roleLabel}</p>
             )}
           </div>
         </div>

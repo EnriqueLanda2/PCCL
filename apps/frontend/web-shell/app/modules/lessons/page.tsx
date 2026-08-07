@@ -9,13 +9,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
-import type { Lesson } from '@/lib/types';
+import type { Course, Lesson } from '@/lib/types';
 import { Card } from '@/app/components/ui/Card';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
+import { AppButton, AppInput } from '@/app/components/ui/AppControls';
 import { ProgressBar } from '@/app/components/ui/ProgressBar';
+import { GoalCard } from '@/registry/new-york/ui/goal-card';
 import { EmptyState } from '@/app/components/shared/EmptyState';
+import { PageHeader } from '@/app/components/shared/PageHeader';
 import { CreateLessonModal } from '@/app/components/shared/CreateLessonModal';
+import { CourseComments } from '@/app/components/shared/CourseComments';
 import { useLessonFileViewer } from '@/app/components/shared/LessonFileViewer';
 import { lessonType, getIcon, getLabel, getVariant } from '@/types/status';
 import { APP_ICONS } from '@/lib/icons';
@@ -34,13 +38,13 @@ function groupByCourse(lessons: Lesson[]): Map<string, Lesson[]> {
 /* ── Skeleton row ── */
 function SkeletonRow() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 0', borderBottom: '1px solid var(--neutral-100)' }}>
-      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--neutral-100)', flexShrink: 0 }} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <div style={{ height: '14px', borderRadius: '6px', background: 'var(--neutral-100)', width: '60%' }} />
-        <div style={{ height: '12px', borderRadius: '6px', background: 'var(--neutral-100)', width: '35%' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '14px 0', borderBottom: '1px solid var(--neutral-100)' }}>
+      <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '0.625rem', background: 'var(--neutral-100)', flexShrink: 0 }} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+        <div style={{ height: '0.875rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: '60%' }} />
+        <div style={{ height: '0.75rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: '35%' }} />
       </div>
-      <div style={{ width: '70px', height: '22px', borderRadius: '999px', background: 'var(--neutral-100)' }} />
+      <div style={{ width: '4.375rem', height: '1.375rem', borderRadius: '999px', background: 'var(--neutral-100)' }} />
     </div>
   );
 }
@@ -65,14 +69,14 @@ function LessonListItem({ lesson, isLast, canCreate, onEditLesson }: {
     <div style={{ borderBottom: isLast ? 'none' : '1px solid var(--neutral-100)' }}>
       <div
         style={{
-          display: 'flex', alignItems: 'center', gap: '14px',
+          display: 'flex', alignItems: 'center', gap: '0.875rem',
           padding: '13px 0',
           opacity: lesson.locked ? 0.5 : 1,
         }}
       >
         {/* Icon */}
         <span style={{
-          width: '38px', height: '38px', borderRadius: '10px',
+          width: '2.375rem', height: '2.375rem', borderRadius: '0.625rem',
           background: bgColor, color: fgColor,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
@@ -83,17 +87,17 @@ function LessonListItem({ lesson, isLast, canCreate, onEditLesson }: {
         {/* Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontSize: '14px', fontWeight: 500, color: lesson.completed ? 'var(--ink-muted)' : 'var(--ink)',
+            fontSize: '0.875rem', fontWeight: 500, color: lesson.completed ? 'var(--ink-muted)' : 'var(--ink)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             textDecoration: lesson.completed ? 'line-through' : 'none',
           }}>
             {lesson.title}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '2px', display: 'flex', gap: '6px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: '2px', display: 'flex', gap: '0.375rem' }}>
             <span>{label}</span>
             {lesson.durationMinutes && <span>· {lesson.durationMinutes} min</span>}
             {lesson.locked && (
-              <span style={{ color: 'var(--yellow-600)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+              <span style={{ color: 'var(--yellow-600)', display: 'inline-flex', alignItems: 'center', gap: '0.1875rem' }}>
                 · <Icon icon={APP_ICONS.lock} width={11} height={11} /> Bloqueada
               </span>
             )}
@@ -119,7 +123,7 @@ function LessonListItem({ lesson, isLast, canCreate, onEditLesson }: {
             onClick={() => onEditLesson(lesson)}
             aria-label={`Editar ${lesson.title}`}
             style={{
-              flexShrink: 0, width: '28px', height: '28px', borderRadius: '8px',
+              flexShrink: 0, width: '1.75rem', height: '1.75rem', borderRadius: '0.5rem',
               border: '1px solid var(--neutral-100)', background: 'var(--panel)',
               color: 'var(--ink-muted)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -131,14 +135,15 @@ function LessonListItem({ lesson, isLast, canCreate, onEditLesson }: {
           </button>
         )}
       </div>
-      {content && <div style={{ marginBottom: '13px' }}>{content}</div>}
+      {content && <div style={{ marginBottom: '0.8125rem' }}>{content}</div>}
     </div>
   );
 }
 
 /* ── Accordion course group ── */
-function CourseGroup({ courseId, lessons, open, onToggle, canCreate, onAddLesson, onEditLesson }: {
+function CourseGroup({ courseId, course, lessons, open, onToggle, canCreate, onAddLesson, onEditLesson }: {
   courseId: string;
+  course?: Course;
   lessons: Lesson[];
   open: boolean;
   onToggle: () => void;
@@ -148,47 +153,59 @@ function CourseGroup({ courseId, lessons, open, onToggle, canCreate, onAddLesson
 }) {
   const done = lessons.filter((l) => l.completed).length;
   const pct  = Math.round((done / lessons.length) * 100);
-  const courseName = lessons[0]?.courseName ?? `Curso ${courseId.slice(0, 6)}`;
+  const courseName = course?.title ?? lessons[0]?.courseName ?? `Curso ${courseId.slice(0, 6)}`;
 
   return (
-    <Card padding="default" style={{ marginBottom: '12px' }}>
+    <Card padding="default" style={{ marginBottom: '0.75rem' }}>
       {/* Header */}
       <button
         type="button"
         onClick={onToggle}
         style={{
-          display: 'flex', alignItems: 'center', gap: '14px', width: '100%',
+          display: 'flex', alignItems: 'center', gap: '0.875rem', width: '100%',
           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
           textAlign: 'left', fontFamily: 'var(--font-sans)',
         }}
       >
         <div style={{
-          width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
+          width: '2.75rem', height: '2.75rem', borderRadius: '0.75rem', flexShrink: 0,
           background: 'var(--blue-900)', color: 'var(--panel)', display: 'flex', alignItems: 'center',
           justifyContent: 'center',
         }}>
           <Icon icon={APP_ICONS.book} width={22} height={22} />
         </div>
+        {/* El avance del curso se pinta con GoalCard: cada lección es un hito
+            del roadmap, que es justo lo que el componente modela. */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {courseName}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <ProgressBar value={pct} color={pct === 100 ? 'green' : 'blue'} style={{ flex: 1, maxWidth: '160px' }} />
-            <span style={{ fontSize: '12px', color: 'var(--ink-muted)', whiteSpace: 'nowrap' }}>
-              {done}/{lessons.length} lecciones · {pct}%
-            </span>
-          </div>
+          <GoalCard
+            id={courseId}
+            title={courseName}
+            progress={pct}
+            roadmap={{
+              title: courseName,
+              nodes: lessons.map((l) => ({
+                id: l.id,
+                title: l.title,
+                isComplete: Boolean(l.completed),
+              })),
+            }}
+            className="border-none bg-transparent p-0 shadow-none dark:bg-transparent"
+          />
         </div>
         <span style={{
-          color: 'var(--ink-muted)', fontSize: '18px', transition: 'transform 200ms',
+          color: 'var(--ink-muted)', fontSize: '1.125rem', transition: 'transform 200ms',
           transform: open ? 'rotate(90deg)' : 'rotate(0deg)', flexShrink: 0,
         }}>›</span>
       </button>
 
       {/* Lessons list */}
       {open && (
-        <div style={{ marginTop: '16px', borderTop: '1px solid var(--neutral-100)', paddingTop: '4px' }}>
+        <div style={{ marginTop: '1rem', borderTop: '1px solid var(--neutral-100)', paddingTop: '0.875rem' }}>
+          {courseId !== 'Sin curso' && (
+            <div style={{ marginBottom: '0.875rem' }}>
+              <CourseComments courseId={courseId} className="rounded-3xl border border-[var(--neutral-100)] bg-white/85 p-4 shadow-[0_12px_28px_rgba(23,50,77,0.06)]" />
+            </div>
+          )}
           {canCreate && courseId !== 'Sin curso' && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 0' }}>
               <Button type="button" variant="secondary" size="sm" onClick={() => onAddLesson(courseId)}>
@@ -213,7 +230,9 @@ function CourseGroup({ courseId, lessons, open, onToggle, canCreate, onAddLesson
 
 export default function LessonsPage() {
   const [lessons,     setLessons]     = useState<Lesson[]>([]);
+  const [courses,     setCourses]     = useState<Course[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
+  const [roles,       setRoles]       = useState<string[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [openGroups,  setOpenGroups]  = useState<Set<string>>(new Set());
   const [search,      setSearch]      = useState('');
@@ -224,21 +243,28 @@ export default function LessonsPage() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([api.lessons(), api.access()])
-      .then(([lessonList, access]) => {
+    Promise.all([api.lessons(), api.courses().catch(() => []), api.access()])
+      .then(([lessonList, courseList, access]) => {
         if (!alive) return;
         setLessons(lessonList);
+        setCourses(courseList);
         setPermissions(access.permissions);
+        setRoles(access.roles);
         /* Open first group by default */
         const firstCourse = lessonList[0]?.courseId;
         if (firstCourse) setOpenGroups(new Set([firstCourse ?? 'Sin curso']));
       })
-      .catch(() => { if (alive) { setLessons([]); setPermissions([]); } })
+      .catch(() => { if (alive) { setLessons([]); setCourses([]); setPermissions([]); setRoles([]); } })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
 
   const canCreate = useMemo(() => permissions.includes('lessons:create'), [permissions]);
+
+  /* Las lecciones llegan ya acotadas por el backend: las de los cursos que el
+     alumno cursa, las de los cursos que el instructor creó, o todas si es admin. */
+  const isAdmin      = roles.includes('admin');
+  const isInstructor = roles.includes('instructor');
 
   /* ── Filter ── */
   const filtered = useMemo(() => {
@@ -254,11 +280,13 @@ export default function LessonsPage() {
   }, [lessons, search, typeFilter]);
 
   const grouped = useMemo(() => groupByCourse(filtered), [filtered]);
+  const coursesById = useMemo(() => new Map(courses.map((course) => [course.id, course])), [courses]);
 
   const toggleGroup = (id: string) =>
     setOpenGroups((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
 
@@ -281,33 +309,27 @@ export default function LessonsPage() {
   const TYPE_CHIPS = lessonType.chips;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-            Mis <em style={{ color: 'var(--green-500)', fontStyle: 'italic' }}>lecciones</em>
-          </h1>
-          <p style={{ color: 'var(--ink-muted)', fontSize: '15px' }}>
-            {loading ? 'Cargando…' : `${totalCompleted} de ${lessons.length} completadas · ${totalPct}% progreso general`}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={<>{isAdmin ? 'Temas y ' : 'Mis '}lecciones</>}
+        subtitle={loading ? 'Cargando…' : `${totalCompleted} de ${lessons.length} completadas · ${totalPct}% progreso general`}
+      />
 
       {/* ── Overall progress bar ── */}
       {!loading && lessons.length > 0 && (
         <Card padding="default" variant="dark">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--blue-300)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.625rem' }}>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--blue-300)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>
               Progreso general
             </span>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '28px', color: 'var(--panel)' }}>
-              {totalPct}<small style={{ fontSize: '14px', color: 'var(--blue-300)', marginLeft: '2px' }}>%</small>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', color: 'var(--panel)' }}>
+              {totalPct}<small style={{ fontSize: '0.875rem', color: 'var(--blue-300)', marginLeft: '2px' }}>%</small>
             </span>
           </div>
           <ProgressBar value={totalPct} color={totalPct === 100 ? 'green' : 'blue'} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '12.5px', color: 'var(--blue-300)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.7813rem', color: 'var(--blue-300)' }}>
             <span>{totalCompleted} completadas</span>
             <span>{lessons.length - totalCompleted} restantes</span>
           </div>
@@ -315,51 +337,43 @@ export default function LessonsPage() {
       )}
 
       {/* ── Search + type chips + expand/collapse ── */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
-          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--ink-muted)' }} />
-          <input
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 240px', minWidth: '15rem', maxWidth: '23.75rem' }}>
+          <AppInput
             type="search"
             placeholder="Buscar lección…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: '100%', height: '40px', paddingLeft: '40px', paddingRight: '12px',
-              borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)',
-              background: 'var(--blue-50)', fontSize: '13.5px', color: 'var(--ink)',
-              fontFamily: 'var(--font-sans)', outline: 'none',
-            }}
+            withSearchIcon
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
           {TYPE_CHIPS.map((chip) => (
-            <button
+            <AppButton
               key={chip}
               type="button"
               onClick={() => setTypeFilter(chip)}
-              style={{
-                border: typeFilter === chip ? '1.5px solid var(--green-500)' : '1.5px solid var(--neutral-200)',
-                background: typeFilter === chip ? 'var(--green-50)' : 'var(--panel)',
+              variant={typeFilter === chip ? 'contained' : 'outlined'}
+              sx={{
+                bgcolor: typeFilter === chip ? 'var(--green-50)' : 'var(--panel)',
                 color: typeFilter === chip ? 'var(--green-700)' : 'var(--ink-muted)',
-                borderRadius: 'var(--radius-full)', padding: '5px 14px',
-                fontSize: '12.5px', fontWeight: typeFilter === chip ? 600 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                borderColor: typeFilter === chip ? 'var(--green-500)' : 'var(--neutral-200)',
+                px: 1.8,
               }}
             >
               {chip}
-            </button>
+            </AppButton>
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
-          <button type="button" onClick={expandAll}  style={{ fontSize: '12.5px', color: 'var(--blue-600)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', marginLeft: 'auto' }}>
+          <AppButton type="button" onClick={expandAll} variant="outlined">
             Expandir todo
-          </button>
-          <span style={{ color: 'var(--neutral-300)' }}>|</span>
-          <button type="button" onClick={collapseAll} style={{ fontSize: '12.5px', color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+          </AppButton>
+          <AppButton type="button" onClick={collapseAll} variant="outlined">
             Colapsar todo
-          </button>
+          </AppButton>
         </div>
       </div>
 
@@ -375,9 +389,9 @@ export default function LessonsPage() {
           description={
             search || typeFilter !== 'Todos'
               ? 'Ninguna lección coincide con tu búsqueda o filtro.'
-              : canCreate
-              ? 'Aún no hay lecciones. ¡Crea la primera!'
-              : 'No tienes lecciones asignadas por ahora.'
+              : isAdmin || isInstructor
+                ? 'Aún no hay lecciones. ¡Crea la primera!'
+                : 'Aún no estás inscrito en ningún curso, así que no hay lecciones que mostrar.'
           }
           action={
             (search || typeFilter !== 'Todos')
@@ -391,6 +405,7 @@ export default function LessonsPage() {
             <CourseGroup
               key={courseId}
               courseId={courseId}
+              course={coursesById.get(courseId)}
               lessons={courseLessons}
               open={openGroups.has(courseId)}
               onToggle={() => toggleGroup(courseId)}

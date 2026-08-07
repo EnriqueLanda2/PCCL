@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataScope } from '@app/contracts';
+import type { Prisma } from '../../prisma/generated';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLiveSessionDto } from './dtos/create-live-session.dto';
 import { UpdateLiveSessionDto } from './dtos/update-live-session.dto';
@@ -13,8 +15,26 @@ export class LiveSessionsService {
     });
   }
 
-  findAll() {
+  private whereFor(scope?: DataScope): Prisma.LiveSessionWhereInput {
+    switch (scope?.kind) {
+      case 'all':
+        return {};
+      case 'instructor':
+        return scope.instructorEmail
+          ? { course: { createdBy: scope.instructorEmail } }
+          : { id: '00000000-0000-0000-0000-000000000000' };
+      case 'user':
+        return scope.userId
+          ? { course: { inscriptions: { some: { userId: scope.userId } } } }
+          : { id: '00000000-0000-0000-0000-000000000000' };
+      default:
+        return { id: '00000000-0000-0000-0000-000000000000' };
+    }
+  }
+
+  findAll(scope?: DataScope) {
     return this.prisma.liveSession.findMany({
+      where: this.whereFor(scope),
       include: { course: { select: { title: true } } },
       orderBy: { scheduledAt: 'desc' },
     });

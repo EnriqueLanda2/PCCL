@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { LEARNING_PATTERNS } from '@app/contracts';
+import { DataScope, LEARNING_PATTERNS } from '@app/contracts';
 import { ProgressService } from './progress.service';
 
 @Controller()
@@ -13,7 +13,7 @@ export class ProgressController {
   }
 
   @MessagePattern(LEARNING_PATTERNS.PROGRESS_FIND_ALL)
-  findAll() {
-    return this.service.findAll();
+  findAll(@Payload() p: { scope?: DataScope }) {
+    return this.service.findAll(p?.scope);
   }
 }

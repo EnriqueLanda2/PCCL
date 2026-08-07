@@ -13,7 +13,7 @@ interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'color'> 
   hover?:    boolean;          // adds lift + shadow on hover
   bordered?: boolean;          // force border on glass/flat
   children:  React.ReactNode;
-  as?: keyof React.JSX.IntrinsicElements;
+  as?: keyof HTMLElementTagNameMap;
 }
 
 const variantCls: Record<CardVariant, string> = {
@@ -50,14 +50,17 @@ export function Card({
   onClick,
   as: Tag  = 'div',
   ...rest
-}: CardProps & { as?: keyof React.JSX.IntrinsicElements }) {
-  const Comp = Tag as React.ElementType;
+}: CardProps & { as?: keyof HTMLElementTagNameMap }) {
+  /* ElementType deriva de JSX.IntrinsicElements, que @react-three/fiber
+     augmenta con los elementos de three. Sin acotarlo a props de HTML, la
+     union de todos ellos intersecta a never y rompe este componente. */
+  const Comp = Tag as unknown as React.FC<React.HTMLAttributes<HTMLElement> & { ref?: React.Ref<HTMLElement> }>;
   return (
     <Comp
       onClick={onClick}
       {...rest}
       className={cn(
-        'relative overflow-hidden rounded-[24px]',
+        'relative overflow-hidden rounded-[1.5rem]',
         radiusCls[radius],
         variantCls[variant],
         paddingCls[padding],

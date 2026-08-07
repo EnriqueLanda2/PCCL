@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "courses" ADD COLUMN     "currency" VARCHAR(3) NOT NULL DEFAULT 'USD',
+ADD COLUMN     "is_free" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "price" DECIMAL(10,2) NOT NULL DEFAULT 0;

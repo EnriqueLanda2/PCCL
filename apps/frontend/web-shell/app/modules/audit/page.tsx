@@ -7,12 +7,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
 import type { AuditLog } from '@/lib/types';
 import { Card } from '@/app/components/ui/Card';
 import { Badge } from '@/app/components/ui/Badge';
+import { AppButton, AppInput } from '@/app/components/ui/AppControls';
+import { DEFAULT_PAGE_SIZE, Pagination } from '@/app/components/ui/Pagination';
 import { EmptyState } from '@/app/components/shared/EmptyState';
+import { PageHeader } from '@/app/components/shared/PageHeader';
 import { httpMethod, getVariant } from '@/types/status';
 import { APP_ICONS } from '@/lib/icons';
 
@@ -31,7 +33,7 @@ function SkeletonRow() {
     <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
       {[50, 70, 35, 45, 22, 40].map((w, i) => (
         <td key={i} style={{ padding: '12px 14px' }}>
-          <div style={{ height: '13px', borderRadius: '5px', background: 'var(--neutral-100)', width: `${w}%` }} />
+          <div style={{ height: '0.8125rem', borderRadius: '0.3125rem', background: 'var(--neutral-100)', width: `${w}%` }} />
         </td>
       ))}
     </tr>
@@ -46,7 +48,6 @@ export default function AuditPage() {
   const [search,      setSearch]      = useState('');
   const [methodChip,  setMethodChip]  = useState('Todos');
   const [page,        setPage]        = useState(1);
-  const PAGE_SIZE = 25;
 
   useEffect(() => {
     let alive = true;
@@ -72,59 +73,50 @@ export default function AuditPage() {
     return list;
   }, [logs, search, methodChip]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / DEFAULT_PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const paginated  = filtered.slice((pageSafe - 1) * DEFAULT_PAGE_SIZE, pageSafe * DEFAULT_PAGE_SIZE);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* ── Header ── */}
-      <div>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-          Bitácora <em style={{ color: 'var(--blue-600)', fontStyle: 'italic' }}>del sistema</em>
-        </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px' }}>
-          {loading ? 'Cargando…' : `${logs.length} evento${logs.length !== 1 ? 's' : ''} registrado${logs.length !== 1 ? 's' : ''}`}
-        </p>
-      </div>
+      <PageHeader
+        title={<>Bitácora del sistema</>}
+        subtitle={loading ? 'Cargando…' : `${logs.length} evento${logs.length !== 1 ? 's' : ''} registrado${logs.length !== 1 ? 's' : ''}`}
+      />
 
       {/* ── Search + method chips ── */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '380px' }}>
-          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
-          <input
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 240px', minWidth: '15rem', maxWidth: '26.25rem' }}>
+          <AppInput
             type="search"
             placeholder="Buscar endpoint, actor o descripción…"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            style={{
-              width: '100%', height: '40px', paddingLeft: '40px', paddingRight: '12px',
-              borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)',
-              background: 'var(--blue-50)', fontSize: '13.5px', color: 'var(--ink)',
-              fontFamily: 'var(--font-sans)', outline: 'none',
-            }}
+            withSearchIcon
           />
         </div>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
           {METHODS.map((m) => (
-            <button
+            <AppButton
               key={m}
               type="button"
               onClick={() => { setMethodChip(m); setPage(1); }}
-              style={{
+              variant={methodChip === m ? 'contained' : 'outlined'}
+              sx={{
                 border: methodChip === m ? `1.5px solid ${m === 'DELETE' ? 'var(--red-400)' : m === 'POST' ? 'var(--green-400)' : 'var(--blue-400)'}` : '1.5px solid var(--neutral-200)',
-                background: methodChip === m ? (m === 'DELETE' ? 'var(--red-50)' : m === 'POST' ? 'var(--green-50)' : 'var(--blue-50)') : 'var(--panel)',
+                bgcolor: methodChip === m ? (m === 'DELETE' ? 'var(--red-50)' : m === 'POST' ? 'var(--green-50)' : 'var(--blue-50)') : 'var(--panel)',
                 color: methodChip === m ? (m === 'DELETE' ? 'var(--red-700)' : m === 'POST' ? 'var(--green-700)' : 'var(--blue-700)') : 'var(--ink-muted)',
-                borderRadius: 'var(--radius-full)', padding: '5px 14px',
-                fontSize: '12.5px', fontWeight: methodChip === m ? 600 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-mono)',
+                px: 1.8,
               }}
             >
               {m}
-            </button>
+            </AppButton>
           ))}
         </div>
-        <span style={{ marginLeft: 'auto', fontSize: '13px', color: 'var(--ink-muted)' }}>
+        <span style={{ marginLeft: 'auto', fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
           {filtered.length} evento{filtered.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -141,18 +133,18 @@ export default function AuditPage() {
           icon={APP_ICONS.clipboard}
           title="Sin registros"
           description={search || methodChip !== 'Todos' ? 'Ningún evento coincide con los filtros.' : 'La bitácora está vacía.'}
-          action={(search || methodChip !== 'Todos') ? { label: 'Ver todos', onClick: () => { setSearch(''); setMethodChip('Todos'); } } : undefined}
+          action={(search || methodChip !== 'Todos') ? { label: 'Ver todos', onClick: () => { setSearch(''); setMethodChip('Todos'); setPage(1); } } : undefined}
         />
       ) : (
         <>
           <Card padding="tight" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '43.75rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
                   {['Método', 'Endpoint', 'Estado', 'Actor', 'Código', 'Fecha'].map((h) => (
                     <th key={h} style={{
                       padding: '10px 14px', textAlign: 'left',
-                      fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em',
+                      fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.1em',
                       fontWeight: 600, color: 'var(--ink-muted)', background: 'var(--blue-50)',
                       whiteSpace: 'nowrap',
                     }}>
@@ -170,19 +162,19 @@ export default function AuditPage() {
                     <td style={{ padding: '12px 14px' }}>
                       <Badge variant={getVariant(httpMethod, log.method, 'dark')}>{log.method}</Badge>
                     </td>
-                    <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: '12.5px', color: 'var(--ink)', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.7813rem', color: 'var(--ink)', maxWidth: '16.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {log.endpoint}
                     </td>
-                    <td style={{ padding: '12px 14px', fontSize: '12.5px', color: 'var(--ink-muted)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px 14px', fontSize: '0.7813rem', color: 'var(--ink-muted)', maxWidth: '11.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {log.description || '—'}
                     </td>
-                    <td style={{ padding: '12px 14px', fontSize: '13px', color: 'var(--ink)' }}>
+                    <td style={{ padding: '12px 14px', fontSize: '0.8125rem', color: 'var(--ink)' }}>
                       {log.actorIdentifier ?? <span style={{ color: 'var(--ink-muted)' }}>{log.actorScope}</span>}
                     </td>
-                    <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: '13px', fontWeight: 600, color: statusColor(log.statusCode) }}>
+                    <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 600, color: statusColor(log.statusCode) }}>
                       {log.statusCode ?? '—'}
                     </td>
-                    <td style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--ink-muted)', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px 14px', fontSize: '0.75rem', color: 'var(--ink-muted)', whiteSpace: 'nowrap' }}>
                       {new Date(log.createdAt).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </td>
                   </tr>
@@ -191,22 +183,7 @@ export default function AuditPage() {
             </table>
           </Card>
 
-          {/* ── Pagination ── */}
-          {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
-              <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                style={{ height: '36px', padding: '0 14px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)', background: 'var(--panel)', color: page === 1 ? 'var(--neutral-300)' : 'var(--ink)', fontSize: '13px', cursor: page === 1 ? 'default' : 'pointer', fontFamily: 'var(--font-sans)' }}>
-                ← Anterior
-              </button>
-              <span style={{ fontSize: '13px', color: 'var(--ink-muted)', padding: '0 8px' }}>
-                Página {page} de {totalPages}
-              </span>
-              <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                style={{ height: '36px', padding: '0 14px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)', background: 'var(--panel)', color: page === totalPages ? 'var(--neutral-300)' : 'var(--ink)', fontSize: '13px', cursor: page === totalPages ? 'default' : 'pointer', fontFamily: 'var(--font-sans)' }}>
-                Siguiente →
-              </button>
-            </div>
-          )}
+          <Pagination page={pageSafe} totalItems={filtered.length} onChange={setPage} label="eventos" />
         </>
       )}
     </div>

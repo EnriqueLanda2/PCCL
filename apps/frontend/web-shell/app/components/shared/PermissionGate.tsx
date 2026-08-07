@@ -34,9 +34,13 @@ export function PermissionGate({ permissions, children, fallback }: PermissionGa
   const [allowed, setAllowed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const userPerms = getPermissions();
-    const ok = permissions.length === 0 || permissions.some((p) => userPerms.includes(p));
-    setAllowed(ok);
+    const checkAccess = () => {
+      const userPerms = getPermissions();
+      const ok = permissions.length === 0 || permissions.some((p) => userPerms.includes(p));
+      setAllowed(ok);
+    };
+    const accessCheck = requestAnimationFrame(checkAccess);
+    return () => cancelAnimationFrame(accessCheck);
   }, [permissions]);
 
   if (allowed === null) return null; // still resolving

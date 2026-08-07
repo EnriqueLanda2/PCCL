@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUrl } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, IsUrl, Min } from 'class-validator';
 
 export class CreateCourseDto {
   @IsString() @IsNotEmpty() title!: string;
@@ -7,4 +7,7 @@ export class CreateCourseDto {
   /** URL de Cloudinary — la imagen ya fue subida vía POST /uploads/image antes de crear el curso */
   @IsUrl() @IsOptional() coverImageUrl?: string;
   @IsInt() @IsPositive() @IsOptional() durationMinutes?: number;
+  @IsNumber() @Min(0) @IsOptional() price?: number;
+  @IsString() @IsOptional() currency?: string;
+  @IsBoolean() @IsOptional() isFree?: boolean;
 }

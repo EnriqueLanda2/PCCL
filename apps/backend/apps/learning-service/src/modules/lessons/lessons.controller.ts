@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { LEARNING_PATTERNS } from '@app/contracts';
+import { DataScope, LEARNING_PATTERNS } from '@app/contracts';
 import { LessonsService } from './lessons.service';
 import { CreateLessonDto } from './dtos/create-lesson.dto';
 import { UpdateLessonDto } from './dtos/update-lesson.dto';
@@ -15,7 +15,7 @@ export class LessonsController {
   }
 
   @MessagePattern(LEARNING_PATTERNS.LESSON_FIND_ALL)
-  findAll() { return this.service.findAll(); }
+  findAll(@Payload() p: { scope?: DataScope }) { return this.service.findAll(p?.scope); }
 
   @MessagePattern(LEARNING_PATTERNS.LESSON_FIND_ONE)
   findOne(@Payload() p: { id: string }) { return this.service.findOne(p.id); }

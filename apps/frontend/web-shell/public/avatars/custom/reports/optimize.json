@@ -1,0 +1,129 @@
+{
+  "generatedAt": "2026-08-06T23:42:44.339Z",
+  "pipeline": [
+    "dedup",
+    "prune",
+    "reorder(meshopt)",
+    "quantize",
+    "EXT_meshopt_compression(FILTER)"
+  ],
+  "totals": {
+    "rawBytes": 9874508,
+    "optimizedBytes": 2002768,
+    "ratio": 0.2028
+  },
+  "rows": [
+    {
+      "file": "/avatars/custom/bodies/female-base.glb",
+      "rawBytes": 2427416,
+      "optimizedBytes": 479932,
+      "ratio": 0.1977,
+      "saved": 1947484
+    },
+    {
+      "file": "/avatars/custom/bodies/male-base.glb",
+      "rawBytes": 2423712,
+      "optimizedBytes": 482520,
+      "ratio": 0.1991,
+      "saved": 1941192
+    },
+    {
+      "file": "/avatars/custom/bodies/neutral-base.glb",
+      "rawBytes": 2431268,
+      "optimizedBytes": 483584,
+      "ratio": 0.1989,
+      "saved": 1947684
+    },
+    {
+      "file": "/avatars/custom/hair/female-base__layered-bob.glb",
+      "rawBytes": 213912,
+      "optimizedBytes": 38724,
+      "ratio": 0.181,
+      "saved": 175188
+    },
+    {
+      "file": "/avatars/custom/hair/male-base__layered-bob.glb",
+      "rawBytes": 216376,
+      "optimizedBytes": 39060,
+      "ratio": 0.1805,
+      "saved": 177316
+    },
+    {
+      "file": "/avatars/custom/hair/neutral-base__layered-bob.glb",
+      "rawBytes": 213928,
+      "optimizedBytes": 38808,
+      "ratio": 0.1814,
+      "saved": 175120
+    },
+    {
+      "file": "/avatars/custom/clothing/female-base__bottom-b.glb",
+      "rawBytes": 242812,
+      "optimizedBytes": 51484,
+      "ratio": 0.212,
+      "saved": 191328
+    },
+    {
+      "file": "/avatars/custom/clothing/female-base__shoes-b.glb",
+      "rawBytes": 131052,
+      "optimizedBytes": 31588,
+      "ratio": 0.241,
+      "saved": 99464
+    },
+    {
+      "file": "/avatars/custom/clothing/female-base__top-b.glb",
+      "rawBytes": 242488,
+      "optimizedBytes": 55712,
+      "ratio": 0.2298,
+      "saved": 186776
+    },
+    {
+      "file": "/avatars/custom/clothing/male-base__bottom-b.glb",
+      "rawBytes": 241996,
+      "optimizedBytes": 52076,
+      "ratio": 0.2152,
+      "saved": 189920
+    },
+    {
+      "file": "/avatars/custom/clothing/male-base__shoes-b.glb",
+      "rawBytes": 130084,
+      "optimizedBytes": 31236,
+      "ratio": 0.2401,
+      "saved": 98848
+    },
+    {
+      "file": "/avatars/custom/clothing/male-base__top-b.glb",
+      "rawBytes": 243964,
+      "optimizedBytes": 56692,
+      "ratio": 0.2324,
+      "saved": 187272
+    },
+    {
+      "file": "/avatars/custom/clothing/neutral-base__bottom-b.glb",
+      "rawBytes": 245316,
+      "optimizedBytes": 52360,
+      "ratio": 0.2134,
+      "saved": 192956
+    },
+    {
+      "file": "/avatars/custom/clothing/neutral-base__shoes-b.glb",
+      "rawBytes": 131024,
+      "optimizedBytes": 31584,
+      "ratio": 0.2411,
+      "saved": 99440
+    },
+    {
+      "file": "/avatars/custom/clothing/neutral-base__top-b.glb",
+      "rawBytes": 243016,
+      "optimizedBytes": 56252,
+      "ratio": 0.2315,
+      "saved": 186764
+    },
+    {
+      "file": "/avatars/custom/accessories/male-base__facial-hair-goatee.glb",
+      "rawBytes": 96144,
+      "optimizedBytes": 21156,
+      "ratio": 0.22,
+      "saved": 74988
+    }
+  ]
+}

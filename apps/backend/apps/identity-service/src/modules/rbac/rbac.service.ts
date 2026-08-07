@@ -40,7 +40,7 @@ export class RbacService {
 
   async listCatalogs() {
     const [roles, modules, privileges] = await Promise.all([
-      this.prisma.role.findMany(),
+      this.prisma.role.findMany({ where: { active: true } }),
       this.prisma.systemModule.findMany(),
       this.prisma.privilege.findMany({ include: { module: true } }),
     ]);

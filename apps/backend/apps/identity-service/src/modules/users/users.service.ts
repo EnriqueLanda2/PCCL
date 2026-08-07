@@ -73,4 +73,18 @@ export class UsersService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  /** Total de usuarios activos — para las estadísticas públicas del landing. */
+  countActive() {
+    return this.prisma.user.count({ where: { active: true } });
+  }
+
+  /** Actualiza la foto de perfil del usuario — solo el propio usuario, vía /users/me/avatar. */
+  async updateAvatar(userId: string, avatarUrl: string, actor: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl, updatedBy: actor },
+    });
+    return { id: userId, avatarUrl };
+  }
 }

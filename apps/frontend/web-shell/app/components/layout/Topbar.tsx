@@ -31,7 +31,7 @@ export function Topbar(props: TopbarProps) {
       {/* Franja de acento */}
       <div
         style={{
-          height: '4px',
+          height: '0.25rem',
           background: 'linear-gradient(90deg, var(--green-700) 0%, var(--green-500) 100%)',
         }}
       />
@@ -40,7 +40,7 @@ export function Topbar(props: TopbarProps) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '32px',
+          gap: '2rem',
           padding: '16px clamp(20px, 4vw, 56px)',
           borderBottom: '1px solid rgba(23, 50, 77, 0.08)',
           background: 'rgba(247, 250, 243, 0.82)',
@@ -55,9 +55,9 @@ export function Topbar(props: TopbarProps) {
         <nav
           style={{
             display: 'flex',
-            gap: '4px',
-            fontSize: '14.5px',
-            marginLeft: '8px',
+            gap: '0.375rem',
+            fontSize: '0.9688rem',
+            marginLeft: '0.75rem',
           }}
         >
           {navLinks.map((link) => {
@@ -70,7 +70,7 @@ export function Topbar(props: TopbarProps) {
                 onMouseLeave={() => setHovered(null)}
                 style={{
                   position: 'relative',
-                  padding: '8px 14px',
+                  padding: '9px 17px',
                   borderRadius: '999px',
                   color: active ? 'var(--green-700)' : 'var(--ink-soft)',
                   fontWeight: active ? 600 : 450,
@@ -88,7 +88,7 @@ export function Topbar(props: TopbarProps) {
           style={{
             marginLeft: 'auto',
             display: 'flex',
-            gap: '10px',
+            gap: '0.625rem',
             alignItems: 'center',
           }}
         >
@@ -97,10 +97,10 @@ export function Topbar(props: TopbarProps) {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              height: '40px',
+              height: '2.5rem',
               padding: '0 18px',
               borderRadius: '999px',
-              fontSize: '14px',
+              fontSize: '0.875rem',
               fontWeight: 500,
               color: 'var(--green-700)',
               background: 'transparent',
@@ -114,11 +114,11 @@ export function Topbar(props: TopbarProps) {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '8px',
-              height: '40px',
+              gap: '0.5rem',
+              height: '2.5rem',
               padding: '0 20px',
               borderRadius: '999px',
-              fontSize: '14px',
+              fontSize: '0.875rem',
               fontWeight: 600,
               color: 'var(--panel)',
               background: 'linear-gradient(120deg, var(--green-700), var(--green-500))',
@@ -127,7 +127,7 @@ export function Topbar(props: TopbarProps) {
             }}
           >
             Comenzar
-            <span style={{ fontSize: '16px', lineHeight: 1 }}>→</span>
+            <span style={{ fontSize: '1rem', lineHeight: 1 }}>→</span>
           </Link>
         </div>
       </header>

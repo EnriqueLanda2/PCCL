@@ -1,0 +1,20 @@
+{
+  "name": "@pccl/avatar-pipeline",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pipeline de construcción, optimización y validación de los avatares 3D propios.",
+  "scripts": {
+    "build": "node build.mjs",
+    "optimize": "node optimize.mjs",
+    "inspect": "node inspect.mjs",
+    "validate": "node validate.mjs",
+    "manifest": "node manifest.mjs"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^4.4.2",
+    "@gltf-transform/extensions": "^4.4.2",
+    "@gltf-transform/functions": "^4.4.2",
+    "meshoptimizer": "^1.2.0"
+  }
+}

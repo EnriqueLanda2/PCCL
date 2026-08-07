@@ -12,8 +12,10 @@ import { firstValueFrom } from 'rxjs';
 import { CERTIFICATION_PATTERNS } from '@app/contracts';
 import { CERTIFICATION_CLIENT } from '@app/messaging';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequestUser } from '../auth/interfaces/request-user.interface';
+import { resolveScope } from '../auth/data-scope';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -36,9 +38,24 @@ export class CertificationController {
   }
 
   @Get('certificates')
-  findAll() {
+  findAll(@CurrentUser() u: RequestUser) {
     return firstValueFrom(
-      this.client.send(CERTIFICATION_PATTERNS.CERT_FIND_ALL, {}),
+      this.client.send(CERTIFICATION_PATTERNS.CERT_FIND_ALL, {
+        scope: resolveScope(u),
+      }),
+    );
+  }
+
+  /**
+   * Verificación pública de un certificado por folio — destino del QR
+   * impreso al reverso de la tarjeta. Se declara antes de
+   * `certificates/:id/download` para que gane el match de ruta.
+   */
+  @Public()
+  @Get('certificates/verify/:folio')
+  verifyByFolio(@Param('folio') folio: string) {
+    return firstValueFrom(
+      this.client.send(CERTIFICATION_PATTERNS.CERT_VERIFY_FOLIO, { folio }),
     );
   }
 

@@ -1,5 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 @import "tailwindcss";
+
+/* `dark:` solo aplica bajo una clase .dark explícita, nunca por
+   prefers-color-scheme. La plataforma es de tema claro únicamente, pero los
+   componentes del registry traen variantes dark: y con el SO en modo oscuro
+   se pintaban ilegibles (texto casi blanco sobre tarjeta blanca). */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ════════════════════════════════════════════════════════════════
   PCCL — Global Styles · Tailwind v4 + cream/green academy palette
@@ -66,9 +72,9 @@
   --color-teal-500: #14A6A6;
 
   /* ─── Font families ─── */
-  --font-sans:  'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans:  'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono:  'JetBrains Mono', ui-monospace, monospace;
-  --font-serif: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
 
   /* ─── Border radius ─── */
   --radius-sm:   3px;
@@ -93,9 +99,9 @@
   --blue-100: #D7E8FF;
   --blue-300: #8DBBFF;
   --blue-400: #5EA0FF;
-  --blue-500: #2F7EF0;
-  --blue-600: #2566CB;
-  --blue-700: #1E4FA2;
+  --blue-500: #5C8ED8;
+  --blue-600: #4D7FCA;
+  --blue-700: #3F6EA9;
   --blue-800: #173B77;
   --blue-900: #112952;
 
@@ -104,9 +110,9 @@
   --green-100: #D2F2DE;
   --green-300: #8AD8A3;
   --green-400: #4FC276;
-  --green-500: #25A656;
-  --green-600: #1E8B48;
-  --green-700: #176C38;
+  --green-500: #62BD81;
+  --green-600: #4FA870;
+  --green-700: #3D8659;
   --green-900: #0F4724;
 
   /* Rojo / alerta */
@@ -149,9 +155,25 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* ── Escala global de la interfaz ──────────────────────────────────────
+     Un solo número controla el tamaño de TODA la app. Funciona porque los
+     tamaños están en rem (utilidades de Tailwind + los valores inline ya
+     migrados de px a rem), así que todo se deriva del font-size raíz.
+
+     Va en % y no en px a propósito: así respeta el tamaño de fuente que el
+     usuario haya configurado en su navegador en vez de pisarlo.
+
+     Los breakpoints de @media siguen en px y NO escalan — es lo correcto:
+     el punto de corte depende del ancho real del dispositivo, no del zoom. */
   html {
+    font-size: 88%;
     scroll-behavior: smooth;
   }
+
+  /* En pantallas chicas ya no sobra espacio horizontal, así que encoger solo
+     perjudica la legibilidad. La escala vuelve progresivamente a 100%. */
+  @media (max-width: 1024px) { html { font-size: 94%; } }
+  @media (max-width: 640px)  { html { font-size: 100%; } }
 
   body {
     background:
@@ -159,13 +181,16 @@
       radial-gradient(circle at top right, rgba(47, 126, 240, 0.06), transparent 28%),
       linear-gradient(180deg, #f4f7ef 0%, #eef3e8 100%);
     color: #17324D;
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
     line-height: 1.6;
-    font-size: 15px;
+    font-size: 0.9375rem; /* 15px a escala 100% — en rem para seguir a html */
+    /* Ninguna vista debe provocar scroll horizontal: si algo se desborda, que
+       se recorte en vez de romper el ancho de toda la página en móvil. */
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
     color: #17324D;
     line-height: 1.25;
   }
@@ -198,6 +223,35 @@
   .cover-4 { background: linear-gradient(135deg, #FF8B00 0%, #176C38 100%); }
   .cover-5 { background: linear-gradient(135deg, #17324D 0%, #FF8B00 100%); }
   .cover-6 { background: linear-gradient(135deg, #5A4AB2 0%, #33C7C7 100%); }
+
+  /* Patrón geométrico sutil — puntos repetidos sobre un cover-N, para que
+     las miniaturas de curso sin foto real se sientan "ilustradas" y no
+     un bloque de color plano */
+  .cover-pattern {
+    position: relative;
+  }
+  .cover-pattern::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.24) 1.4px, transparent 1.4px);
+    background-size: 15px 15px;
+    pointer-events: none;
+  }
+
+  /* Misma idea, para fondos claros (mint/verde pálido) donde puntos blancos
+     no se notarían — puntos verdes, un poco más presentes */
+  .cover-pattern-tint {
+    position: relative;
+  }
+  .cover-pattern-tint::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(31, 154, 75, 0.16) 1.6px, transparent 1.6px);
+    background-size: 14px 14px;
+    pointer-events: none;
+  }
 
   /* Card hover lift */
   .card-hover {
@@ -292,12 +346,28 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: translateZ(0.1px);
+
+  /* Acabado tomado de PricingCard del registry: esquina 24px, superficie
+     translúcida con desenfoque y borde hairline. La mecánica del volteo
+     (holo-flipper / holo-face-back) queda intacta — solo cambia la piel. */
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+    0 18px 40px -18px rgba(14, 26, 38, 0.28);
+  overflow: hidden;
 }
 
+/* El reverso hereda la misma piel para que el volteo no cambie de material */
 .holo-face-back {
   position: absolute;
   inset: 0;
   transform: rotateY(180deg) translateZ(0.1px);
+  border-radius: 24px;
+  overflow: hidden;
 }
 
 /* Brillo holográfico que sigue al puntero (variables --hx/--hy en %) */
@@ -360,6 +430,18 @@
 .course-flip-face {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+
+  /* Misma piel de PricingCard que en .holo-face, para que todas las cards
+     volteables del sistema compartan acabado. El volteo no se toca. */
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+    0 18px 40px -18px rgba(14, 26, 38, 0.28);
+  overflow: hidden;
 }
 
 .course-flip-face-back {
@@ -592,7 +674,7 @@
   position: absolute;
   pointer-events: none;
   color: var(--green-300);
-  font-size: 13px;
+  font-size: 0.8125rem;
   animation: knowledge-rise 3.6s ease-out infinite;
 }
 
@@ -694,27 +776,68 @@
 }
 
 /* ════════════════════════════════════════════════════════════════
-   Carousel3DRing — anillo de tarjetas girando en 3D
-   Las tarjetas se reparten en un prisma (rotateY + translateZ) y
-   el anillo entero gira despacio y sin parar; se pausa al pasar
-   el mouse. Tamaño moderado y paleta propia a propósito — es un
-   adorno de la portada, no debe robarle protagonismo al resto.
+   Carousel3DRing — anillo de tarjetas girando en 3D, a pantalla
+   completa. Es el fondo del hero: se estira edge-to-edge contra la
+   <section> (position:absolute; inset:0), difuminado y con z-index
+   negativo, para que el texto y las tarjetas de encima (contenido
+   normal, z-index:auto) lo tapen sin necesidad de reglas extra.
    ════════════════════════════════════════════════════════════════ */
 .carousel3d-scene {
-  --card-w: 240px;
-  --card-h: 320px;
-  --ring-radius: 166px;
-  perspective: 1500px;
+  --card-w: 480px;
+  --card-h: 640px;
+  --ring-radius: 380px;
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  perspective: 1700px;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 12px 0 32px;
+  overflow: hidden;
 }
 
 @media (max-width: 640px) {
   .carousel3d-scene {
-    --card-w: 168px;
-    --card-h: 226px;
-    --ring-radius: 117px;
+    --card-w: 260px;
+    --card-h: 348px;
+    --ring-radius: 200px;
+  }
+}
+
+/* variant="inline" — el mismo anillo 3D, acotado a su contenedor en vez de
+   ser el fondo de toda la sección (usado en el hero del dashboard) */
+.carousel3d-scene--inline {
+  --card-w: 168px;
+  --card-h: 220px;
+  --ring-radius: 130px;
+  position: relative;
+  inset: auto;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.carousel3d-compass--inline {
+  bottom: 8px;
+}
+
+.carousel3d-ring:active {
+  cursor: grabbing;
+}
+
+/* Envuelve el anillo — inclinación (tilt) hacia el mouse, separada de la
+   rotación propia del anillo para que ambos transforms no se pisen */
+.carousel3d-tilt-stage {
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition: transform 300ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel3d-tilt-stage {
+    transform: none;
   }
 }
 
@@ -729,7 +852,7 @@
 .notes-panel-content .ProseMirror,
 .notes-panel-content p {
   margin: 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ink);
   line-height: 1.5;
 }
@@ -743,22 +866,16 @@
   width: var(--card-w);
   height: var(--card-h);
   transform-style: preserve-3d;
-  animation: carousel3d-spin 34s linear infinite;
-}
-
-.carousel3d-ring.paused {
-  animation-play-state: paused;
+  transform: rotateY(var(--manual-rotation, 0deg));
+  transition: transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: grab;
+  touch-action: pan-y;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .carousel3d-ring {
-    animation: none;
+    transition: none;
   }
-}
-
-@keyframes carousel3d-spin {
-  from { transform: rotateY(0deg); }
-  to   { transform: rotateY(-360deg); }
 }
 
 .carousel3d-card {
@@ -775,6 +892,15 @@
   box-shadow: 0 14px 30px rgba(23, 50, 77, 0.14);
   backface-visibility: hidden;
   transform: rotateY(calc(360deg / var(--ring-count) * var(--i))) translateZ(var(--ring-radius));
+  transition: filter 320ms ease, opacity 320ms ease, box-shadow 320ms ease;
+  opacity: 1;
+  filter: none;
+}
+
+.carousel3d-card--active {
+  opacity: 1;
+  filter: none;
+  box-shadow: 0 22px 44px rgba(23, 50, 77, 0.24);
 }
 
 .carousel3d-card::after {
@@ -792,7 +918,7 @@
 }
 
 .carousel3d-card-eyebrow {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -801,10 +927,79 @@
 
 .carousel3d-card-title {
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.2;
   font-weight: 700;
   color: #ffffff;
+}
+
+/* Brújula de aprendizaje — flota fija al pie del hero, por encima del
+   carrusel-fondo y su scrim (que son z-index:-1); sigue siendo clicable
+   aunque el anillo que controla ahora viva difuminado detrás de todo */
+.carousel3d-compass {
+  position: absolute;
+  bottom: clamp(16px, 3vw, 28px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.65625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.carousel3d-compass-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  opacity: 0.32;
+  transition: opacity 200ms ease, background 200ms ease, color 200ms ease, transform 160ms ease;
+}
+
+.carousel3d-compass-btn:hover {
+  opacity: 1;
+  color: var(--blue-600);
+  background: var(--panel);
+  border-color: rgba(37, 102, 203, 0.18);
+  box-shadow: 0 10px 18px rgba(23, 50, 77, 0.14);
+  transform: translateY(-1px);
+}
+
+/* Puntos de paginación — junto a las flechas, uno por curso del anillo */
+.carousel3d-compass-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.carousel3d-compass-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  opacity: 0.3;
+  transition: all 200ms ease;
+}
+
+.carousel3d-compass-dot--active {
+  opacity: 1;
+  width: 20px;
+  border-radius: 999px;
+  background: var(--blue-600);
+}
+
+.carousel3d-compass-dot:hover {
+  opacity: 0.75;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -844,6 +1039,55 @@
 
 .hero-float-card {
   transform: rotate(var(--float-rot, 0deg));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HeroInteractive — fondo ambiental + swap de la tarjeta de curso
+   El glow se tiñe con la paleta de portada del curso activo del
+   carrusel (--glow-a/--glow-b, fijadas por HeroInteractive.tsx).
+   ════════════════════════════════════════════════════════════════ */
+.hero-interactive {
+  --glow-a: 23, 50, 77;
+  --glow-b: 30, 79, 162;
+}
+
+.hero-ambient-glow {
+  position: absolute;
+  inset: -30% -20% -30% -160%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 60% at 30% 40%, rgba(var(--glow-a), 0.16), transparent 70%),
+    radial-gradient(38% 50% at 78% 62%, rgba(var(--glow-b), 0.14), transparent 70%);
+  filter: blur(38px);
+  transition: background 700ms ease;
+}
+
+@media (max-width: 960px) {
+  .hero-ambient-glow {
+    inset: -20% -10% -20% -20%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-ambient-glow {
+    transition: none;
+  }
+}
+
+.hero-course-card {
+  animation: hero-card-swap 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hero-card-swap {
+  from { opacity: 0; transform: translateX(14px) rotate(var(--float-rot, 0deg)); }
+  to   { opacity: 1; transform: translateX(0) rotate(var(--float-rot, 0deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-course-card {
+    animation: none;
+  }
 }
 
 /* ── Punto "en vivo": parpadeo nítido + onda roja expandiéndose ── */
@@ -907,4 +1151,285 @@
     box-shadow: 0 14px 40px rgba(23, 50, 77, 0.06);
     backdrop-filter: blur(10px);
   }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RumboHero2a — sección "2a" del handoff de diseño (dashboard vivo)
+   Topbar + hero con carrusel + ticker + carrusel de cursos + stats.
+   ════════════════════════════════════════════════════════════════ */
+@keyframes rumbo2a-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.8); }
+}
+@keyframes rumbo2a-float-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+@keyframes rumbo2a-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes rumbo2a-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rumbo2a-fade-up { animation: none !important; }
+  [style*="rumbo2a-pulse"], [style*="rumbo2a-float-y"], [style*="rumbo2a-marquee"] { animation: none !important; }
+}
+
+.rumbo2a-fade-up { animation: rumbo2a-fade-up 0.7s ease both; }
+
+.rumbo2a-topbar { padding: 20px 40px; gap: 16px; flex-wrap: wrap; }
+.rumbo2a-topbar-nav { display: flex; gap: 28px; }
+.rumbo2a-badge span:last-child { display: inline; }
+
+.rumbo2a-cta-primary { transition: background 0.2s, transform 0.2s; }
+.rumbo2a-cta-primary:hover { background: #15653d !important; transform: translateY(-2px); }
+.rumbo2a-login-link:hover { color: #1a7a4a !important; }
+
+.rumbo2a-hero-grid {
+  display: grid;
+  grid-template-columns: 440px 1fr;
+  gap: 32px;
+  padding: 40px 40px 8px;
+  align-items: center;
+}
+
+.rumbo2a-float-card:hover { box-shadow: 0 18px 40px rgba(22, 36, 28, 0.18) !important; }
+
+.rumbo2a-courses-section { padding: 32px 40px 12px; }
+
+.rumbo2a-stats-row { display: flex; gap: 56px; padding: 24px 40px 36px; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .rumbo2a-hero-grid { grid-template-columns: 1fr; padding: 28px 24px 8px; }
+  .rumbo2a-topbar-nav { display: none; }
+  .rumbo2a-topbar { padding: 16px 20px; }
+  .rumbo2a-courses-section { padding: 24px 20px 12px; }
+  .rumbo2a-stats-row { padding: 20px 20px 32px; gap: 32px; }
+}
+
+@media (max-width: 480px) {
+  .rumbo2a-badge span:last-child { display: none; }
+  .rumbo2a-badge { padding: 8px !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Dashboard charts — compact animated analytics
+   ════════════════════════════════════════════════════════════════ */
+@keyframes dashboard-card-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dashboard-donut-in {
+  from { stroke-dasharray: 0 263.89; opacity: 0.2; }
+  to   { opacity: 1; }
+}
+
+@keyframes dashboard-bar-in {
+  from { width: 0; }
+  to   { width: var(--bar-width); }
+}
+
+@keyframes dashboard-line-in {
+  from { stroke-dashoffset: 420; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes dashboard-area-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 0.12; transform: translateY(0); }
+}
+
+@keyframes dashboard-point-in {
+  from { opacity: 0; transform: scale(0.2); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes dashboard-dots-drift {
+  from { background-position: 0 0; }
+  to   { background-position: 18px 18px; }
+}
+
+@keyframes dashboard-dot-pulse {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(31, 154, 75, 0)); transform: scale(1); }
+  50%      { filter: drop-shadow(0 0 8px rgba(31, 154, 75, 0.42)); transform: scale(1.18); }
+}
+
+.dashboard-card-in {
+  animation: dashboard-card-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dashboard-card-dots::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(31, 154, 75, 0.13) 1.2px, transparent 1.2px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.42), transparent 72%);
+  animation: dashboard-dots-drift 5.8s linear infinite;
+}
+
+.dashboard-card-dots > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-donut-segment {
+  animation: dashboard-donut-in 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dashboard-bar-fill {
+  width: 0;
+  animation: dashboard-bar-in 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dashboard-line-draw {
+  stroke-dasharray: 420;
+  stroke-dashoffset: 420;
+  animation: dashboard-line-in 900ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
+.dashboard-area-fill {
+  transform-origin: center bottom;
+  animation: dashboard-area-in 620ms ease 280ms both;
+}
+
+.dashboard-point-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation:
+    dashboard-point-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both,
+    dashboard-dot-pulse 1.9s ease-in-out 900ms infinite;
+}
+
+.dashboard-radar-compact > figcaption {
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-radar-compact > figcaption p:first-child {
+  font-size: 1rem;
+}
+
+.dashboard-radar-compact > figcaption p:last-child {
+  font-size: 0.75rem;
+}
+
+.dashboard-radar-compact > div > svg {
+  width: min(100%, 330px);
+  height: 190px;
+  max-height: 190px;
+  margin-inline: auto;
+  animation: dashboard-card-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dashboard-radar-compact polygon[stroke],
+.dashboard-radar-compact line {
+  animation: fadeIn 480ms ease both;
+}
+
+.dashboard-radar-compact g polygon[fill] {
+  transform-origin: center;
+  animation: scaleIn 620ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
+.dashboard-radar-compact g circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    dashboard-point-in 320ms cubic-bezier(0.16, 1, 0.3, 1) 360ms both,
+    dashboard-dot-pulse 1.8s ease-in-out 900ms infinite;
+}
+
+.dashboard-radar-compact text {
+  font-size: 0.625rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-card-in,
+  .dashboard-donut-segment,
+  .dashboard-bar-fill,
+  .dashboard-line-draw,
+  .dashboard-area-fill,
+  .dashboard-point-pop,
+  .dashboard-card-dots::before,
+  .dashboard-radar-compact > div > svg,
+  .dashboard-radar-compact polygon,
+  .dashboard-radar-compact line,
+  .dashboard-radar-compact circle {
+    animation: none !important;
+  }
+
+  .dashboard-bar-fill {
+    width: var(--bar-width);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Desplegables de MUI (Select / Menu)
+   ────────────────────────────────────────────────────────────────
+   Deliberadamente FUERA de @layer: las capas de cascada pierden
+   frente a los estilos sin capa, y emotion (MUI) inyecta los suyos
+   sin capa. Metidas en @layer estas reglas no ganarían nunca.
+
+   El campo sigue siendo píldora para no desentonar con los inputs y
+   botones de al lado; lo que se redondea es el panel y cada opción.
+   ════════════════════════════════════════════════════════════════ */
+.MuiPaper-root.MuiMenu-paper {
+  border-radius: 1rem;
+  border: 1px solid var(--neutral-200);
+  box-shadow: 0 18px 40px rgba(23, 50, 77, 0.14);
+  margin-top: 0.35rem;
+  overflow: hidden;
+}
+
+.MuiPaper-root.MuiMenu-paper .MuiList-root {
+  padding: 0.35rem;
+}
+
+.MuiPaper-root.MuiMenu-paper .MuiMenuItem-root {
+  border-radius: 0.7rem;
+  margin-block: 0.1rem;
+  padding: 0.45rem 0.7rem;
+  min-height: 0;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--ink);
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.MuiPaper-root.MuiMenu-paper .MuiMenuItem-root:hover {
+  background-color: var(--green-50);
+}
+
+.MuiPaper-root.MuiMenu-paper .MuiMenuItem-root.Mui-selected,
+.MuiPaper-root.MuiMenu-paper .MuiMenuItem-root.Mui-selected:hover {
+  background-color: var(--green-100);
+  color: var(--green-700);
+  font-weight: 600;
+}
+
+/* Buscador de las listas largas — se queda fijo al hacer scroll. */
+.app-select-search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.15rem 0.15rem 0.4rem;
+  background: var(--panel);
+}
+
+.app-select-search:focus-within {
+  outline: none;
+}
+
+.app-select-empty {
+  padding: 0.6rem 0.7rem;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
 }

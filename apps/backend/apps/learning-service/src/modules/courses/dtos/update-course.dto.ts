@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsOptional, IsPositive, IsString, IsUrl } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUrl, Min } from 'class-validator';
 
 export class UpdateCourseDto {
   @IsString() @IsOptional() title?: string;
@@ -6,4 +6,7 @@ export class UpdateCourseDto {
   @IsString() @IsIn(['basic', 'intermediate', 'advanced']) @IsOptional() level?: string;
   @IsUrl() @IsOptional() coverImageUrl?: string;
   @IsInt() @IsPositive() @IsOptional() durationMinutes?: number;
+  @IsNumber() @Min(0) @IsOptional() price?: number;
+  @IsString() @IsOptional() currency?: string;
+  @IsBoolean() @IsOptional() isFree?: boolean;
 }

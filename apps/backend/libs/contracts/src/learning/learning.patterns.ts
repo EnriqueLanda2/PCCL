@@ -2,6 +2,7 @@ export const LEARNING_PATTERNS = {
   COURSE_CREATE: 'learning.course.create',
   COURSE_FIND_ALL: 'learning.course.find_all',
   COURSE_FIND_PUBLISHED: 'learning.course.find_published',
+  COURSE_COUNT_PUBLISHED: 'learning.course.count_published',
   COURSE_FIND_ONE: 'learning.course.find_one',
   COURSE_UPDATE: 'learning.course.update',
   COURSE_DELETE: 'learning.course.delete',
@@ -18,6 +19,8 @@ export const LEARNING_PATTERNS = {
   INSCRIPTION_FIND_ONE: 'learning.inscription.find_one',
   INSCRIPTION_UPDATE: 'learning.inscription.update',
   INSCRIPTION_DELETE: 'learning.inscription.delete',
+  INSCRIPTION_STATS_PUBLIC: 'learning.inscription.stats_public',
+  INSCRIPTION_FIND_IDS_BY_SCOPE: 'learning.inscription.find_ids_by_scope',
 
   PROGRESS_FIND_BY_INSCRIPTION: 'learning.progress.find_by_inscription',
   PROGRESS_FIND_ALL: 'learning.progress.find_all',
@@ -37,6 +40,14 @@ export const LEARNING_PATTERNS = {
   EVALUATION_FIND_ALL: 'learning.evaluation.find_all',
   EVALUATION_FIND_ONE: 'learning.evaluation.find_one',
   EVALUATION_SUBMIT_ATTEMPT: 'learning.evaluation.submit_attempt',
+
+  COMMENT_FIND_BY_COURSE: 'learning.comment.find_by_course',
+  COMMENT_CREATE: 'learning.comment.create',
+  COMMENT_TOGGLE_LIKE: 'learning.comment.toggle_like',
+  COMMENT_DELETE: 'learning.comment.delete',
+
+  TASK_FIND_PENDING: 'learning.task.find_pending',
+  LESSON_SET_COMPLETED: 'learning.lesson.set_completed',
 
   EVT_INSCRIPTION_COMPLETED: 'learning.inscription.completed',
 

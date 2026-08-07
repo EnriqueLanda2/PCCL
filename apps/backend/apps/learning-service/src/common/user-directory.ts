@@ -6,6 +6,10 @@ export interface DirectoryUser {
   id: string;
   fullName: string;
   email: string;
+  /** Foto de perfil. Puede faltar: el usuario aún no ha guardado avatar. */
+  avatarUrl: string | null;
+  /** Cuenta dada de alta. Las vistas de alumnos ocultan las que no lo están. */
+  active: boolean;
 }
 
 /**
@@ -20,5 +24,21 @@ export async function buildUserDirectory(identityClient: ClientProxy): Promise<M
   ).catch(() => [] as DirectoryUser[]);
   // Solo se exponen campos públicos — la respuesta de USER_FIND_ALL trae
   // passwordHash/userRoles y no debe reenviarse tal cual al gateway/frontend.
-  return new Map(users.map((u) => [u.id, { id: u.id, fullName: u.fullName, email: u.email }]));
+  // `avatarUrl` se añade a esa lista blanca a propósito: los listados de
+  // alumnos lo necesitan para pintar la foto real, y es un dato tan público
+  // como el nombre.
+  return new Map(
+    users.map((u) => [
+      u.id,
+      {
+        id: u.id,
+        fullName: u.fullName,
+        email: u.email,
+        avatarUrl: u.avatarUrl ?? null,
+        // Ausente se interpreta como activa: un usuario antiguo sin el campo no
+        // debe desaparecer de los listados por omisión.
+        active: u.active ?? true,
+      },
+    ]),
+  );
 }

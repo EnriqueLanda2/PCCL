@@ -13,9 +13,11 @@ import type { User } from '@/lib/types';
 import { Card } from '@/app/components/ui/Card';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
-import { Avatar, getInitials } from '@/app/components/ui/Avatar';
+import { AppButton, AppInput } from '@/app/components/ui/AppControls';
+import { StudentAvatar } from '@/app/components/shared/StudentAvatar';
 import { StatCard } from '@/app/components/shared/StatCard';
 import { EmptyState } from '@/app/components/shared/EmptyState';
+import { PageHeader } from '@/app/components/shared/PageHeader';
 import { APP_ICONS } from '@/lib/icons';
 
 /* ── Skeleton row ── */
@@ -24,14 +26,14 @@ function SkeletonRow() {
     <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
       {[48, 40, 40, 22].map((w, i) => (
         <td key={i} style={{ padding: '14px 16px' }}>
-          <div style={{ height: '14px', borderRadius: '6px', background: 'var(--neutral-100)', width: `${w}%` }} />
+          <div style={{ height: '0.875rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: `${w}%` }} />
         </td>
       ))}
       <td style={{ padding: '14px 16px' }}>
-        <div style={{ height: '22px', borderRadius: '999px', background: 'var(--neutral-100)', width: '70px' }} />
+        <div style={{ height: '1.375rem', borderRadius: '999px', background: 'var(--neutral-100)', width: '4.375rem' }} />
       </td>
       <td style={{ padding: '14px 16px' }}>
-        <div style={{ height: '32px', borderRadius: '8px', background: 'var(--neutral-100)', width: '72px' }} />
+        <div style={{ height: '2rem', borderRadius: '0.5rem', background: 'var(--neutral-100)', width: '4.5rem' }} />
       </td>
     </tr>
   );
@@ -86,26 +88,18 @@ export default function UsersPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-            Gestión de <em style={{ color: 'var(--blue-600)', fontStyle: 'italic' }}>usuarios</em>
-          </h1>
-          <p style={{ color: 'var(--ink-muted)', fontSize: '15px' }}>
-            {loading ? 'Cargando…' : `${users.length} cuenta${users.length !== 1 ? 's' : ''} registrada${users.length !== 1 ? 's' : ''}`}
-          </p>
-        </div>
-        {canCreate && (
-          <Button variant="primary" size="md">+ Nuevo usuario</Button>
-        )}
-      </div>
+      <PageHeader
+        title={<>Gestión de usuarios</>}
+        subtitle={loading ? 'Cargando…' : `${users.length} cuenta${users.length !== 1 ? 's' : ''} registrada${users.length !== 1 ? 's' : ''}`}
+        action={canCreate ? <Button variant="primary" size="md">+ Nuevo usuario</Button> : undefined}
+      />
 
       {/* ── Stats ── */}
       {!loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))', gap: '1rem' }}>
           <StatCard label="Total"     value={users.length} icon={<Icon icon={APP_ICONS.users} width={20} height={20} />} />
           <StatCard label="Activos"   value={active}   deltaUp icon={<Icon icon={APP_ICONS.checkFilled} width={20} height={20} />} variant="green" />
           <StatCard label="Inactivos" value={inactive}  deltaUp={false} icon={<Icon icon={APP_ICONS.lock} width={20} height={20} />} variant="yellow" />
@@ -113,50 +107,43 @@ export default function UsersPage() {
       )}
 
       {/* ── Search + chips ── */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '360px' }}>
-          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
-          <input
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 240px', minWidth: '15rem', maxWidth: '26.25rem' }}>
+          <AppInput
             type="search"
             placeholder="Buscar por nombre o correo…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: '100%', height: '40px', paddingLeft: '40px', paddingRight: '12px',
-              borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)',
-              background: 'var(--blue-50)', fontSize: '13.5px', color: 'var(--ink)',
-              fontFamily: 'var(--font-sans)', outline: 'none',
-            }}
+            withSearchIcon
           />
         </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '0.375rem' }}>
           {STATUS_CHIPS.map((chip) => (
-            <button
+            <AppButton
               key={chip.key}
               type="button"
               onClick={() => setStatusFilter(chip.key)}
-              style={{
-                border: statusFilter === chip.key ? '1.5px solid var(--blue-600)' : '1.5px solid var(--neutral-200)',
-                background: statusFilter === chip.key ? 'var(--blue-50)' : 'var(--panel)',
+              variant={statusFilter === chip.key ? 'contained' : 'outlined'}
+              sx={{
+                borderColor: statusFilter === chip.key ? 'var(--blue-500)' : 'var(--neutral-200)',
+                bgcolor: statusFilter === chip.key ? 'var(--blue-50)' : 'var(--panel)',
                 color: statusFilter === chip.key ? 'var(--blue-700)' : 'var(--ink-muted)',
-                borderRadius: 'var(--radius-full)', padding: '6px 16px',
-                fontSize: '13px', fontWeight: statusFilter === chip.key ? 600 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                px: 2,
               }}
             >
               {chip.label}
-            </button>
+            </AppButton>
           ))}
         </div>
-        <span style={{ marginLeft: 'auto', fontSize: '13px', color: 'var(--ink-muted)' }}>
+        <span style={{ marginLeft: 'auto', fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
           {filtered.length} de {users.length}
         </span>
       </div>
 
       {/* ── Table ── */}
       {loading ? (
-        <Card padding="tight">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <Card padding="tight" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '38rem' }}>
             <tbody>{Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}</tbody>
           </table>
         </Card>
@@ -178,14 +165,14 @@ export default function UsersPage() {
           }
         />
       ) : (
-        <Card padding="tight">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <Card padding="tight" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '38rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--neutral-100)' }}>
                 {['Usuario', 'Correo', 'Estado', 'Acciones'].map((h) => (
                   <th key={h} style={{
                     padding: '12px 16px', textAlign: 'left',
-                    fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em',
+                    fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.1em',
                     fontWeight: 600, color: 'var(--ink-muted)', background: 'var(--blue-50)',
                   }}>
                     {h}
@@ -201,13 +188,18 @@ export default function UsersPage() {
                 >
                   {/* Name + avatar */}
                   <td style={{ padding: '14px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Avatar initials={getInitials(user.fullName)} size="sm" />
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ink)' }}>{user.fullName}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                      <StudentAvatar
+                        userId={user.id}
+                        fullName={user.fullName}
+                        avatarUrl={user.avatarUrl}
+                        size="sm"
+                      />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--ink)' }}>{user.fullName}</span>
                     </div>
                   </td>
                   {/* Email */}
-                  <td style={{ padding: '14px 16px', fontSize: '13.5px', color: 'var(--ink-muted)', fontFamily: 'var(--font-mono)' }}>
+                  <td style={{ padding: '14px 16px', fontSize: '0.8438rem', color: 'var(--ink-muted)', fontFamily: 'var(--font-mono)' }}>
                     {user.email}
                   </td>
                   {/* Status badge */}
@@ -219,7 +211,7 @@ export default function UsersPage() {
                   {/* Actions */}
                   <td style={{ padding: '14px 16px' }}>
                     {canEdit && (
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '0.375rem' }}>
                         <Button variant="ghost" size="sm">Editar</Button>
                         <Button variant="danger" size="sm">{user.active ? 'Desactivar' : 'Activar'}</Button>
                       </div>

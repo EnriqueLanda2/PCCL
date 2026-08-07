@@ -79,7 +79,20 @@ export function RadarChart({
       )}
 
       <div className="relative">
-        <svg viewBox="0 0 320 300" className="w-full" role="img" aria-label={title ?? 'Gráfica de radar'}>
+        {/* El viewBox se extiende 80u a cada lado del área de dibujo porque las
+            etiquetas de eje se anclan en R+16 con textAnchor start/end y se
+            salían del recuadro: "Certificados" y "Completados" aparecían
+            cortadas. El centro (-80 + 480/2 = 160) sigue coincidiendo con CX.
+
+            max-w es imprescindible: con viewBox y solo w-full, el SVG mantiene
+            su relación de aspecto y en un contenedor ancho crecía hasta ~1400px
+            de alto. */}
+        <svg
+          viewBox="-80 -8 480 316"
+          className="mx-auto block h-auto w-full max-w-[40rem]"
+          role="img"
+          aria-label={title ?? 'Gráfica de radar'}
+        >
           {/* Rejilla recesiva */}
           {ringPolys.map((points, i) => (
             <polygon key={points} points={points} fill="none" stroke="#E7EDE2" strokeWidth={i === RINGS - 1 ? 1.4 : 1} />
@@ -151,9 +164,9 @@ export function RadarChart({
         {/* Tooltip del vértice activo */}
         {hovered !== null && (
           <div className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 rounded-xl border border-[#E4EBDD] bg-white px-3.5 py-2 shadow-lg animate-fade-in">
-            <p className="text-[12px] font-bold text-[var(--ink)]">{String(data[hovered][angleKey])}</p>
+            <p className="text-[0.75rem] font-bold text-[var(--ink)]">{String(data[hovered][angleKey])}</p>
             {keys.map((key, s) => (
-              <p key={key} className="flex items-center gap-1.5 text-[12px] text-[var(--ink-soft)]">
+              <p key={key} className="flex items-center gap-1.5 text-[0.75rem] text-[var(--ink-soft)]">
                 <span className="inline-block h-2 w-2 rounded-full" style={{ background: SERIES_COLORS[s] }} />
                 {labels[s]}: <strong className="text-[var(--ink)]">{Number(data[hovered][key]) || 0}</strong>
               </p>
@@ -166,7 +179,7 @@ export function RadarChart({
       {keys.length > 1 && (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-4">
           {keys.map((key, s) => (
-            <span key={key} className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--ink-soft)]">
+            <span key={key} className="inline-flex items-center gap-1.5 text-[0.7813rem] text-[var(--ink-soft)]">
               <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: SERIES_COLORS[s] }} />
               {labels[s]}
             </span>

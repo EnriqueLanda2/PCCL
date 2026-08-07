@@ -9,11 +9,13 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import Button from '@mui/material/Button';
+import InputAdornment from '@mui/material/InputAdornment';
+import TextField from '@mui/material/TextField';
 import { api, getErrorMessage } from '@/lib/api';
 import type { Course } from '@/lib/types';
 import { Modal } from '@/app/components/ui/Modal';
-import { Button } from '@/app/components/ui/Button';
-import { Field, Input } from '@/app/components/ui/Input';
+import { Field } from '@/app/components/ui/Input';
 import { WaveSpinner } from '@/app/components/ui/WaveSpinner';
 
 const LEVEL_OPTIONS: { value: 'basic' | 'intermediate' | 'advanced'; label: string }[] = [
@@ -35,13 +37,15 @@ export function CreateCourseModal({ open, onClose, onCreated }: Readonly<CreateC
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<'basic' | 'intermediate' | 'advanced'>('basic');
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [isFree, setIsFree] = useState(true);
+  const [price, setPrice] = useState('');
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
     setTitle(''); setDescription(''); setLevel('basic');
-    setCoverImageUrl(null); setError(null);
+    setCoverImageUrl(null); setIsFree(true); setPrice(''); setError(null);
   };
 
   const handleClose = () => { if (!submitting && !uploading) { reset(); onClose(); } };
@@ -68,6 +72,11 @@ export function CreateCourseModal({ open, onClose, onCreated }: Readonly<CreateC
       setError('Título y descripción son obligatorios.');
       return;
     }
+    const numericPrice = Number(price);
+    if (!isFree && (!price.trim() || Number.isNaN(numericPrice) || numericPrice <= 0)) {
+      setError('Ingresa un precio válido o marca el curso como gratuito.');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -75,6 +84,9 @@ export function CreateCourseModal({ open, onClose, onCreated }: Readonly<CreateC
         title: title.trim(),
         description: description.trim(),
         level,
+        isFree,
+        price: isFree ? 0 : numericPrice,
+        currency: 'USD',
         ...(coverImageUrl ? { coverImageUrl } : {}),
       });
       onCreated(course);
@@ -88,17 +100,57 @@ export function CreateCourseModal({ open, onClose, onCreated }: Readonly<CreateC
   };
 
   const busy = uploading || submitting;
+  const pillSx = (active: boolean) => ({
+    flex: 1,
+    borderRadius: '0.75rem',
+    border: active ? '1.5px solid var(--green-500)' : '1.5px solid #DDE7D7',
+    bgcolor: active ? 'var(--green-50)' : '#fff',
+    color: active ? 'var(--green-700)' : 'var(--ink-muted)',
+    py: 1,
+    fontFamily: 'var(--font-sans)',
+    fontSize: 14,
+    fontWeight: active ? 700 : 500,
+    textTransform: 'none',
+    boxShadow: 'none',
+    '&:hover': {
+      bgcolor: active ? 'var(--green-50)' : '#F8FBF5',
+      borderColor: active ? 'var(--green-500)' : 'var(--green-300)',
+    },
+  });
+  const fieldSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: '1rem',
+      bgcolor: '#F8FBF5',
+      fontFamily: 'var(--font-sans)',
+      color: 'var(--ink)',
+      '& fieldset': { borderColor: '#DDE7D7' },
+      '&:hover fieldset': { borderColor: 'var(--green-400)' },
+      '&.Mui-focused fieldset': { borderColor: 'var(--green-500)', boxShadow: '0 0 0 2px #D2F2DE' },
+      '&.Mui-disabled': { bgcolor: '#F1F6EB' },
+    },
+    '& input::placeholder, & textarea::placeholder': { color: '#A2AE9D', opacity: 1 },
+  };
 
   return (
     <Modal open={open} onClose={handleClose} title="Nuevo curso" description="Se crea como borrador — puedes publicarlo después.">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* ── Portada ── */}
         <Field label="Portada (opcional)">
-          <button
-            type="button"
+          <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
-            className="relative flex h-36 w-full items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-[#DDE7D7] bg-[#F8FBF5] transition-colors hover:border-[var(--green-400)] disabled:cursor-not-allowed"
+            fullWidth
+            sx={{
+              position: 'relative',
+              height: 144,
+              overflow: 'hidden',
+              borderRadius: '1rem',
+              border: '2px dashed #DDE7D7',
+              bgcolor: '#F8FBF5',
+              color: 'var(--ink-muted)',
+              textTransform: 'none',
+              '&:hover': { borderColor: 'var(--green-400)', bgcolor: '#F8FBF5' },
+            }}
           >
             {coverImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -115,7 +167,7 @@ export function CreateCourseModal({ open, onClose, onCreated }: Readonly<CreateC
                 <span className="text-xs font-medium">Haz clic para subir una imagen</span>
               </span>
             )}
-          </button>
+          </Button>
           <input
             ref={fileInputRef}
             type="file"
@@ -127,50 +179,116 @@ export function CreateCourseModal({ open, onClose, onCreated }: Readonly<CreateC
         </Field>
 
         <Field label="Título">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej. APIs REST con Node.js y Express" disabled={busy} />
+          <TextField
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ej. APIs REST con Node.js y Express"
+            disabled={busy}
+            fullWidth
+            size="small"
+            sx={fieldSx}
+          />
         </Field>
 
         <Field label="Descripción">
-          <textarea
+          <TextField
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="¿Qué aprenderán tus estudiantes?"
-            rows={3}
             disabled={busy}
-            className="w-full resize-none rounded-2xl border border-[#DDE7D7] bg-[#F8FBF5] px-4 py-3 text-sm text-[var(--ink)] outline-none transition-colors placeholder:text-[#A2AE9D] focus:border-[var(--green-500)] focus:ring-2 focus:ring-[#D2F2DE] disabled:cursor-not-allowed disabled:bg-[#F1F6EB]"
+            fullWidth
+            multiline
+            minRows={3}
+            sx={fieldSx}
           />
         </Field>
 
         <Field label="Nivel">
           <div className="flex gap-2">
             {LEVEL_OPTIONS.map((opt) => (
-              <button
+              <Button
                 key={opt.value}
-                type="button"
                 disabled={busy}
                 onClick={() => setLevel(opt.value)}
-                className={
-                  level === opt.value
-                    ? 'flex-1 rounded-xl border-[1.5px] border-[var(--green-500)] bg-[var(--green-50)] px-3 py-2 text-sm font-semibold text-[var(--green-700)]'
-                    : 'flex-1 rounded-xl border-[1.5px] border-[#DDE7D7] bg-white px-3 py-2 text-sm text-[var(--ink-muted)]'
-                }
+                variant="outlined"
+                sx={pillSx(level === opt.value)}
               >
                 {opt.label}
-              </button>
+              </Button>
             ))}
           </div>
         </Field>
 
+        <Field label="Precio">
+          <div className="flex gap-2">
+            <Button
+              disabled={busy}
+              onClick={() => setIsFree(true)}
+              variant="outlined"
+              sx={pillSx(isFree)}
+            >
+              Gratuito
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={() => setIsFree(false)}
+              variant="outlined"
+              sx={pillSx(!isFree)}
+            >
+              De pago
+            </Button>
+          </div>
+          {!isFree && (
+            <div className="mt-2">
+              <TextField
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="19.99"
+                disabled={busy}
+                fullWidth
+                size="small"
+                slotProps={{
+                  htmlInput: { min: 0, step: '0.01' },
+                  input: {
+                    startAdornment: <InputAdornment position="start">USD $</InputAdornment>,
+                  },
+                }}
+                sx={fieldSx}
+              />
+            </div>
+          )}
+        </Field>
+
         {error && (
-          <p className="rounded-xl bg-[#FFF1ED] px-3.5 py-2.5 text-[13px] text-[#BF2600]">{error}</p>
+          <p className="rounded-xl bg-[#FFF1ED] px-3.5 py-2.5 text-[0.8125rem] text-[#BF2600]">{error}</p>
         )}
 
         <div className="mt-1 flex justify-end gap-2.5">
-          <Button type="button" variant="secondary" onClick={handleClose} disabled={busy}>
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={handleClose}
+            disabled={busy}
+            sx={{ borderRadius: '999px', px: 2.5, fontFamily: 'var(--font-sans)', textTransform: 'none' }}
+          >
             Cancelar
           </Button>
-          <Button type="submit" variant="primary" loading={submitting} disabled={uploading}>
-            Crear curso
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={uploading || submitting}
+            sx={{
+              borderRadius: '999px',
+              bgcolor: 'var(--green-600)',
+              px: 2.5,
+              fontFamily: 'var(--font-sans)',
+              fontWeight: 800,
+              textTransform: 'none',
+              '&:hover': { bgcolor: 'var(--green-700)' },
+            }}
+          >
+            {submitting ? 'Creando…' : 'Crear curso'}
           </Button>
         </div>
       </form>

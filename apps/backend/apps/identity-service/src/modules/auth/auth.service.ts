@@ -36,6 +36,9 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       roleIds: user.userRoles.map((ur) => ur.role.id),
+      // Los nombres de rol viajan en el token para que el gateway decida el
+      // alcance de datos (admin = global) sin consultar identity en cada request.
+      roles: profile.roles as string[],
       permissions: profile.permissions as string[],
       scope: 'authenticated_user',
     };
@@ -43,7 +46,7 @@ export class AuthService {
     const token = await this.jwtService.signAsync(payload);
     return {
       token,
-      user: { id: user.id, fullName: user.fullName, email: user.email },
+      user: { id: user.id, fullName: user.fullName, email: user.email, avatarUrl: user.avatarUrl },
       access: profile,
     };
   }

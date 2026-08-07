@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { AppButton, AppInput } from '@/app/components/ui/AppControls';
 
 type ScanState = 'requesting' | 'scanning' | 'denied' | 'unsupported';
 
@@ -158,7 +159,7 @@ export default function ScanCertificatePage() {
       {/* Marca */}
       <Link href="/" className="mb-8 flex items-center gap-2.5 no-underline">
         <span
-          className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-white"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-[0.625rem] text-white"
           style={{ background: 'linear-gradient(135deg, var(--green-600), var(--green-400))' }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -172,11 +173,11 @@ export default function ScanCertificatePage() {
       <h1 className="text-center text-[clamp(24px,3vw,36px)] font-extrabold tracking-tight text-[var(--ink)]">
         Escanear certificado
       </h1>
-      <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
+      <p className="mt-1 text-[0.8125rem] text-[var(--ink-muted)]">
         Apunta la cámara al código QR del reverso de la tarjeta
       </p>
 
-      <div className="mt-8 flex w-full max-w-[440px] flex-col items-center gap-6">
+      <div className="mt-8 flex w-full max-w-[27.5rem] flex-col items-center gap-6">
         {(state === 'requesting' || state === 'scanning') && (
           <div
             className="relative w-full overflow-hidden rounded-2xl border border-[#CDEFD9] bg-black"
@@ -207,10 +208,10 @@ export default function ScanCertificatePage() {
               </svg>
             </span>
             <div>
-              <p className="text-[15px] font-bold text-[var(--red-600)]">
+              <p className="text-[0.9375rem] font-bold text-[var(--red-600)]">
                 {state === 'unsupported' ? 'Cámara no disponible' : 'Acceso a la cámara denegado'}
               </p>
-              <p className="mt-1 text-[13px] text-[var(--ink-soft)]">
+              <p className="mt-1 text-[0.8125rem] text-[var(--ink-soft)]">
                 {state === 'unsupported'
                   ? 'Este navegador no soporta acceso a cámara. Ingresa el folio manualmente.'
                   : 'Otorga permiso de cámara o ingresa el folio manualmente para validar el certificado.'}
@@ -221,30 +222,30 @@ export default function ScanCertificatePage() {
 
         {/* Fallback: ingreso manual de folio — siempre disponible */}
         <form onSubmit={handleManualSubmit} className="flex w-full flex-col gap-2">
-          <label htmlFor="folio" className="text-[12px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+          <label htmlFor="folio" className="text-[0.75rem] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
             O ingresa el folio manualmente
           </label>
           <div className="flex gap-2">
-            <input
+            <AppInput
               id="folio"
               type="text"
               value={manualFolio}
               onChange={(e) => setManualFolio(e.target.value)}
               placeholder="Ej. RB-2026-0001"
-              className="h-11 flex-1 rounded-xl border border-[var(--neutral-200)] bg-white px-4 font-mono text-[13px] tracking-[0.05em] text-[var(--ink)] outline-none focus:border-[var(--green-500)]"
+              sx={{ flex: 1, '& .MuiOutlinedInput-root': { fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' } }}
             />
-            <button
+            <AppButton
               type="submit"
-              className="inline-flex h-11 items-center rounded-full px-6 text-sm font-bold text-white no-underline"
-              style={{ background: 'linear-gradient(120deg, var(--green-700), var(--green-500))' }}
+              variant="contained"
+              sx={{ px: 3 }}
             >
               Validar
-            </button>
+            </AppButton>
           </div>
         </form>
       </div>
 
-      <p className="mt-auto pt-12 text-[12px] text-[var(--ink-muted)]">
+      <p className="mt-auto pt-12 text-[0.75rem] text-[var(--ink-muted)]">
         certification-service · Rumbo © 2026
       </p>
     </main>
