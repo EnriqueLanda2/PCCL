@@ -21,6 +21,7 @@ model User {
   email           String     @unique @db.VarChar(120)
   passwordHash    String     @map("password_hash") @db.VarChar(255)
   active          Boolean    @default(true)
+  avatarUrl       String?    @map("avatar_url") @db.VarChar(500)
   userRoles       UserRole[]
 
   @@map("users")

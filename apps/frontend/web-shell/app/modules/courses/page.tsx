@@ -6,24 +6,23 @@
 
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
-import { api } from '@/lib/api';
-import type { Course, Inscription } from '@/lib/types';
-import { Card } from '@/app/components/ui/Card';
+import MenuItem from '@mui/material/MenuItem';
+import type { SelectChangeEvent } from '@mui/material/Select';
+import { api, getErrorMessage } from '@/lib/api';
+import type { Course, CourseEarnings, Inscription } from '@/lib/types';
 import { Badge } from '@/app/components/ui/Badge';
-import { Button } from '@/app/components/ui/Button';
+import { AppButton, AppInput, AppSelect } from '@/app/components/ui/AppControls';
+import { DEFAULT_PAGE_SIZE, Pagination } from '@/app/components/ui/Pagination';
 import { EmptyState } from '@/app/components/shared/EmptyState';
+import { PageHeader } from '@/app/components/shared/PageHeader';
 import { CourseContentView } from '@/app/components/shared/CourseContentView';
 import { CreateCourseModal } from '@/app/components/shared/CreateCourseModal';
-import { CourseHoloCard, type CardCarouselItem } from '@/app/components/shared/CardCarousel';
-import { APP_ICONS, COURSE_COVER_ICONS } from '@/lib/icons';
-
-const COVER_CLASSES = ['cover-1', 'cover-2', 'cover-3', 'cover-4', 'cover-5', 'cover-6'];
-
-function courseIcon(iconName: string) {
-  return <Icon icon={iconName} width={40} height={40} style={{ color: 'rgba(255,255,255,0.9)' }} />;
-}
+import { CheckoutModal } from '@/app/components/shared/CheckoutModal';
+import { CourseCard } from '@/app/components/shared/CourseCard';
+import { EnrollableCourses } from '@/app/components/shared/EnrollableCourses';
+import { APP_ICONS } from '@/lib/icons';
 
 function getCachedEmail(): string | null {
   try {
@@ -35,109 +34,168 @@ function getCachedEmail(): string | null {
   }
 }
 
-/* ── Chip helper ── */
-function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        border: active ? '1.5px solid var(--blue-600)' : '1.5px solid var(--neutral-200)',
-        background: active ? 'var(--blue-50)' : 'var(--panel)',
-        color: active ? 'var(--blue-700)' : 'var(--ink-muted)',
-        borderRadius: 'var(--radius-full)',
-        padding: '6px 16px',
-        fontSize: '13px',
-        fontWeight: active ? 600 : 400,
-        cursor: 'pointer',
-        transition: 'all 140ms',
-        fontFamily: 'var(--font-sans)',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
-/* ── Filter checkbox row ── */
-function FilterItem({ label, count, checked, onChange }: {
-  label: string; count?: number; checked: boolean; onChange: (v: boolean) => void;
-}) {
-  return (
-    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', cursor: 'pointer', padding: '6px 0' }}>
-      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--ink)' }}>
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          style={{ accentColor: 'var(--blue-600)', width: '15px', height: '15px' }}
-        />
-        {label}
-      </span>
-      {count !== undefined && (
-        <span style={{ fontSize: '11.5px', color: 'var(--ink-muted)', background: 'var(--neutral-100)', borderRadius: '999px', padding: '1px 7px', minWidth: '24px', textAlign: 'center' }}>
-          {count}
-        </span>
-      )}
-    </label>
-  );
-}
-
-/* ── Section label ── */
-function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: '20px' }}>
-      <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 600, color: 'var(--blue-600)', marginBottom: '8px' }}>
-        {title}
-      </div>
-      {children}
-    </div>
-  );
-}
-
 /* ── Skeleton card ── */
 function SkeletonCard() {
   return (
     <div style={{ borderRadius: 'var(--radius-lg)', border: '1px solid var(--neutral-100)', overflow: 'hidden', background: 'var(--panel)' }}>
       <div style={{ aspectRatio: '16/10', background: 'var(--neutral-100)', animation: 'pulse 1.4s ease-in-out infinite' }} />
-      <div style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ height: '20px', borderRadius: '6px', background: 'var(--neutral-100)', width: '80%' }} />
-        <div style={{ height: '14px', borderRadius: '6px', background: 'var(--neutral-100)', width: '55%' }} />
-        <div style={{ height: '14px', borderRadius: '6px', background: 'var(--neutral-100)', width: '35%' }} />
+      <div style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+        <div style={{ height: '1.25rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: '80%' }} />
+        <div style={{ height: '0.875rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: '55%' }} />
+        <div style={{ height: '0.875rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: '35%' }} />
       </div>
     </div>
   );
 }
 
-const LEVELS   = ['Básico', 'Intermedio', 'Avanzado'];
-const STATUSES = ['published', 'draft'];
+/* Controles compactos SOLO para la barra de filtros. No se toca el alto por
+   defecto de AppControls (46px) porque lo comparten todos los formularios de la
+   app, donde ese tamaño sí es el adecuado para escribir. */
+const DENSE_CONTROL = {
+  minHeight: '2.125rem',
+  borderRadius: '999px',
+  fontSize: '0.8125rem',
+};
+const DENSE_FIELD_SX = {
+  '& .MuiOutlinedInput-root': DENSE_CONTROL,
+  '& .MuiOutlinedInput-input': { paddingTop: '0.3rem', paddingBottom: '0.3rem' },
+};
+const DENSE_SELECT_SX = {
+  ...DENSE_CONTROL,
+  '& .MuiSelect-select': { paddingTop: '0.3rem', paddingBottom: '0.3rem' },
+};
+const DENSE_BUTTON_SX = {
+  minHeight: '2.125rem',
+  py: 0,
+  px: 1.4,
+  fontSize: '0.8125rem',
+  whiteSpace: 'nowrap',
+};
+
 const STATUS_LABEL: Record<string, string> = { published: 'Publicado', draft: 'Borrador' };
-const LEVEL_CHIPS  = ['Todos', 'Básico', 'Intermedio', 'Avanzado'];
 const SORT_OPTIONS = [
   { value: 'newest',   label: 'Más recientes' },
   { value: 'title',    label: 'A → Z'         },
   { value: 'popular',  label: 'Más populares' },
 ];
 
+type StudentTab = 'mine' | 'available';
+type ManagerTab = 'all' | 'published' | 'draft' | 'sold';
+
+function formatCompact(value: number) {
+  return new Intl.NumberFormat('es-MX', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
+function formatMoney(value: number, currency = 'USD') {
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(value);
+}
+
+function SectionHeader({ title, count }: Readonly<{ title: string; count: number }>) {
+  return (
+    <div className="mb-5 flex items-center gap-3">
+      <h2 className="text-[1rem] font-extrabold text-[var(--ink)]">{title}</h2>
+      <span className="rounded-full bg-white px-2.5 py-0.5 text-[0.7188rem] font-bold text-[var(--blue-600)] shadow-[0_1px_4px_rgba(23,50,77,0.07)]">
+        {count}
+      </span>
+      <div className="h-px flex-1 bg-[var(--neutral-100)]" />
+    </div>
+  );
+}
+
+function CourseTabs<T extends string>({
+  tabs,
+  active,
+  onChange,
+  tone = 'dark',
+}: Readonly<{
+  tabs: { id: T; label: string; count: number | string }[];
+  active: T;
+  onChange: (tab: T) => void;
+  tone?: 'dark' | 'green';
+}>) {
+  return (
+    <div className="flex w-fit flex-wrap gap-1 rounded-2xl bg-white p-1 shadow-[0_2px_12px_rgba(23,50,77,0.07)]">
+      {tabs.map((tab) => {
+        const selected = active === tab.id;
+        return (
+          <AppButton
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
+            sx={{
+              minHeight: '2.5rem',
+              px: 1.8,
+              borderRadius: '0.85rem',
+              bgcolor: selected ? (tone === 'green' ? 'var(--green-600)' : 'var(--ink)') : 'transparent',
+              color: selected ? '#fff' : 'var(--ink-soft)',
+              boxShadow: 'none',
+              '&:hover': { bgcolor: selected ? (tone === 'green' ? 'var(--green-700)' : 'var(--blue-900)') : 'var(--green-50)' },
+            }}
+          >
+            {tab.label}
+            <span
+              className="ml-2 rounded-full px-1.5 py-0.5 text-[0.625rem] font-extrabold"
+              style={{ background: selected ? 'rgba(255,255,255,0.18)' : 'var(--surface)', color: selected ? '#fff' : 'var(--ink-muted)' }}
+            >
+              {tab.count}
+            </span>
+          </AppButton>
+        );
+      })}
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon, color, textColor }: Readonly<{
+  label: string;
+  value: string | number;
+  icon: string;
+  color: string;
+  textColor: string;
+}>) {
+  return (
+    <div className="flex items-center gap-4 rounded-[1.125rem] bg-white p-5 shadow-[0_2px_12px_rgba(23,50,77,0.07)]">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-[1.25rem]" style={{ background: color }}>
+        <Icon icon={icon} width={22} height={22} style={{ color: textColor }} />
+      </div>
+      <div>
+        <p className="text-[0.7188rem] font-semibold text-[var(--ink-muted)]">{label}</p>
+        <p className="text-[1.25rem] font-extrabold" style={{ color: textColor }}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function CoursesPage() {
   const [courses,      setCourses]      = useState<Course[]>([]);
   const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
   const [permissions,  setPermissions]  = useState<string[]>([]);
+  const [roles,        setRoles]        = useState<string[]>([]);
+  const [earnings,     setEarnings]     = useState<CourseEarnings[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [modalOpen,    setModalOpen]    = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
   /* Arranca en null en ambos lados — sessionStorage no existe en el servidor */
-  const [myEmail,      setMyEmail]      = useState<string | null>(null);
-  useEffect(() => { setMyEmail(getCachedEmail()); }, []);
+  const [myEmail] = useState<string | null>(() => (typeof window === 'undefined' ? null : getCachedEmail()));
+
+  /* Sección "Cursos disponibles para ti" (solo alumnos) */
+  const [enrollableCount, setEnrollableCount] = useState<number | null>(null);
+  const [catalogKey,      setCatalogKey]      = useState(0);
+  const handleEnrollableCount = useCallback((n: number) => setEnrollableCount(n), []);
 
   /* ── Filters state ── */
-  const [levelChip,       setLevelChip]       = useState('Todos');
   const [levelFilters,    setLevelFilters]     = useState<string[]>([]);
   const [statusFilters,   setStatusFilters]    = useState<string[]>([]);
   const [onlyMine,        setOnlyMine]         = useState(false);
   const [sortBy,          setSortBy]           = useState('newest');
   const [search,          setSearch]           = useState('');
+  /* Plegado por defecto: la barra debe ser discreta salvo que se pidan filtros. */
+  const [filtersOpen,     setFiltersOpen]      = useState(false);
+  const [page,            setPage]             = useState(1);
+  const [studentTab,      setStudentTab]      = useState<StudentTab>('mine');
+  const [managerTab,      setManagerTab]      = useState<ManagerTab>('all');
 
   useEffect(() => {
     let alive = true;
@@ -146,14 +204,29 @@ export default function CoursesPage() {
         if (!alive) return;
         setCourses(courseList);
         setPermissions(access.permissions);
+        setRoles(access.roles);
         setInscriptions(inscriptionList);
+        if (access.roles.includes('admin') || access.roles.includes('instructor')) {
+          api.courseEarnings().then((items) => { if (alive) setEarnings(items); }).catch(() => {});
+        }
       })
-      .catch(() => { if (alive) { setCourses([]); setPermissions([]); } })
+      .catch(() => { if (alive) { setCourses([]); setPermissions([]); setRoles([]); } })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
 
   const canCreate = useMemo(() => permissions.includes('courses:create'), [permissions]);
+
+  /* El backend ya acota la lista: admin ve todo, instructor sus cursos creados
+     y el alumno solo aquellos en los que está inscrito. El encabezado cambia
+     para no prometer un catálogo completo que no se está mostrando. */
+  const isAdmin      = roles.includes('admin');
+  const isInstructor = roles.includes('instructor');
+  const heading = isAdmin
+    ? { lead: 'Catálogo de',  em: 'cursos',  helper: (n: number) => `${n} curso${n !== 1 ? 's' : ''} en la plataforma` }
+    : isInstructor
+      ? { lead: 'Mis',        em: 'cursos',  helper: (n: number) => `${n} curso${n !== 1 ? 's' : ''} que impartes` }
+      : { lead: 'Mis',        em: 'cursos',  helper: (n: number) => `${n} curso${n !== 1 ? 's' : ''} en los que estás inscrito` };
   const enrolledCourseIds = useMemo(
     () => new Set(inscriptions.map((i) => i.course?.id).filter((id): id is string => Boolean(id))),
     [inscriptions],
@@ -169,25 +242,48 @@ export default function CoursesPage() {
     () => (myEmail ? courses.filter((c) => c.createdBy === myEmail).length : 0),
     [courses, myEmail],
   );
+  const publishedCount = useMemo(() => courses.filter((course) => course.status === 'published').length, [courses]);
+  const draftCount = useMemo(() => courses.filter((course) => course.status === 'draft').length, [courses]);
+  const soldCourseIds = useMemo(
+    () => new Set(earnings.filter((item) => item.salesCount > 0).map((item) => item.courseId)),
+    [earnings],
+  );
+  const soldCount = soldCourseIds.size;
+  const totalStudents = useMemo(
+    () => courses.reduce((sum, course) => sum + (course.studentsCount ?? 0), 0),
+    [courses],
+  );
+  const totalRevenue = useMemo(
+    () => earnings.reduce((sum, item) => sum + item.grossRevenue, 0),
+    [earnings],
+  );
+  const revenueCurrency = earnings[0]?.currency ?? 'USD';
 
-  /* ── Derived counts for filter sidebar ── */
-  const levelCounts  = useMemo(() =>
-    LEVELS.reduce<Record<string, number>>((acc, l) => {
-      acc[l] = courses.filter((c) => c.level === l).length;
-      return acc;
-    }, {}),
-  [courses]);
+  const levelOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const course of courses) {
+      if (course.level) counts.set(course.level, (counts.get(course.level) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).map(([value, count]) => ({ value, label: value, count }));
+  }, [courses]);
 
-  const statusCounts = useMemo(() =>
-    STATUSES.reduce<Record<string, number>>((acc, s) => {
-      acc[s] = courses.filter((c) => c.status === s).length;
-      return acc;
-    }, {}),
-  [courses]);
+  const statusOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const course of courses) {
+      if (course.status) counts.set(course.status, (counts.get(course.status) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).map(([value, count]) => ({ value, label: STATUS_LABEL[value] ?? value, count }));
+  }, [courses]);
 
   /* ── Filtered + sorted list ── */
   const filtered = useMemo(() => {
     let list = [...courses];
+
+    if (isAdmin || isInstructor) {
+      if (managerTab === 'published') list = list.filter((c) => c.status === 'published');
+      if (managerTab === 'draft') list = list.filter((c) => c.status === 'draft');
+      if (managerTab === 'sold') list = list.filter((c) => soldCourseIds.has(c.id));
+    }
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -197,9 +293,7 @@ export default function CoursesPage() {
       );
     }
 
-    if (levelChip !== 'Todos') {
-      list = list.filter((c) => c.level === levelChip);
-    } else if (levelFilters.length > 0) {
+    if (levelFilters.length > 0) {
       list = list.filter((c) => levelFilters.includes(c.level));
     }
 
@@ -218,23 +312,84 @@ export default function CoursesPage() {
     }
 
     return list;
-  }, [courses, search, levelChip, levelFilters, statusFilters, onlyMine, myEmail, sortBy]);
+  }, [courses, search, levelFilters, statusFilters, onlyMine, myEmail, sortBy, isAdmin, isInstructor, managerTab, soldCourseIds]);
 
-  const toggleLevel  = (l: string, on: boolean) =>
-    setLevelFilters((prev) => on ? [...prev, l] : prev.filter((x) => x !== l));
-  const toggleStatus = (s: string, on: boolean) =>
-    setStatusFilters((prev) => on ? [...prev, s] : prev.filter((x) => x !== s));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / DEFAULT_PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const paginatedCourses = filtered.slice((pageSafe - 1) * DEFAULT_PAGE_SIZE, pageSafe * DEFAULT_PAGE_SIZE);
 
   const clearAll = () => {
     setOnlyMine(false);
-    setLevelChip('Todos');
     setLevelFilters([]);
     setStatusFilters([]);
     setSearch('');
     setSortBy('newest');
+    setPage(1);
   };
 
-  const hasActiveFilters = levelChip !== 'Todos' || levelFilters.length > 0 || statusFilters.length > 0 || onlyMine || Boolean(search.trim());
+  const hasActiveFilters = levelFilters.length > 0 || statusFilters.length > 0 || onlyMine || Boolean(search.trim());
+  /* Cuenta solo lo que vive dentro del panel plegable: el buscador se ve siempre,
+     así que incluirlo haría que el contador señalara algo ya visible. */
+  const activeFilterCount = levelFilters.length + statusFilters.length + (sortBy === 'newest' ? 0 : 1);
+
+  /** Alumnos compran cursos con costo antes de ver contenido; admin/profesor pueden administrarlos. */
+  const handleSelectCourse = (course: Course) => {
+    const requiresPayment = !course.isFree && (course.price ?? 0) > 0;
+    const canManageCourse = isAdmin || (isInstructor && course.createdBy === myEmail);
+    if (requiresPayment && !enrolledCourseIds.has(course.id) && !canManageCourse) {
+      setCheckoutCourse(course);
+    } else {
+      setSelectedCourse(course);
+    }
+  };
+
+  const handlePaid = () => {
+    if (!checkoutCourse) return;
+    const course = checkoutCourse;
+    setInscriptions((prev) => [
+      ...prev,
+      { id: `local-${course.id}`, status: 'enrolled', progressPercentage: 0, completedAt: null, course },
+    ]);
+    setCheckoutCourse(null);
+    setSelectedCourse(course);
+  };
+
+  const canPublishCourse = (course: Course) =>
+    course.status === 'draft' && (isAdmin || (isInstructor && course.createdBy === myEmail));
+
+  const handlePublishCourse = async (course: Course) => {
+    setPublishingId(course.id);
+    setPublishError(null);
+    try {
+      const published = await api.publishCourse(course.id);
+      setCourses((prev) => prev.map((item) => (item.id === course.id ? published : item)));
+      setCatalogKey((key) => key + 1);
+    } catch (error) {
+      setPublishError(getErrorMessage(error));
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
+  const studentTabs = [
+    { id: 'mine' as const, label: 'Mis cursos', count: courses.length },
+    { id: 'available' as const, label: 'Catálogo', count: enrollableCount ?? '—' },
+  ];
+  const managerTabs = [
+    { id: 'all' as const, label: 'Todos', count: courses.length },
+    { id: 'published' as const, label: 'Publicados', count: publishedCount },
+    { id: 'draft' as const, label: 'Borradores', count: draftCount },
+    { id: 'sold' as const, label: 'Vendidos', count: soldCount },
+  ];
+  const managerStats = [
+    { label: 'Total cursos', value: courses.length, icon: APP_ICONS.book, color: '#EBF2FF', textColor: '#2454A9' },
+    { label: 'Publicados', value: publishedCount, icon: APP_ICONS.checkFilled, color: '#E8F7EE', textColor: '#1E7A44' },
+    { label: 'Estudiantes', value: formatCompact(totalStudents), icon: APP_ICONS.users, color: '#FEF3C7', textColor: '#92400E' },
+    { label: 'Ganancias', value: formatMoney(totalRevenue, revenueCurrency), icon: APP_ICONS.chart, color: '#F3E8FF', textColor: '#6B21A8' },
+  ];
+  const currentSectionTitle = isAdmin || isInstructor
+    ? managerTabs.find((tab) => tab.id === managerTab)?.label ?? 'Cursos'
+    : 'Cursos inscritos';
 
   /* ── Segmento de detalle: reemplaza el catálogo sin navegar de página ── */
   if (selectedCourse) {
@@ -242,189 +397,180 @@ export default function CoursesPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* ── Page header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-            Catálogo de <em style={{ color: 'var(--blue-600)', fontStyle: 'italic' }}>cursos</em>
-          </h1>
-          <p style={{ color: 'var(--ink-muted)', fontSize: '15px' }}>
-            {loading ? 'Cargando…' : `${courses.length} curso${courses.length !== 1 ? 's' : ''} disponibles`}
-          </p>
-        </div>
-        {canCreate && (
-          <Button variant="primary" size="md" onClick={() => setModalOpen(true)}>
+      <PageHeader
+        title={<>{heading.lead} {heading.em}</>}
+        subtitle={loading ? 'Cargando…' : heading.helper(courses.length)}
+        action={canCreate ? (
+          <AppButton
+            variant="contained"
+            onClick={() => setModalOpen(true)}
+            sx={{ px: 2.4, py: 1, boxShadow: '0 12px 24px rgba(30,139,72,0.18)' }}
+          >
             + Nuevo curso
-          </Button>
-        )}
-      </div>
+          </AppButton>
+        ) : undefined}
+      />
 
-      {/* ── "Mis cursos" toggle (instructor) ── */}
-      {myEmail && myCoursesCount > 0 && (
-        <button
-          type="button"
-          onClick={() => setOnlyMine((v) => !v)}
-          style={{
-            alignSelf: 'flex-start',
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            border: onlyMine ? '1.5px solid var(--green-500)' : '1.5px solid var(--neutral-200)',
-            background: onlyMine ? 'var(--green-50)' : 'var(--panel)',
-            color: onlyMine ? 'var(--green-700)' : 'var(--ink-muted)',
-            borderRadius: 'var(--radius-full)', padding: '7px 16px',
-            fontSize: '13px', fontWeight: onlyMine ? 600 : 500,
-            cursor: 'pointer', fontFamily: 'var(--font-sans)',
-          }}
-        >
-          <Icon icon={APP_ICONS.user} width={14} height={14} /> Mis cursos
-          <span style={{ background: onlyMine ? 'var(--green-600)' : 'var(--neutral-200)', color: onlyMine ? '#fff' : 'var(--ink-muted)', borderRadius: '999px', padding: '1px 7px', fontSize: '11.5px' }}>
-            {myCoursesCount}
-          </span>
-        </button>
+      {(isAdmin || isInstructor) && (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {managerStats.map((stat) => <StatCard key={stat.label} {...stat} />)}
+        </div>
       )}
 
-      {/* ── Search + sort bar ── */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* Search input */}
-        <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: '400px' }}>
-          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
-          <input
-            type="search"
-            placeholder="Buscar cursos o instructor…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: '100%',
-              height: '44px',
-              paddingLeft: '42px',
-              paddingRight: '14px',
-              borderRadius: 'var(--radius-md)',
-              border: '1.5px solid var(--neutral-200)',
-              background: 'var(--blue-50)',
-              fontSize: '14px',
-              color: 'var(--ink)',
-              fontFamily: 'var(--font-sans)',
-              outline: 'none',
-              transition: 'border-color 160ms, box-shadow 160ms',
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--blue-400)';
-              e.currentTarget.style.boxShadow = '0 0 0 4px rgba(61,108,229,0.1)';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--neutral-200)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {isAdmin || isInstructor ? (
+          <CourseTabs
+            tabs={managerTabs}
+            active={managerTab}
+            onChange={(tab) => { setManagerTab(tab); setPage(1); }}
+            tone="green"
           />
-        </div>
-
-        {/* Level chips */}
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {LEVEL_CHIPS.map((chip) => (
-            <Chip
-              key={chip}
-              label={chip}
-              active={levelChip === chip}
-              onClick={() => { setLevelChip(chip); setLevelFilters([]); }}
-            />
-          ))}
-        </div>
-
-        {/* Sort */}
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          style={{
-            height: '40px',
-            padding: '0 12px',
-            borderRadius: 'var(--radius-md)',
-            border: '1.5px solid var(--neutral-200)',
-            background: 'var(--panel)',
-            color: 'var(--ink)',
-            fontSize: '13.5px',
-            fontFamily: 'var(--font-sans)',
-            cursor: 'pointer',
-            outline: 'none',
-          }}
-        >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-
-        {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={clearAll}
-            style={{ fontSize: '13px', color: 'var(--blue-600)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)', padding: '4px 6px', borderRadius: '6px', fontWeight: 500 }}
-          >
-            <Icon icon={APP_ICONS.close} width={13} height={13} style={{ verticalAlign: '-2px' }} /> Limpiar filtros
-          </button>
+        ) : (
+          <CourseTabs
+            tabs={studentTabs}
+            active={studentTab}
+            onChange={(tab) => { setStudentTab(tab); setPage(1); }}
+          />
         )}
       </div>
 
-      {/* ── Main: sidebar + grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '24px', alignItems: 'start' }}>
+      {/* ── "Mis cursos" toggle — solo para admin: es el único que ve cursos
+             ajenos, así que es el único para quien el filtro significa algo. ── */}
+      {isAdmin && myEmail && myCoursesCount > 0 && (
+        <AppButton
+          onClick={() => { setOnlyMine((v) => !v); setPage(1); }}
+          variant={onlyMine ? 'contained' : 'outlined'}
+          startIcon={<Icon icon={APP_ICONS.user} width={14} height={14} />}
+          sx={{
+            alignSelf: 'flex-start',
+            border: onlyMine ? '1.5px solid var(--green-500)' : '1.5px solid var(--neutral-200)',
+            bgcolor: onlyMine ? 'var(--green-50)' : 'var(--panel)',
+            color: onlyMine ? 'var(--green-700)' : 'var(--ink-muted)',
+            borderRadius: '999px',
+            px: 2,
+            py: 0.8,
+            fontSize: 13,
+            fontWeight: onlyMine ? 700 : 600,
+            fontFamily: 'var(--font-sans)',
+            textTransform: 'none',
+            boxShadow: 'none',
+            '&:hover': { bgcolor: onlyMine ? 'var(--green-50)' : 'var(--neutral-50)', borderColor: onlyMine ? 'var(--green-500)' : 'var(--neutral-200)' },
+          }}
+        >
+          Mis cursos
+          <span style={{ background: onlyMine ? 'var(--green-600)' : 'var(--neutral-200)', color: onlyMine ? '#fff' : 'var(--ink-muted)', borderRadius: '999px', padding: '1px 7px', fontSize: '0.7188rem' }}>
+            {myCoursesCount}
+          </span>
+        </AppButton>
+      )}
 
-        {/* ── Filters sidebar ── */}
-        <Card padding="default" style={{ position: 'sticky', top: '80px' }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '18px', marginBottom: '20px', color: 'var(--ink)' }}>
-            Filtros
+      {/* ── Barra de filtros — compacta y plegable ──
+             Solo el buscador queda siempre a la vista; orden, nivel y estado se
+             despliegan bajo demanda para que la barra no domine la página. */}
+      <div style={{ borderRadius: '1rem', border: '1px solid var(--neutral-100)', background: 'rgba(255,255,255,0.86)', boxShadow: '0 6px 18px rgba(23,50,77,0.05)', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: filtersOpen ? '0.5rem' : 0 }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', width: '100%' }}>
+          {/* Buscador */}
+          <div style={{ flex: '1 1 12rem', minWidth: '9rem' }}>
+            <AppInput
+              type="search"
+              placeholder="Buscar cursos o instructor…"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              withSearchIcon
+              sx={DENSE_FIELD_SX}
+            />
           </div>
 
-          <FilterSection title="Nivel">
-            {LEVELS.map((l) => (
-              <FilterItem
-                key={l}
-                label={l}
-                count={levelCounts[l] ?? 0}
-                checked={levelFilters.includes(l)}
-                onChange={(on) => { setLevelChip('Todos'); toggleLevel(l, on); }}
-              />
-            ))}
-          </FilterSection>
-
-          <FilterSection title="Estado">
-            {STATUSES.map((s) => (
-              <FilterItem
-                key={s}
-                label={STATUS_LABEL[s]}
-                count={statusCounts[s] ?? 0}
-                checked={statusFilters.includes(s)}
-                onChange={(on) => toggleStatus(s, on)}
-              />
-            ))}
-          </FilterSection>
+          {/* Alternar filtros. El contador es lo que evita que plegarlos oculte
+              que hay filtros aplicados y el usuario no entienda el resultado. */}
+          <AppButton
+            onClick={() => setFiltersOpen((open) => !open)}
+            aria-expanded={filtersOpen}
+            sx={{ ...DENSE_BUTTON_SX, gap: '0.4rem' }}
+          >
+            <Icon icon={APP_ICONS.filter} width={14} height={14} />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                minWidth: '1.15rem', height: '1.15rem', padding: '0 0.3rem',
+                borderRadius: '999px', background: 'var(--green-600)', color: '#fff',
+                fontSize: '0.6875rem', fontWeight: 700, lineHeight: 1,
+              }}>
+                {activeFilterCount}
+              </span>
+            )}
+            <Icon icon={filtersOpen ? APP_ICONS.chevronUp : APP_ICONS.chevronDown} width={14} height={14} />
+          </AppButton>
 
           {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={clearAll}
-              style={{
-                width: '100%',
-                padding: '10px 0',
-                borderRadius: 'var(--radius-md)',
-                border: '1.5px solid var(--neutral-200)',
-                background: 'transparent',
-                color: 'var(--ink-muted)',
-                fontSize: '13px',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-sans)',
-                marginTop: '4px',
-              }}
-            >
-              Limpiar todo
-            </button>
+            <AppButton onClick={clearAll} sx={DENSE_BUTTON_SX}>Limpiar</AppButton>
           )}
-        </Card>
+        </div>
 
-        {/* ── Course grid ── */}
-        <div>
+        {filtersOpen && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))', gap: '0.5rem' }}>
+            <AppSelect
+              value={sortBy}
+              onChange={(e: SelectChangeEvent) => { setSortBy(e.target.value); setPage(1); }}
+              sx={DENSE_SELECT_SX}
+            >
+              {SORT_OPTIONS.map((o) => (
+                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+              ))}
+            </AppSelect>
+
+            <AppSelect
+              multiple
+              value={levelFilters}
+              onChange={(e) => { setLevelFilters(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value); setPage(1); }}
+              displayEmpty
+              renderValue={(selected) => selected.length ? selected.join(', ') : 'Todos los niveles'}
+              sx={DENSE_SELECT_SX}
+            >
+              {levelOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label} ({option.count})
+                </MenuItem>
+              ))}
+            </AppSelect>
+
+            <AppSelect
+              multiple
+              value={statusFilters}
+              onChange={(e) => { setStatusFilters(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value); setPage(1); }}
+              displayEmpty
+              renderValue={(selected) => selected.length ? selected.map((value) => STATUS_LABEL[value] ?? value).join(', ') : 'Todos los estados'}
+              sx={DENSE_SELECT_SX}
+            >
+              {statusOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label} ({option.count})
+                </MenuItem>
+              ))}
+            </AppSelect>
+          </div>
+        )}
+      </div>
+
+      {/* ── Course grid ── */}
+      {(isAdmin || isInstructor || studentTab === 'mine') && (
+      <div>
+          {publishError && (
+            <p className="mb-4 rounded-2xl border-l-4 border-[var(--red-500)] bg-[#FFF1ED] px-4 py-3 text-[0.8125rem] text-[var(--red-600)]">
+              {publishError}
+            </p>
+          )}
+
+          {!loading && <SectionHeader title={currentSectionTitle} count={filtered.length} />}
+
           {/* Results summary */}
           {!loading && (
-            <div style={{ fontSize: '13px', color: 'var(--ink-muted)', marginBottom: '16px' }}>
-              Mostrando <strong style={{ color: 'var(--ink)' }}>{filtered.length}</strong> de {courses.length} cursos
+            <div style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: '1rem' }}>
+              Mostrando <strong style={{ color: 'var(--ink)' }}>{paginatedCourses.length}</strong> de {filtered.length} cursos
               {hasActiveFilters && (
                 <span> · <span style={{ color: 'var(--blue-600)', fontWeight: 500 }}>filtros activos</span></span>
               )}
@@ -433,8 +579,8 @@ export default function CoursesPage() {
 
           {loading ? (
             /* Skeleton grid */
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
-              {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+              {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filtered.length === 0 ? (
             <EmptyState
@@ -443,7 +589,11 @@ export default function CoursesPage() {
               description={
                 hasActiveFilters
                   ? 'Ningún curso coincide con los filtros actuales. Intenta ajustarlos.'
-                  : 'Aún no hay cursos registrados en el sistema.'
+                  : isAdmin
+                    ? 'Aún no hay cursos registrados en el sistema.'
+                    : isInstructor
+                      ? 'Todavía no has creado ningún curso.'
+                      : 'Aún no estás inscrito en ningún curso. Explora el catálogo público para encontrar uno.'
               }
               action={
                 hasActiveFilters
@@ -454,69 +604,99 @@ export default function CoursesPage() {
               }
             />
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
-              {filtered.map((course, i) => {
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+              {paginatedCourses.map((course, i) => {
                 const enrolled = enrolledCourseIds.has(course.id);
-                const item: CardCarouselItem = {
-                  id: course.id,
-                  title: course.title,
-                  description: course.description || 'Explora este curso y comienza cuando quieras.',
-                  eyebrow: course.category ?? course.level,
-                  coverClass: COVER_CLASSES[i % COVER_CLASSES.length],
-                  coverImageUrl: course.coverImageUrl ?? undefined,
-                  icon: courseIcon(COURSE_COVER_ICONS[i % COURSE_COVER_ICONS.length]),
-                  progress: progressByCourseId.get(course.id),
-                  onSelect: () => setSelectedCourse(course),
-                  linkLabel: enrolled ? 'Continuar' : 'Ver curso',
-                };
+                const canManageThisCourse = isAdmin || (isInstructor && course.createdBy === myEmail);
+                const requiresPayment = !course.isFree && (course.price ?? 0) > 0;
+                const actionLabel = enrolled || canManageThisCourse
+                  ? 'Continuar'
+                  : requiresPayment
+                    ? 'Comprar'
+                    : 'Inscribirme';
                 return (
-                  <div key={course.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                    <CourseHoloCard item={item} fluid />
-                    {/* Status pills below card */}
-                    {(course.status === 'draft' || enrolled) && (
-                      <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                        {enrolled && <Badge variant="blue"><Icon icon={APP_ICONS.check} width={12} height={12} style={{ verticalAlign: '-1px' }} /> Ya inscrito</Badge>}
+                  <div
+                    key={course.id}
+                    className="dashboard-card-in"
+                    style={{ display: 'flex', flexDirection: 'column', animationDelay: `${Math.min(i, 9) * 45}ms` }}
+                  >
+                    <CourseCard
+                      course={course}
+                      progress={progressByCourseId.get(course.id) ?? 0}
+                      actionLabel={actionLabel}
+                      onAction={handleSelectCourse}
+                      onDetails={handleSelectCourse}
+                    />
+                    <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', gap: '0.375rem' }}>
+                      <span>
+                        {course.isFree || !course.price ? (
+                          <Badge variant="green">Gratis</Badge>
+                        ) : (
+                          <Badge variant="dark">
+                            {new Intl.NumberFormat('es', { style: 'currency', currency: course.currency ?? 'USD' }).format(course.price)}
+                          </Badge>
+                        )}
+                      </span>
+                      <span style={{ display: 'flex', gap: '0.375rem' }}>
                         {course.status === 'draft' && <Badge variant="yellow">Borrador</Badge>}
-                      </div>
+                      </span>
+                    </div>
+                    {canPublishCourse(course) && (
+                      <AppButton
+                        variant="outlined"
+                        loading={publishingId === course.id}
+                        disabled={publishingId === course.id}
+                        onClick={() => void handlePublishCourse(course)}
+                        sx={{ mt: 1, width: '100%', justifyContent: 'center' }}
+                      >
+                        Publicar curso
+                      </AppButton>
                     )}
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
       </div>
+      )}
 
-      {/* ── Pagination stub ── */}
-      {!loading && filtered.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', paddingTop: '8px' }}>
-          {[1, 2, 3].map((p) => (
-            <button
-              key={p}
-              type="button"
-              style={{
-                width: '36px', height: '36px', borderRadius: 'var(--radius-md)',
-                border: p === 1 ? '1.5px solid var(--blue-600)' : '1.5px solid var(--neutral-200)',
-                background: p === 1 ? 'var(--blue-600)' : 'var(--panel)',
-                color: p === 1 ? 'var(--panel)' : 'var(--ink-muted)',
-                fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)',
-              }}
-            >
-              {p}
-            </button>
-          ))}
-          <button
-            type="button"
-            style={{
-              height: '36px', padding: '0 14px', borderRadius: 'var(--radius-md)',
-              border: '1.5px solid var(--neutral-200)',
-              background: 'var(--panel)', color: 'var(--ink-muted)',
-              fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+      {/* ── Cursos por descubrir ──
+             La lista de arriba está acotada a los cursos propios; esta sección
+             es el único punto del portal donde el alumno ve cursos ajenos y
+             puede inscribirse sin salir de "Mis cursos". */}
+      {!isAdmin && !isInstructor && studentTab === 'available' && (
+        <section>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <SectionHeader title="Cursos disponibles" count={enrollableCount ?? 0} />
+              <p style={{ color: 'var(--ink-muted)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {enrollableCount === null
+                  ? 'Buscando cursos…'
+                  : enrollableCount === 0
+                    ? 'Ya estás inscrito en todos los cursos publicados.'
+                    : `${enrollableCount} curso${enrollableCount !== 1 ? 's' : ''} en los que aún no estás inscrito`}
+              </p>
+            </div>
+          </div>
+
+          <EnrollableCourses
+            key={catalogKey}
+            layout="grid"
+            search={search}
+            levels={levelFilters}
+            onCountChange={handleEnrollableCount}
+            onEnrolled={() => {
+              setCatalogKey((k) => k + 1);
+              /* La inscripción cambia "Mis cursos": se recarga la lista propia. */
+              api.courses().then(setCourses).catch(() => {});
+              api.inscriptions().then(setInscriptions).catch(() => {});
             }}
-          >
-            →
-          </button>
-        </div>
+          />
+        </section>
+      )}
+
+      {!loading && filtered.length > 0 && (isAdmin || isInstructor || studentTab === 'mine') && (
+        <Pagination page={pageSafe} totalItems={filtered.length} onChange={setPage} label="cursos" />
       )}
 
       <CreateCourseModal
@@ -524,6 +704,15 @@ export default function CoursesPage() {
         onClose={() => setModalOpen(false)}
         onCreated={(course) => setCourses((prev) => [course, ...prev])}
       />
+
+      {checkoutCourse && (
+        <CheckoutModal
+          open={Boolean(checkoutCourse)}
+          course={checkoutCourse}
+          onClose={() => setCheckoutCourse(null)}
+          onPaid={handlePaid}
+        />
+      )}
     </div>
   );
 }

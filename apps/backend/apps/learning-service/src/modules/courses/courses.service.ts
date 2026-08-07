@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataScope } from '@app/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
+import { courseWhereFor } from '../../common/scope-filter';
 import { CreateCourseDto } from './dtos/create-course.dto';
 import { UpdateCourseDto } from './dtos/update-course.dto';
 
@@ -13,17 +15,42 @@ export class CoursesService {
     });
   }
 
-  findAll() {
-    return this.prisma.course.findMany({ include: { lessons: true }, orderBy: { createdAt: 'desc' } });
+  findAll(scope?: DataScope) {
+    return this.prisma.course.findMany({
+      where: courseWhereFor(scope),
+      include: { lessons: true },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
-  /** Cursos publicados, con campos mínimos — para el carrusel público del landing. */
+  /**
+   * Cursos publicados, con campos mínimos — alimenta el carrusel público del
+   * landing y el catálogo de inscripción del portal. Es la única lista de
+   * cursos que NO se acota por alcance: sirve para descubrir cursos ajenos,
+   * así que solo expone lo que se imprime en la tarjeta.
+   */
   findPublished() {
     return this.prisma.course.findMany({
       where: { status: 'published' },
-      select: { id: true, title: true, level: true, coverImageUrl: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        level: true,
+        coverImageUrl: true,
+        durationMinutes: true,
+        price: true,
+        currency: true,
+        isFree: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  /** Total de cursos publicados — para las estadísticas públicas del landing. */
+  countPublished() {
+    return this.prisma.course.count({ where: { status: 'published' } });
   }
 
   async findOne(id: string) {

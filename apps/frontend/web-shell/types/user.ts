@@ -2,7 +2,7 @@
    Types · User & Auth
    ─────────────────────────────────────────── */
 
-export type UserRole = 'admin' | 'instructor' | 'student';
+export type UserRole = 'admin' | 'instructor' | 'alumno';
 
 export interface User {
   id: string;
@@ -11,6 +11,7 @@ export interface User {
   active: boolean;
   role?: UserRole;
   avatarInitials?: string;
+  avatarUrl?: string | null;
 }
 
 export interface SessionUser {
@@ -33,6 +34,6 @@ export interface LoginPayload {
 }
 
 export interface LoginResponse {
-  user: Pick<User, 'id' | 'fullName' | 'email'>;
+  user: Pick<User, 'id' | 'fullName' | 'email' | 'avatarUrl'>;
   access: AccessProfile;
 }

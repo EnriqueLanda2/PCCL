@@ -21,6 +21,10 @@ export interface Course {
   category?: string;
   rating?: number;
   studentsCount?: number;
+  /** Precio del curso — 0 o isFree=true significa acceso gratuito */
+  price?: number;
+  currency?: string;
+  isFree?: boolean;
   /** Lecciones anidadas — el endpoint GET /courses las incluye */
   lessons?: Lesson[];
 }

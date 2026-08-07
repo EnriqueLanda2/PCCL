@@ -1,0 +1,641 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "2.0.0",
+  "generatedAt": "2026-08-06T23:42:44.359Z",
+  "rig": {
+    "id": "pccl-human-rig-v1",
+    "bones": [
+      "Root",
+      "Hips",
+      "Spine",
+      "Spine1",
+      "Neck",
+      "Head",
+      "LeftShoulder",
+      "LeftArm",
+      "LeftForeArm",
+      "LeftHand",
+      "RightShoulder",
+      "RightArm",
+      "RightForeArm",
+      "RightHand",
+      "LeftUpLeg",
+      "LeftLeg",
+      "LeftFoot",
+      "RightUpLeg",
+      "RightLeg",
+      "RightFoot"
+    ]
+  },
+  "morphTargets": [
+    "blinkLeft",
+    "blinkRight",
+    "smile",
+    "mouthOpen",
+    "browUp",
+    "surprised",
+    "sad"
+  ],
+  "animations": [
+    {
+      "id": "Idle",
+      "revision": 1,
+      "delivery": "bundled",
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ]
+    },
+    {
+      "id": "Breathing",
+      "revision": 1,
+      "delivery": "bundled",
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ]
+    },
+    {
+      "id": "Wave",
+      "revision": 1,
+      "delivery": "bundled",
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ]
+    },
+    {
+      "id": "Presentation",
+      "revision": 1,
+      "delivery": "bundled",
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ]
+    }
+  ],
+  "bodies": [
+    {
+      "id": "female-base",
+      "revision": 1,
+      "type": "body",
+      "label": "Humana femenina PCCL",
+      "url": "/avatars/custom/bodies/female-base.glb",
+      "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+      "genders": [
+        "feminine",
+        "androgynous"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 479932,
+      "triangles": 56092,
+      "trianglesByObject": {
+        "Body_Skin": 23000,
+        "Head_Face": 12392,
+        "Top_A": 6500,
+        "Bottom_A": 6500,
+        "Shoes_A": 3200,
+        "Hair_chunky-short": 4500
+      },
+      "morphTargets": [
+        "blinkLeft",
+        "blinkRight",
+        "browUp",
+        "mouthOpen",
+        "sad",
+        "smile",
+        "surprised"
+      ],
+      "animations": [
+        "Breathing",
+        "Idle",
+        "Presentation",
+        "Wave"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "male-base",
+      "revision": 1,
+      "type": "body",
+      "label": "Humano masculino PCCL",
+      "url": "/avatars/custom/bodies/male-base.glb",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "genders": [
+        "masculine",
+        "androgynous"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 482520,
+      "triangles": 56092,
+      "trianglesByObject": {
+        "Body_Skin": 23000,
+        "Head_Face": 12392,
+        "Top_A": 6500,
+        "Bottom_A": 6500,
+        "Shoes_A": 3200,
+        "Hair_chunky-short": 4500
+      },
+      "morphTargets": [
+        "blinkLeft",
+        "blinkRight",
+        "browUp",
+        "mouthOpen",
+        "sad",
+        "smile",
+        "surprised"
+      ],
+      "animations": [
+        "Breathing",
+        "Idle",
+        "Presentation",
+        "Wave"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "neutral-base",
+      "revision": 1,
+      "type": "body",
+      "label": "Base neutral PCCL",
+      "url": "/avatars/custom/bodies/neutral-base.glb",
+      "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
+      "genders": [
+        "androgynous"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 483584,
+      "triangles": 56092,
+      "trianglesByObject": {
+        "Body_Skin": 23000,
+        "Head_Face": 12392,
+        "Top_A": 6500,
+        "Bottom_A": 6500,
+        "Shoes_A": 3200,
+        "Hair_chunky-short": 4500
+      },
+      "morphTargets": [
+        "blinkLeft",
+        "blinkRight",
+        "browUp",
+        "mouthOpen",
+        "sad",
+        "smile",
+        "surprised"
+      ],
+      "animations": [
+        "Breathing",
+        "Idle",
+        "Presentation",
+        "Wave"
+      ],
+      "dependencies": []
+    }
+  ],
+  "hair": [
+    {
+      "id": "chunky-short",
+      "revision": 1,
+      "label": "Corto por mechones",
+      "delivery": "bundled",
+      "meshName": "Hair_chunky-short",
+      "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+      "compatibleBodies": [
+        "female-base",
+        "male-base",
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 4500,
+      "dependencies": []
+    },
+    {
+      "id": "layered-bob__female-base",
+      "pieceId": "layered-bob",
+      "revision": 1,
+      "label": "Melena por capas",
+      "delivery": "lazy",
+      "url": "/avatars/custom/hair/female-base__layered-bob.glb",
+      "hidesMesh": "Hair_chunky-short",
+      "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+      "compatibleBodies": [
+        "female-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 38724,
+      "triangles": 4500,
+      "dependencies": [
+        "female-base"
+      ]
+    },
+    {
+      "id": "layered-bob__male-base",
+      "pieceId": "layered-bob",
+      "revision": 1,
+      "label": "Melena por capas",
+      "delivery": "lazy",
+      "url": "/avatars/custom/hair/male-base__layered-bob.glb",
+      "hidesMesh": "Hair_chunky-short",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "compatibleBodies": [
+        "male-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 39060,
+      "triangles": 4500,
+      "dependencies": [
+        "male-base"
+      ]
+    },
+    {
+      "id": "layered-bob__neutral-base",
+      "pieceId": "layered-bob",
+      "revision": 1,
+      "label": "Melena por capas",
+      "delivery": "lazy",
+      "url": "/avatars/custom/hair/neutral-base__layered-bob.glb",
+      "hidesMesh": "Hair_chunky-short",
+      "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
+      "compatibleBodies": [
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 38808,
+      "triangles": 4500,
+      "dependencies": [
+        "neutral-base"
+      ]
+    }
+  ],
+  "tops": [
+    {
+      "id": "top-a",
+      "revision": 1,
+      "label": "Sudadera vinilo",
+      "delivery": "bundled",
+      "meshName": "Top_A",
+      "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+      "compatibleBodies": [
+        "female-base",
+        "male-base",
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 6500,
+      "dependencies": []
+    },
+    {
+      "id": "top-b__female-base",
+      "pieceId": "top-b",
+      "revision": 1,
+      "label": "Polo suave",
+      "delivery": "lazy",
+      "url": "/avatars/custom/clothing/female-base__top-b.glb",
+      "hidesMesh": "Top_A",
+      "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+      "compatibleBodies": [
+        "female-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 55712,
+      "triangles": 6500,
+      "dependencies": [
+        "female-base"
+      ]
+    },
+    {
+      "id": "top-b__male-base",
+      "pieceId": "top-b",
+      "revision": 1,
+      "label": "Polo suave",
+      "delivery": "lazy",
+      "url": "/avatars/custom/clothing/male-base__top-b.glb",
+      "hidesMesh": "Top_A",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "compatibleBodies": [
+        "male-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 56692,
+      "triangles": 6500,
+      "dependencies": [
+        "male-base"
+      ]
+    },
+    {
+      "id": "top-b__neutral-base",
+      "pieceId": "top-b",
+      "revision": 1,
+      "label": "Polo suave",
+      "delivery": "lazy",
+      "url": "/avatars/custom/clothing/neutral-base__top-b.glb",
+      "hidesMesh": "Top_A",
+      "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
+      "compatibleBodies": [
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 56252,
+      "triangles": 6498,
+      "dependencies": [
+        "neutral-base"
+      ]
+    }
+  ],
+  "bottoms": [
+    {
+      "id": "bottom-a",
+      "revision": 1,
+      "label": "Pantalón largo",
+      "delivery": "bundled",
+      "meshName": "Bottom_A",
+      "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+      "compatibleBodies": [
+        "female-base",
+        "male-base",
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 6500,
+      "dependencies": []
+    },
+    {
+      "id": "bottom-b__female-base",
+      "pieceId": "bottom-b",
+      "revision": 1,
+      "label": "Bermuda",
+      "delivery": "lazy",
+      "url": "/avatars/custom/clothing/female-base__bottom-b.glb",
+      "hidesMesh": "Bottom_A",
+      "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+      "compatibleBodies": [
+        "female-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 51484,
+      "triangles": 6500,
+      "dependencies": [
+        "female-base"
+      ]
+    },
+    {
+      "id": "bottom-b__male-base",
+      "pieceId": "bottom-b",
+      "revision": 1,
+      "label": "Bermuda",
+      "delivery": "lazy",
+      "url": "/avatars/custom/clothing/male-base__bottom-b.glb",
+      "hidesMesh": "Bottom_A",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "compatibleBodies": [
+        "male-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 52076,
+      "triangles": 6500,
+      "dependencies": [
+        "male-base"
+      ]
+    },
+    {
+      "id": "bottom-b__neutral-base",
+      "pieceId": "bottom-b",
+      "revision": 1,
+      "label": "Bermuda",
+      "delivery": "lazy",
+      "url": "/avatars/custom/clothing/neutral-base__bottom-b.glb",
+      "hidesMesh": "Bottom_A",
+      "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
+      "compatibleBodies": [
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 52360,
+      "triangles": 6498,
+      "dependencies": [
+        "neutral-base"
+      ]
+    }
+  ],
+  "shoes": [
+    {
+      "id": "shoes-a",
+      "revision": 1,
+      "label": "Tenis redondeados",
+      "delivery": "bundled",
+      "meshName": "Shoes_A",
+      "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+      "compatibleBodies": [
+        "female-base",
+        "male-base",
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 3200,
+      "dependencies": []
+    },
+    {
+      "id": "shoes-b__female-base",
+      "pieceId": "shoes-b",
+      "revision": 1,
+      "label": "Zapato vinilo",
+      "delivery": "lazy",
+      "url": "/avatars/custom/clothing/female-base__shoes-b.glb",
+      "hidesMesh": "Shoes_A",
+      "thumbnail": "/avatars/custom/thumbnails/female-base.png",
+      "compatibleBodies": [
+        "female-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 31588,
+      "triangles": 3200,
+      "dependencies": [
+        "female-base"
+      ]
+    },
+    {
+      "id": "shoes-b__male-base",
+      "pieceId": "shoes-b",
+      "revision": 1,
+      "label": "Zapato vinilo",
+      "delivery": "lazy",
+      "url": "/avatars/custom/clothing/male-base__shoes-b.glb",
+      "hidesMesh": "Shoes_A",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "compatibleBodies": [
+        "male-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 31236,
+      "triangles": 3200,
+      "dependencies": [
+        "male-base"
+      ]
+    },
+    {
+      "id": "shoes-b__neutral-base",
+      "pieceId": "shoes-b",
+      "revision": 1,
+      "label": "Zapato vinilo",
+      "delivery": "lazy",
+      "url": "/avatars/custom/clothing/neutral-base__shoes-b.glb",
+      "hidesMesh": "Shoes_A",
+      "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
+      "compatibleBodies": [
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 31584,
+      "triangles": 3200,
+      "dependencies": [
+        "neutral-base"
+      ]
+    }
+  ],
+  "accessories": [
+    {
+      "id": "none",
+      "revision": 1,
+      "label": "Sin accesorio",
+      "delivery": "bundled"
+    },
+    {
+      "id": "facial-hair-goatee__male-base",
+      "pieceId": "facial-hair-goatee",
+      "revision": 1,
+      "label": "Perilla geométrica",
+      "delivery": "lazy",
+      "url": "/avatars/custom/accessories/male-base__facial-hair-goatee.glb",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "compatibleBodies": [
+        "male-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 21156,
+      "triangles": 2324,
+      "dependencies": [
+        "male-base"
+      ]
+    }
+  ]
+}

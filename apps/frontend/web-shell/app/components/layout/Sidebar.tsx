@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import { Logo } from './Logo';
-import { Avatar, getInitials } from '@/app/components/ui/Avatar';
+import { StudentAvatar } from '@/app/components/shared/StudentAvatar';
 import { api } from '@/lib/api';
 import { appRoutes } from '@/lib/routes';
 import { cn } from '@/lib/cn';
@@ -21,12 +23,15 @@ const icons: Record<string, React.ReactNode> = {
   inscriptions:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   lessons:       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   live:          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><rect x="2" y="6" width="14" height="12" rx="2" strokeLinecap="round" strokeLinejoin="round"/><path d="m22 8-6 4 6 4z" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  earnings:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M3 3v18h18M7 15l3-3 3 2 5-7M17 7h3v3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   califications: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   audit:         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   rbac:          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   logout:        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   chevronLeft:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   chevronRight:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  menu:          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18"><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round"/></svg>,
+  close:         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="16" height="16"><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round"/></svg>,
 };
 
 type MenuItem = { key: string; path: string; label: string; icon: string };
@@ -34,40 +39,60 @@ type MenuItem = { key: string; path: string; label: string; icon: string };
 const menuCatalog: MenuItem[] = [
   { key: 'dashboard',     path: appRoutes.dashboard,     label: 'Resumen',             icon: 'home'       },
   { key: 'courses',       path: appRoutes.courses,       label: 'Mis cursos',          icon: 'courses'    },
+  { key: 'catalog',       path: appRoutes.catalog,       label: 'Catálogo',            icon: 'catalog'    },
   { key: 'liveClasses',   path: appRoutes.liveClasses,   label: 'Clases en vivo',      icon: 'live'       },
+  { key: 'earnings',      path: appRoutes.earnings,      label: 'Ganancias',           icon: 'earnings'   },
   { key: 'lessons',       path: appRoutes.lessons,       label: 'Temas y lecciones',   icon: 'catalog'    },
   { key: 'progress',      path: appRoutes.progress,      label: 'Estudiantes',         icon: 'progress'   },
   { key: 'certificates',  path: appRoutes.certificates,  label: 'Certificaciones',     icon: 'certificates' },
   { key: 'profile',       path: appRoutes.identity,      label: 'Perfil e impartición', icon: 'profile'    },
   { key: 'inscriptions',  path: appRoutes.inscriptions,  label: 'Inscripciones',       icon: 'inscriptions' },
-  { key: 'califications', path: appRoutes.califications, label: 'Calificaciones',      icon: 'califications' },
+  /* 'califications' se retiró del menú: la vista no aporta nada al usuario.
+     La ruta y el módulo RBAC siguen existiendo, solo dejó de navegarse. */
   { key: 'reports',       path: appRoutes.audit,         label: 'Auditoría',           icon: 'audit'      },
   { key: 'users',         path: appRoutes.users,         label: 'Usuarios',            icon: 'users'      },
   { key: 'rbac',          path: appRoutes.rbac,          label: 'RBAC',                icon: 'rbac'       },
 ];
 
-const learningGroup = new Set(['dashboard', 'courses', 'liveClasses', 'lessons', 'progress']);
+const learningGroup = new Set(['dashboard', 'courses', 'catalog', 'liveClasses', 'earnings', 'lessons', 'progress']);
 const identityGroup = new Set(['profile']);
 const certificationGroup = new Set(['certificates']);
-const extraGroup = new Set(['inscriptions', 'califications', 'reports', 'users', 'rbac']);
-/* El perfil es visible para cualquier usuario autenticado — no está atado a un privilegio RBAC */
-const ALWAYS_VISIBLE_KEYS = ['profile'];
+const extraGroup = new Set(['inscriptions', 'reports', 'users', 'rbac']);
+/* Visibles para cualquier usuario autenticado — no están atados a un privilegio
+   RBAC. El catálogo entra aquí porque inscribirse no requiere permisos de
+   gestión: es la vía por la que un alumno consigue sus cursos. */
+const ALWAYS_VISIBLE_KEYS = ['profile', 'catalog', 'earnings'];
+
+/* Vistas de gestión docente: listan datos de OTROS alumnos, así que se
+   restringen por rol y no por privilegio. Un alumno conserva
+   'inscriptions:create' para poder inscribirse, pero no debe ver el padrón
+   completo de inscripciones.
+
+   'progress' ("Estudiantes") entra aquí por lo mismo: el backend ya acota los
+   datos por rol (resolveScope devuelve {kind:'user'} a un alumno), así que a un
+   alumno la vista solo le mostraba una ficha: él mismo. No era una fuga, pero sí
+   una sección de seguimiento docente que para él no significa nada. */
+const STAFF_ONLY_KEYS = new Set(['inscriptions', 'earnings', 'progress']);
+const STAFF_ROLES = ['admin', 'instructor'];
 
 /* ── Section label ── */
 function SectionLabel({ children, collapsed }: Readonly<{ children: React.ReactNode; collapsed: boolean }>) {
   if (collapsed) return <div className="h-px bg-white/10 mx-2 my-3" />;
   return (
-    <p className="px-3 pt-5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#9CA9A0] select-none">
+    <p className="px-3 pt-5 pb-1.5 text-[0.625rem] font-bold uppercase tracking-[0.22em] text-[#9CA9A0] select-none">
       {children}
     </p>
   );
 }
 
 /* ── Nav item ── */
-function NavItem({ item, collapsed, isActive }: Readonly<{ item: MenuItem; collapsed: boolean; isActive: boolean }>) {
+function NavItem({ item, collapsed, isActive, onNavigate }: Readonly<{ item: MenuItem; collapsed: boolean; isActive: boolean; onNavigate: () => void }>) {
   return (
     <Link
       href={item.path}
+      /* Cerrar el drawer se hace aquí, en el evento, y no en un efecto que
+         observe la ruta: así no hay un render extra en cada navegación. */
+      onClick={onNavigate}
       title={collapsed ? item.label : undefined}
       className={cn(
         'relative flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium',
@@ -104,39 +129,101 @@ export function Sidebar() {
      mismatch. sessionStorage no existe en el servidor, así que su lectura
      vive solo en el useEffect de abajo, nunca en el inicializador de useState. */
   const [visibleKeys,   setVisibleKeys]   = useState<string[]>(() => menuCatalog.map((m) => m.key));
-  const [userInitials,  setUserInitials]  = useState('US');
   const [userLabel,     setUserLabel]     = useState('Usuario');
+  const [avatarUrl,     setAvatarUrl]     = useState<string | null>(null);
+  /* Identidad para elegir retrato de la galería cuando aún no hay avatar
+     publicado. Se cae al email si no hay id: lo importante es que sea estable. */
+  const [userId,        setUserId]        = useState('');
   const [roleLabel,     setRoleLabel]     = useState('');
+  const [roles,         setRoles]         = useState<string[]>([]);
   const [loggingOut,    setLoggingOut]    = useState(false);
+  const [collapsed,     setCollapsed]     = useState(false);
+  /* Drawer en móvil/tablet. Arranca cerrado y debe coincidir con el servidor. */
+  const [mobileOpen,    setMobileOpen]    = useState(false);
+  /* isMobile arranca en false para que el primer render del cliente calce con
+     el del servidor; el valor real se resuelve en el efecto de abajo. */
+  const [isMobile,      setIsMobile]      = useState(false);
 
   useEffect(() => {
-    try {
-      const cachedAccess = sessionStorage.getItem('pccl_access');
-      if (cachedAccess) {
-        const access = JSON.parse(cachedAccess) as { menu?: { module: string; visible: boolean }[]; roles?: string[] };
-        const keys = access.menu?.filter((m) => m.visible).map((m) => m.module).filter((key): key is string => Boolean(key));
-        const resolved = keys?.length ? keys : menuCatalog.map((m) => m.key);
-        const missingAlwaysVisible = ALWAYS_VISIBLE_KEYS.filter((key) => !resolved.includes(key));
-        setVisibleKeys([...resolved, ...missingAlwaysVisible]);
-        setRoleLabel(access.roles?.[0] ?? '');
+    queueMicrotask(() => {
+      try {
+        setCollapsed(localStorage.getItem('pccl_sidebar_collapsed') === '1');
+        const cachedAccess = sessionStorage.getItem('pccl_access');
+        if (cachedAccess) {
+          const access = JSON.parse(cachedAccess) as { menu?: { module: string; visible: boolean }[]; roles?: string[] };
+          const keys = access.menu?.filter((m) => m.visible).map((m) => m.module).filter((key): key is string => Boolean(key));
+          const resolved = keys?.length ? keys : menuCatalog.map((m) => m.key);
+          const missingAlwaysVisible = ALWAYS_VISIBLE_KEYS.filter((key) => !resolved.includes(key));
+          setVisibleKeys([...resolved, ...missingAlwaysVisible]);
+          setRoleLabel(access.roles?.[0] ?? '');
+          setRoles(access.roles ?? []);
+        }
+      } catch {
+        // conserva los valores por defecto
       }
-    } catch {
-      // conserva los valores por defecto
-    }
+    });
 
-    try {
-      const cachedUser = sessionStorage.getItem('pccl_user');
-      if (cachedUser) {
-        const user = JSON.parse(cachedUser) as { fullName?: string; email?: string };
-        setUserInitials(getInitials(user.fullName ?? user.email ?? 'US'));
-        setUserLabel(user.fullName ?? user.email ?? 'Usuario');
+    const syncUser = () => {
+      try {
+        const cachedUser = sessionStorage.getItem('pccl_user');
+        if (cachedUser) {
+          const user = JSON.parse(cachedUser) as {
+            id?: string; fullName?: string; email?: string; avatarUrl?: string | null;
+          };
+          setUserLabel(user.fullName ?? user.email ?? 'Usuario');
+          setAvatarUrl(user.avatarUrl ?? null);
+          setUserId(user.id ?? user.email ?? '');
+        }
+      } catch {
+        // conserva los valores por defecto
       }
-    } catch {
-      // conserva los valores por defecto
-    }
+    };
+
+    queueMicrotask(syncUser);
+    window.addEventListener('pccl_user_updated', syncUser);
+    return () => window.removeEventListener('pccl_user_updated', syncUser);
   }, []);
 
-  const menu            = menuCatalog.filter((m) => visibleKeys.includes(m.key));
+  /* Debajo de lg el sidebar deja de ser una columna fija y pasa a ser un drawer:
+     en 375px de ancho una barra de 282px se comía la pantalla entera. */
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  /* Con el drawer abierto el fondo no debe hacer scroll detrás del overlay. */
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previous; };
+  }, [mobileOpen]);
+
+  /* Escape cierra el drawer, igual que en los modales. */
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(false); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [mobileOpen]);
+
+  const closeDrawer = useCallback(() => setMobileOpen(false), []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((current) => {
+      const next = !current;
+      localStorage.setItem('pccl_sidebar_collapsed', next ? '1' : '0');
+      return next;
+    });
+  };
+
+  const isStaff = roles.some((r) => STAFF_ROLES.includes(r));
+  const menu    = menuCatalog.filter(
+    (m) => visibleKeys.includes(m.key) && (!STAFF_ONLY_KEYS.has(m.key) || isStaff),
+  );
   const learningItems   = menu.filter((m) => learningGroup.has(m.key));
   const identityItems   = menu.filter((m) => identityGroup.has(m.key));
   const certificationItems = menu.filter((m) => certificationGroup.has(m.key));
@@ -150,105 +237,229 @@ export function Sidebar() {
     router.replace(appRoutes.login);
   };
 
+  /* En móvil el drawer siempre se muestra expandido: colapsarlo a iconos ahí no
+     aporta espacio (está superpuesto) y deja el menú sin etiquetas. */
+  const rail = collapsed && !isMobile;
+
   return (
-    <aside
-      className={cn(
-        'bg-[var(--sidebar)] flex flex-col gap-0.5 py-4 sticky top-0 h-screen overflow-y-auto overflow-x-hidden',
-        'transition-all duration-300 ease-in-out border-r border-[var(--sidebar-border)] shadow-[0_0_0_1px_rgba(255,255,255,0.65)_inset]',
-        'px-3 w-[282px]',
-      )}
-    >
-      {/* ── Logo ── */}
-      <div className="flex items-center justify-between pb-5 px-1">
-        <Logo href={appRoutes.dashboard} />
-      </div>
-
-      {/* ── Learning section ── */}
-      {learningItems.length > 0 && (
-        <>
-          <SectionLabel collapsed={false}>Gestión</SectionLabel>
-          {learningItems.map((item) => (
-            <NavItem
-              key={item.key}
-              item={item}
-              collapsed={false}
-              isActive={pathname.startsWith(item.path)}
-            />
-          ))}
-        </>
-      )}
-
-      {/* ── Identity section ── */}
-      {identityItems.length > 0 && (
-        <>
-          <SectionLabel collapsed={false}>Cuenta</SectionLabel>
-          {identityItems.map((item) => (
-            <NavItem
-              key={item.key}
-              item={item}
-              collapsed={false}
-              isActive={pathname.startsWith(item.path)}
-            />
-          ))}
-        </>
-      )}
-
-      {/* ── Certification section ── */}
-      {certificationItems.length > 0 && (
-        <>
-          <SectionLabel collapsed={false}>Certificar</SectionLabel>
-          {certificationItems.map((item) => (
-            <NavItem
-              key={item.key}
-              item={item}
-              collapsed={false}
-              isActive={pathname.startsWith(item.path)}
-            />
-          ))}
-        </>
-      )}
-
-      {extraItems.length > 0 && (
-        <>
-          <SectionLabel collapsed={false}>Más</SectionLabel>
-          {extraItems.map((item) => (
-            <NavItem
-              key={item.key}
-              item={item}
-              collapsed={false}
-              isActive={pathname.startsWith(item.path)}
-            />
-          ))}
-        </>
-      )}
-
-      {/* ── Spacer ── */}
-      <div className="flex-1" />
-
-      {/* ── User card ── */}
-      <div className="mx-1 mb-3 flex items-center gap-3 px-3 py-3 rounded-2xl bg-[#F7FAF3] border border-[#E3EAD9]">
-        <Avatar initials={userInitials} size="sm" variant="blue" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-[var(--ink)] truncate leading-tight">{userLabel}</p>
-          {roleLabel && (
-            <p className="text-[11px] text-[var(--ink-muted)] truncate mt-0.5">{roleLabel}</p>
-          )}
-        </div>
-      </div>
-
-      {/* ── Logout ── */}
+    <>
+      {/* ── Botón hamburguesa (solo móvil/tablet) ── */}
       <button
-        onClick={handleLogout}
-        disabled={loggingOut}
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Abrir menú"
+        aria-expanded={mobileOpen}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium',
-          'text-[#5E6C84] hover:text-[var(--ink)] hover:bg-[#F4F7EF] transition-colors duration-150',
-          'cursor-pointer border-0 bg-transparent w-full disabled:opacity-50',
+          'fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-full lg:hidden',
+          'border border-[var(--sidebar-border)] bg-white text-[var(--green-700)] shadow-[0_8px_18px_rgba(23,50,77,0.12)]',
+          mobileOpen && 'pointer-events-none opacity-0',
         )}
       >
-        <span className="flex-shrink-0 opacity-70">{icons.logout}</span>
-        <span>{loggingOut ? 'Saliendo…' : 'Cerrar sesión'}</span>
+        {icons.menu}
       </button>
-    </aside>
+
+      {/* ── Backdrop del drawer ── */}
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Cerrar menú"
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-40 bg-[rgba(17,41,26,0.45)] backdrop-blur-[2px] lg:hidden"
+        />
+      )}
+
+      <aside
+        className={cn(
+          /* Sin overflow propio a propósito: con overflow-y:auto el navegador
+             fuerza overflow-x a auto también (visible no es combinable), y eso
+             recortaba el chevron y el badge que sobresalen del borde. El scroll
+             vive ahora en el <nav> de adentro. */
+          'bg-[var(--sidebar)] flex flex-col py-4 z-50',
+          'border-r border-[var(--sidebar-border)] shadow-[0_0_0_1px_rgba(255,255,255,0.65)_inset]',
+          'transition-[width,transform] duration-300 ease-in-out',
+          /* Móvil: drawer superpuesto. Desktop: columna que acompaña el scroll.
+
+             Ojo con el orden: cn() usa twMerge, así que una utilidad compuesta
+             como `lg:inset-y-*` colocada después de `lg:top-0` la elimina por
+             conflicto y el sticky se queda sin umbral (deja de pegarse). Por eso
+             aquí se usan top/bottom sueltos y nunca inset-y con el mismo prefijo. */
+          'fixed top-0 bottom-0 left-0 w-[17.625rem]',
+          'lg:sticky lg:bottom-auto lg:left-auto lg:translate-x-0 lg:h-screen lg:top-0',
+          mobileOpen ? 'translate-x-0 shadow-[0_24px_60px_rgba(23,50,77,0.28)]' : '-translate-x-full',
+          rail ? 'lg:w-[4.75rem] lg:px-2 px-3' : 'lg:w-[17.625rem] px-3',
+        )}
+      >
+        {/* ── Logo ── */}
+        <div className={cn('relative flex items-center pb-5 px-1', rail ? 'justify-center' : 'justify-between')}>
+          {rail ? (
+            <Link
+              href={appRoutes.dashboard}
+              title="Rumbo profesores"
+              className="flex h-10 w-10 items-center justify-center rounded-[0.875rem] bg-gradient-to-br from-[var(--green-600)] to-[var(--green-500)] text-lg font-extrabold text-white shadow-[0_10px_24px_rgba(31,154,75,0.18)]"
+            >
+              R
+            </Link>
+          ) : (
+            <Logo href={appRoutes.dashboard} />
+          )}
+
+          {/* Cerrar el drawer — solo móvil, donde no hay clic fuera cómodo. */}
+          <IconButton
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Cerrar menú"
+            size="small"
+            sx={{
+              display: { xs: 'inline-flex', lg: 'none' },
+              width: 32, height: 32, color: 'var(--ink-muted)',
+              '&:hover': { bgcolor: 'var(--green-50)', color: 'var(--ink)' },
+            }}
+          >
+            {icons.close}
+          </IconButton>
+
+          {/* Colapsar a rail — solo desktop. Sobresale del borde, lo que ahora
+              se ve completo porque el <aside> ya no recorta. */}
+          <IconButton
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={rail ? 'Mostrar sidebar' : 'Ocultar sidebar'}
+            title={rail ? 'Mostrar sidebar' : 'Ocultar sidebar'}
+            size="small"
+            sx={{
+              display: { xs: 'none', lg: 'inline-flex' },
+              position: 'absolute',
+              right: '-1.6rem',
+              top: '0.75rem',
+              width: 28,
+              height: 28,
+              borderRadius: '999px',
+              border: '1px solid var(--sidebar-border)',
+              bgcolor: 'var(--panel)',
+              color: 'var(--green-700)',
+              boxShadow: '0 10px 22px rgba(23,50,77,0.12)',
+              zIndex: 20,
+              '&:hover': { bgcolor: 'var(--green-50)' },
+            }}
+          >
+            {rail ? icons.chevronRight : icons.chevronLeft}
+          </IconButton>
+        </div>
+
+        {/* Único contenedor con scroll: mantiene el <aside> sin recorte para que
+            el chevron pueda sobresalir del borde. */}
+        <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden">
+          {/* ── Learning section ── */}
+          {learningItems.length > 0 && (
+            <>
+              <SectionLabel collapsed={rail}>Gestión</SectionLabel>
+              {learningItems.map((item) => (
+                <NavItem
+                  key={item.key}
+                  item={item}
+                  collapsed={rail}
+                  isActive={pathname.startsWith(item.path)}
+                  onNavigate={closeDrawer}
+                />
+              ))}
+            </>
+          )}
+
+          {/* ── Identity section ── */}
+          {identityItems.length > 0 && (
+            <>
+              <SectionLabel collapsed={rail}>Cuenta</SectionLabel>
+              {identityItems.map((item) => (
+                <NavItem
+                  key={item.key}
+                  item={item}
+                  collapsed={rail}
+                  isActive={pathname.startsWith(item.path)}
+                  onNavigate={closeDrawer}
+                />
+              ))}
+            </>
+          )}
+
+          {/* ── Certification section ── */}
+          {certificationItems.length > 0 && (
+            <>
+              <SectionLabel collapsed={rail}>Certificar</SectionLabel>
+              {certificationItems.map((item) => (
+                <NavItem
+                  key={item.key}
+                  item={item}
+                  collapsed={rail}
+                  isActive={pathname.startsWith(item.path)}
+                  onNavigate={closeDrawer}
+                />
+              ))}
+            </>
+          )}
+
+          {extraItems.length > 0 && (
+            <>
+              <SectionLabel collapsed={rail}>Más</SectionLabel>
+              {extraItems.map((item) => (
+                <NavItem
+                  key={item.key}
+                  item={item}
+                  collapsed={rail}
+                  isActive={pathname.startsWith(item.path)}
+                  onNavigate={closeDrawer}
+                />
+              ))}
+            </>
+          )}
+        </nav>
+
+        {/* ── Pie fijo: queda siempre visible, fuera del área que scrollea ── */}
+        <div className="flex-shrink-0 pt-2">
+          {/* ── User card ── */}
+          <div
+            className={cn(
+              'mx-1 mb-3 flex items-center gap-3 rounded-2xl bg-[#F7FAF3] border border-[#E3EAD9]',
+              rail ? 'justify-center px-2 py-2' : 'px-3 py-3',
+            )}
+            title={rail ? userLabel : undefined}
+          >
+            <StudentAvatar userId={userId} fullName={userLabel} avatarUrl={avatarUrl} size="sm" ring />
+            {!rail && (
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[var(--ink)] truncate leading-tight">{userLabel}</p>
+                {roleLabel && (
+                  <p className="text-[0.6875rem] text-[var(--ink-muted)] truncate mt-0.5">{roleLabel}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── Logout ── */}
+          <Button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            title={rail ? (loggingOut ? 'Saliendo…' : 'Cerrar sesión') : undefined}
+            startIcon={!rail ? <span className="flex-shrink-0 opacity-70">{icons.logout}</span> : undefined}
+            sx={{
+              justifyContent: rail ? 'center' : 'flex-start',
+              minWidth: 0,
+              width: '100%',
+              gap: 1.5,
+              px: rail ? 1 : 1.5,
+              py: 1.15,
+              borderRadius: '1rem',
+              color: '#5E6C84',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              textTransform: 'none',
+              '&:hover': { color: 'var(--ink)', bgcolor: '#F4F7EF' },
+            }}
+          >
+            {rail ? <span className="flex-shrink-0 opacity-70">{icons.logout}</span> : <span>{loggingOut ? 'Saliendo…' : 'Cerrar sesión'}</span>}
+          </Button>
+        </div>
+      </aside>
+    </>
   );
 }

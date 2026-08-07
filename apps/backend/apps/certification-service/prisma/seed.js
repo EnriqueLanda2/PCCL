@@ -3,11 +3,14 @@ const { users, inscriptions: INSCRIPTION_IDS } = require('../../../prisma/seed-s
 
 const prisma = new PrismaClient();
 
-/* ── Certificados de prueba (certificateNumber es único → upsert idempotente) ── */
+/* ── Certificados de prueba (certificateNumber es único → upsert idempotente) ──
+   userId se copia desde la inscripción: certification-service vive en su propia
+   base y no puede unir contra learning, así que el dueño va desnormalizado. */
 const CERTIFICATES = [
   {
     certificateNumber: 'RB-2026-0312',
     inscriptionId: INSCRIPTION_IDS.sofiaApis,
+    userId: users.sofia.id,
     status: 'valid',
     issuedAt: new Date('2026-06-12T10:00:00Z'),
     expiresAt: null,
@@ -15,6 +18,7 @@ const CERTIFICATES = [
   {
     certificateNumber: 'RB-2026-0298',
     inscriptionId: INSCRIPTION_IDS.robertoPostgres,
+    userId: users.roberto.id,
     status: 'valid',
     issuedAt: new Date('2026-05-28T10:00:00Z'),
     expiresAt: null,
@@ -22,6 +26,7 @@ const CERTIFICATES = [
   {
     certificateNumber: 'RB-2026-0285',
     inscriptionId: INSCRIPTION_IDS.luciaApis,
+    userId: users.lucia.id,
     status: 'valid',
     issuedAt: new Date('2026-05-15T10:00:00Z'),
     expiresAt: null,
@@ -29,6 +34,7 @@ const CERTIFICATES = [
   {
     certificateNumber: 'RB-2025-0142',
     inscriptionId: INSCRIPTION_IDS.marianaDataViz,
+    userId: users.mariana.id,
     status: 'expired',
     issuedAt: new Date('2025-01-10T10:00:00Z'),
     expiresAt: new Date('2026-01-10T10:00:00Z'),
@@ -36,6 +42,7 @@ const CERTIFICATES = [
   {
     certificateNumber: 'RB-2025-0099',
     inscriptionId: INSCRIPTION_IDS.diegoA11y,
+    userId: users.diego.id,
     status: 'revoked',
     issuedAt: new Date('2025-02-02T10:00:00Z'),
     expiresAt: null,
@@ -57,7 +64,7 @@ const AUDIT_LOGS = [
   { method: 'GET',  endpoint: '/certificates', transactionType: 'read', actorScope: 'user', actorIdentifier: users.admin.email, browser: 'Chrome 126 / Windows', description: 'Listado de certificados consultado.', statusCode: 200 },
   { method: 'PATCH', endpoint: '/users/:id', transactionType: 'update', actorScope: 'user', actorIdentifier: users.admin.email, browser: 'Chrome 126 / Windows', description: 'Datos de usuario actualizados.', statusCode: 200 },
   { method: 'DELETE', endpoint: '/lessons/:id', transactionType: 'delete', actorScope: 'user', actorIdentifier: users.instructor.email, browser: 'Chrome 126 / Windows', description: 'Intento de eliminar lección sin permisos.', statusCode: 403 },
-  { method: 'GET',  endpoint: '/audit', transactionType: 'read', actorScope: 'user', actorIdentifier: users.revisor.email, browser: 'Firefox 128 / Windows', description: 'Bitácora de auditoría consultada.', statusCode: 200 },
+  { method: 'GET',  endpoint: '/audit', transactionType: 'read', actorScope: 'user', actorIdentifier: users.instructor.email, browser: 'Firefox 128 / Windows', description: 'Bitácora de auditoría consultada.', statusCode: 200 },
   { method: 'GET',  endpoint: '/courses/9999', transactionType: 'read', actorScope: 'user', actorIdentifier: users.ana.email, browser: 'Chrome 126 / Android', description: 'Curso no encontrado.', statusCode: 404 },
 ];
 
@@ -66,6 +73,9 @@ async function main() {
     await prisma.certificate.upsert({
       where: { certificateNumber: cert.certificateNumber },
       update: {
+        // userId también en update: rellena las filas creadas antes de que
+        // existiera la columna.
+        userId: cert.userId,
         status: cert.status,
         issuedAt: cert.issuedAt,
         expiresAt: cert.expiresAt,
@@ -74,6 +84,7 @@ async function main() {
       create: {
         certificateNumber: cert.certificateNumber,
         inscriptionId: cert.inscriptionId,
+        userId: cert.userId,
         status: cert.status,
         issuedAt: cert.issuedAt,
         expiresAt: cert.expiresAt,

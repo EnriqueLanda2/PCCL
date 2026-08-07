@@ -52,7 +52,7 @@ const variantTokens: Record<StatVariant, { card: string; icon: string; value: st
 
 function SkeletonStatCard() {
   return (
-    <div className="bg-white border border-[#E4EBDD] rounded-[24px] p-5 shadow-sm animate-pulse">
+    <div className="bg-white border border-[#E4EBDD] rounded-[1.5rem] p-5 shadow-sm animate-pulse">
       <div className="flex items-center justify-between mb-4">
         <div className="h-3 w-20 bg-[#E4EBDD] rounded" />
         <div className="w-9 h-9 bg-[#E4EBDD] rounded-xl" />
@@ -81,10 +81,10 @@ export function StatCard({
   const lg = size === 'lg';
 
   return (
-    <div className={cn('rounded-[24px] shadow-[0_12px_28px_rgba(23,50,77,0.05)]', lg ? 'p-6 lg:p-7' : 'p-5', t.card, className)}>
+    <div className={cn('rounded-[1.5rem] shadow-[0_12px_28px_rgba(23,50,77,0.05)]', lg ? 'p-6 lg:p-7' : 'p-5', t.card, className)}>
       {/* Label + icon row */}
       <div className={cn('flex items-center justify-between', lg ? 'mb-4' : 'mb-3')}>
-        <p className={cn('font-semibold uppercase tracking-widest text-[var(--ink-muted)] select-none', lg ? 'text-[12px]' : 'text-[11px]')}>
+        <p className={cn('font-semibold uppercase tracking-widest text-[var(--ink-muted)] select-none', lg ? 'text-[0.75rem]' : 'text-[0.6875rem]')}>
           {label}
         </p>
         {icon && (

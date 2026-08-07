@@ -150,7 +150,7 @@ const PARTICLES = [
 
 export function OpeningBook() {
   return (
-    <div className="book-scene relative h-[190px]" aria-hidden>
+    <div className="book-scene relative h-[11.875rem]" aria-hidden>
       <span className="book-glow" />
       <div className="book">
         {/* Mitad izquierda con renglones */}

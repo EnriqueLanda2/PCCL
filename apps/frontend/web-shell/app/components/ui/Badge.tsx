@@ -23,7 +23,7 @@ export function Badge({ variant = 'blue', children, className }: BadgeProps) {
   return (
     <span className={cn(
       'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full',
-      'text-[11px] font-semibold uppercase tracking-wide whitespace-nowrap',
+      'text-[0.6875rem] font-semibold uppercase tracking-wide whitespace-nowrap',
       variantCls[variant],
       className,
     )}>

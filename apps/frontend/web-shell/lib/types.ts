@@ -1,7 +1,10 @@
 export interface SessionUser {
   id: string;
+  fullName?: string | null;
   email: string;
+  avatarUrl?: string | null;
   roleIds: string[];
+  roles: string[];
   permissions: string[];
   scope: string;
 }
@@ -10,6 +13,24 @@ export interface AccessProfile {
   roles: string[];
   permissions: string[];
   menu: { module: string; visible: boolean }[];
+}
+
+/**
+ * Proyección pública de un curso — la devuelve GET /courses/public, la única
+ * lista de cursos que no se acota al usuario. Alimenta el catálogo de
+ * inscripción, donde por definición hay que ver cursos aún no propios.
+ */
+export interface PublicCourse {
+  id: string;
+  title: string;
+  description: string;
+  status: 'draft' | 'published';
+  level: string;
+  coverImageUrl?: string | null;
+  durationMinutes?: number | null;
+  price?: number;
+  currency?: string;
+  isFree?: boolean;
 }
 
 export interface Course {
@@ -30,6 +51,10 @@ export interface Course {
   studentsCount?: number;
   coverVariant?: number;
   coverIcon?: string;
+  /** Precio del curso — 0 o isFree=true significa acceso gratuito */
+  price?: number;
+  currency?: string;
+  isFree?: boolean;
   /** Lecciones anidadas — el endpoint GET /courses las incluye */
   lessons?: Lesson[];
 }
@@ -50,6 +75,37 @@ export interface Lesson {
   order?: number;
 }
 
+/** Tarea pendiente del alumno: lección por ver o evaluación por responder. */
+export interface PendingTask {
+  id: string;
+  kind: 'lesson' | 'evaluation';
+  title: string;
+  courseId: string;
+  courseTitle: string;
+  durationMinutes?: number | null;
+  contentType?: string;
+  done: boolean;
+}
+
+export interface PendingTasksResult {
+  tasks: PendingTask[];
+  total: number;
+  done: number;
+}
+
+/** Comentario de un alumno en un curso. */
+export interface CourseComment {
+  id: string;
+  courseId: string;
+  content: string;
+  createdAt: string;
+  authorName: string;
+  authorId: string;
+  likes: number;
+  likedByMe: boolean;
+  mine: boolean;
+}
+
 export interface Note {
   id: string;
   lessonId: string;
@@ -59,6 +115,36 @@ export interface Note {
   updatedBy?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OrderCreateResponse {
+  orderId: string;
+  clientSecret: string | null;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'paid' | 'failed';
+  accessType?: 'monthly' | 'permanent';
+  accessEndsAt?: string | null;
+}
+
+export interface OrderRecord {
+  id: string;
+  userId: string;
+  courseId: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'paid' | 'failed';
+  accessType?: 'monthly' | 'permanent';
+  accessEndsAt?: string | null;
+}
+
+export interface CourseEarnings {
+  courseId: string;
+  courseTitle: string;
+  instructorEmail: string | null;
+  salesCount: number;
+  grossRevenue: number;
+  currency: string;
 }
 
 export interface Inscription {
@@ -86,6 +172,22 @@ export interface Certificate {
   issuedAt: string;
   expiresAt: string | null;
   inscription?: Inscription;
+}
+
+/** Proyección pública de un certificado — solo lo impreso en la tarjeta. */
+export interface PublicCertificate {
+  certificateNumber: string;
+  status: 'valid' | 'expired' | 'revoked';
+  issuedAt: string;
+  expiresAt: string | null;
+  studentName: string | null;
+  courseTitle: string | null;
+}
+
+/** Respuesta de GET /certificates/verify/:folio (no requiere sesión). */
+export interface CertificateVerification {
+  found: boolean;
+  certificate?: PublicCertificate;
 }
 
 export interface Progress {
@@ -127,7 +229,9 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
+  avatarUrl?: string | null;
   active: boolean;
+  userRoles?: { role?: { name?: string | null } | null }[];
 }
 
 export interface RbacRole {

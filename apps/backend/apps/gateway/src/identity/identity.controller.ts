@@ -4,6 +4,7 @@ import {
   Get,
   Inject,
   Param,
+  Patch,
   Post,
   Res,
   UseGuards,
@@ -72,9 +73,30 @@ export class IdentityController {
     return { message: 'Sesion cerrada' };
   }
 
+  /**
+   * Sesión actual. El JWT no guarda el nombre (cambia sin reemitir el token),
+   * así que se resuelve contra identity-service. La proyección es explícita a
+   * propósito: USER_FIND_BY_ID devuelve la fila completa, con passwordHash.
+   */
   @Get('auth/me')
-  me(@CurrentUser() user: RequestUser) {
-    return user;
+  async me(@CurrentUser() user: RequestUser) {
+    const profile = await firstValueFrom<{
+      fullName?: string;
+      avatarUrl?: string | null;
+    } | null>(
+      this.client.send(IDENTITY_PATTERNS.USER_FIND_BY_ID, { id: user.sub }),
+    ).catch(() => null);
+
+    return {
+      id: user.sub,
+      email: user.email,
+      fullName: profile?.fullName ?? null,
+      avatarUrl: profile?.avatarUrl ?? null,
+      roleIds: user.roleIds,
+      roles: user.roles ?? [],
+      permissions: user.permissions,
+      scope: user.scope,
+    };
   }
 
   @Get('users')
@@ -97,6 +119,17 @@ export class IdentityController {
       this.client.send(IDENTITY_PATTERNS.USER_CREATE, {
         dto,
         actor: user?.email ?? 'anonymous',
+      }),
+    );
+  }
+
+  @Patch('users/me/avatar')
+  updateMyAvatar(@Body() dto: { avatarUrl: string }, @CurrentUser() user: RequestUser) {
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.USER_UPDATE_AVATAR, {
+        userId: user.sub,
+        avatarUrl: dto.avatarUrl,
+        actor: user.email,
       }),
     );
   }

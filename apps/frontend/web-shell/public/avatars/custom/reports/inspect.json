@@ -1,0 +1,882 @@
+{
+  "generatedAt": "2026-08-06T20:54:06.856Z",
+  "assets": [
+    {
+      "file": "/avatars/custom/bodies/female-base.glb",
+      "bytes": 479932,
+      "scenes": 1,
+      "nodes": 27,
+      "meshes": 6,
+      "meshNames": [
+        "Body_Skin_Mesh",
+        "Bottom_A_Mesh",
+        "Hair_chunky-short_Mesh",
+        "Head_Face_Mesh",
+        "Shoes_A_Mesh",
+        "Top_A_Mesh"
+      ],
+      "nodeNames": [
+        "Body_Skin",
+        "Bottom_A",
+        "Hair_chunky-short",
+        "Head_Face",
+        "Shoes_A",
+        "Top_A"
+      ],
+      "primitives": 11,
+      "materials": [
+        "PCCL_Skin",
+        "PCCL_BottomA",
+        "PCCL_Hair",
+        "PCCL_EyeWhite",
+        "PCCL_EyeIris",
+        "PCCL_EyePupil",
+        "PCCL_Mouth",
+        "PCCL_ShoeA",
+        "PCCL_TopA"
+      ],
+      "textures": 0,
+      "skins": 6,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 56092,
+      "morphTargets": [
+        "blinkLeft",
+        "blinkRight",
+        "browUp",
+        "mouthOpen",
+        "sad",
+        "smile",
+        "surprised"
+      ],
+      "animations": [
+        "Breathing",
+        "Idle",
+        "Presentation",
+        "Wave"
+      ],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/bodies/male-base.glb",
+      "bytes": 482520,
+      "scenes": 1,
+      "nodes": 27,
+      "meshes": 6,
+      "meshNames": [
+        "Body_Skin_Mesh",
+        "Bottom_A_Mesh",
+        "Hair_chunky-short_Mesh",
+        "Head_Face_Mesh",
+        "Shoes_A_Mesh",
+        "Top_A_Mesh"
+      ],
+      "nodeNames": [
+        "Body_Skin",
+        "Bottom_A",
+        "Hair_chunky-short",
+        "Head_Face",
+        "Shoes_A",
+        "Top_A"
+      ],
+      "primitives": 11,
+      "materials": [
+        "PCCL_Skin",
+        "PCCL_BottomA",
+        "PCCL_Hair",
+        "PCCL_EyeWhite",
+        "PCCL_EyeIris",
+        "PCCL_EyePupil",
+        "PCCL_Mouth",
+        "PCCL_ShoeA",
+        "PCCL_TopA"
+      ],
+      "textures": 0,
+      "skins": 6,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 56092,
+      "morphTargets": [
+        "blinkLeft",
+        "blinkRight",
+        "browUp",
+        "mouthOpen",
+        "sad",
+        "smile",
+        "surprised"
+      ],
+      "animations": [
+        "Breathing",
+        "Idle",
+        "Presentation",
+        "Wave"
+      ],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/bodies/neutral-base.glb",
+      "bytes": 483584,
+      "scenes": 1,
+      "nodes": 27,
+      "meshes": 6,
+      "meshNames": [
+        "Body_Skin_Mesh",
+        "Bottom_A_Mesh",
+        "Hair_chunky-short_Mesh",
+        "Head_Face_Mesh",
+        "Shoes_A_Mesh",
+        "Top_A_Mesh"
+      ],
+      "nodeNames": [
+        "Body_Skin",
+        "Bottom_A",
+        "Hair_chunky-short",
+        "Head_Face",
+        "Shoes_A",
+        "Top_A"
+      ],
+      "primitives": 11,
+      "materials": [
+        "PCCL_Skin",
+        "PCCL_BottomA",
+        "PCCL_Hair",
+        "PCCL_EyeWhite",
+        "PCCL_EyeIris",
+        "PCCL_EyePupil",
+        "PCCL_Mouth",
+        "PCCL_ShoeA",
+        "PCCL_TopA"
+      ],
+      "textures": 0,
+      "skins": 6,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 56092,
+      "morphTargets": [
+        "blinkLeft",
+        "blinkRight",
+        "browUp",
+        "mouthOpen",
+        "sad",
+        "smile",
+        "surprised"
+      ],
+      "animations": [
+        "Breathing",
+        "Idle",
+        "Presentation",
+        "Wave"
+      ],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/hair/female-base__layered-bob.glb",
+      "bytes": 38724,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Hair_layered-bob_Mesh"
+      ],
+      "nodeNames": [
+        "Hair_layered-bob"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_Hair"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 4500,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/hair/male-base__layered-bob.glb",
+      "bytes": 39060,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Hair_layered-bob_Mesh"
+      ],
+      "nodeNames": [
+        "Hair_layered-bob"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_Hair"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 4500,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/hair/neutral-base__layered-bob.glb",
+      "bytes": 38808,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Hair_layered-bob_Mesh"
+      ],
+      "nodeNames": [
+        "Hair_layered-bob"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_Hair"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 4500,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/clothing/female-base__bottom-b.glb",
+      "bytes": 51484,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Bottom_B_Mesh"
+      ],
+      "nodeNames": [
+        "Bottom_B"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_BottomB"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 6500,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/clothing/female-base__shoes-b.glb",
+      "bytes": 31588,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Shoes_B_Mesh"
+      ],
+      "nodeNames": [
+        "Shoes_B"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_ShoeB"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 3200,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/clothing/female-base__top-b.glb",
+      "bytes": 55712,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Top_B_Mesh"
+      ],
+      "nodeNames": [
+        "Top_B"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_TopB"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 6500,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/clothing/male-base__bottom-b.glb",
+      "bytes": 52076,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Bottom_B_Mesh"
+      ],
+      "nodeNames": [
+        "Bottom_B"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_BottomB"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 6500,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/clothing/male-base__shoes-b.glb",
+      "bytes": 31236,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Shoes_B_Mesh"
+      ],
+      "nodeNames": [
+        "Shoes_B"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_ShoeB"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 3200,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/clothing/male-base__top-b.glb",
+      "bytes": 56692,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Top_B_Mesh"
+      ],
+      "nodeNames": [
+        "Top_B"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_TopB"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 6500,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/clothing/neutral-base__bottom-b.glb",
+      "bytes": 52360,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Bottom_B_Mesh"
+      ],
+      "nodeNames": [
+        "Bottom_B"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_BottomB"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 6498,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/clothing/neutral-base__shoes-b.glb",
+      "bytes": 31584,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Shoes_B_Mesh"
+      ],
+      "nodeNames": [
+        "Shoes_B"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_ShoeB"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 3200,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/clothing/neutral-base__top-b.glb",
+      "bytes": 56252,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "Top_B_Mesh"
+      ],
+      "nodeNames": [
+        "Top_B"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_TopB"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 6498,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "file": "/avatars/custom/accessories/male-base__facial-hair-goatee.glb",
+      "bytes": 21156,
+      "scenes": 1,
+      "nodes": 22,
+      "meshes": 1,
+      "meshNames": [
+        "FacialHair_Goatee_Mesh"
+      ],
+      "nodeNames": [
+        "FacialHair_Goatee"
+      ],
+      "primitives": 1,
+      "materials": [
+        "PCCL_Hair"
+      ],
+      "textures": 0,
+      "skins": 1,
+      "bones": [
+        "Head",
+        "Hips",
+        "LeftArm",
+        "LeftFoot",
+        "LeftForeArm",
+        "LeftHand",
+        "LeftLeg",
+        "LeftShoulder",
+        "LeftUpLeg",
+        "Neck",
+        "RightArm",
+        "RightFoot",
+        "RightForeArm",
+        "RightHand",
+        "RightLeg",
+        "RightShoulder",
+        "RightUpLeg",
+        "Root",
+        "Spine",
+        "Spine1"
+      ],
+      "triangles": 2324,
+      "morphTargets": [],
+      "animations": [],
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    }
+  ]
+}

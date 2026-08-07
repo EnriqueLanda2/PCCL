@@ -39,7 +39,7 @@ export function Modal({ open, onClose, title, description, children, className }
         aria-labelledby="modal-title"
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          'animate-scale-in w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[24px] bg-white p-6 shadow-[0_30px_70px_rgba(23,50,77,0.25)] lg:p-7',
+          'animate-scale-in w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[1.5rem] bg-white p-6 shadow-[0_30px_70px_rgba(23,50,77,0.25)] lg:p-7',
           className,
         )}
       >

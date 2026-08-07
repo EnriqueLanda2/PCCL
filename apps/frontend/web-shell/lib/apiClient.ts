@@ -81,11 +81,28 @@ export function setNavigator(fn: (path: string) => void): void {
   navigate = fn;
 }
 
+/** Rutas donde un 401 es esperado (aún no hay sesión) y no hay a dónde volver. */
+const AUTH_PATHS = ['/identity/auth', '/identity/register', '/modules/auth', '/modules/register'];
+
 function redirectToLogin(): void {
+  /* Se conserva la ruta actual en `?next=` para que, tras reautenticar, el
+     usuario regrese a donde estaba en vez de caer siempre en el dashboard —
+     el mismo contrato que usa proxy.ts. */
+  let target = '/identity/auth';
+  if (typeof window !== 'undefined') {
+    const current = window.location.pathname + window.location.search;
+    const isAuthPath = AUTH_PATHS.some(
+      (p) => window.location.pathname === p || window.location.pathname.startsWith(`${p}/`),
+    );
+    if (!isAuthPath && current !== '/') {
+      target = `/identity/auth?next=${encodeURIComponent(current)}`;
+    }
+  }
+
   if (navigate) {
-    navigate('/identity/auth');
+    navigate(target);
   } else if (typeof window !== 'undefined') {
-    window.location.href = '/identity/auth';
+    window.location.href = target;
   }
 }
 

@@ -37,6 +37,13 @@
       "sourceRoot": "apps/certification-service/src",
       "compilerOptions": { "tsConfigPath": "apps/certification-service/tsconfig.app.json" }
     },
+    "payment-service": {
+      "type": "application",
+      "root": "apps/payment-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/payment-service/src",
+      "compilerOptions": { "tsConfigPath": "apps/payment-service/tsconfig.app.json" }
+    },
     "contracts": {
       "type": "library",
       "root": "libs/contracts",

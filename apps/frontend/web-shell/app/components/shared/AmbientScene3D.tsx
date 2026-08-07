@@ -72,7 +72,7 @@ export function AmbientScene3D() {
       phase: Math.random() * Math.PI * 2,
       baseY: (Math.random() - 0.5) * 3,
     }));
-    ORB_COLORS.forEach((color, i) => {
+    ORB_COLORS.forEach((color) => {
       const material = new THREE.SpriteMaterial({
         map: glowTexture,
         color,

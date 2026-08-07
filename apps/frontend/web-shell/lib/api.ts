@@ -10,20 +10,33 @@ import type {
   AuditLog,
   Calification,
   Certificate,
+  CertificateVerification,
   Course,
+  CourseEarnings,
+  CourseComment,
   Inscription,
   Lesson,
   LiveSession,
   Note,
+  OrderCreateResponse,
+  OrderRecord,
+  PendingTasksResult,
   Progress,
+  PublicCourse,
   RbacCatalogs,
   SessionUser,
   User,
 } from './types';
 
 export interface LoginResponse {
-  user:   { id: string; fullName: string; email: string };
+  user:   { id: string; fullName: string; email: string; avatarUrl?: string | null };
   access: AccessProfile;
+}
+
+export interface PublicStats {
+  activeStudents:   number;
+  publishedCourses: number;
+  completionRate:   number;
 }
 
 export const api = {
@@ -44,7 +57,12 @@ export const api = {
 
   /* ── Learning ─────────────────────────────────────────── */
   courses:       () => get<Course[]>('/courses'),
+
+  /** Catálogo de cursos publicados, sin acotar al usuario — para inscribirse. */
+  publicCourses: () => get<PublicCourse[]>('/courses/public'),
+
   createCourse:  (dto: Partial<Course>) => post<Course>('/courses', dto),
+  publishCourse: (id: string) => patch<Course>(`/courses/${id}/publish`, {}),
 
   /* ── Uploads (Cloudinary) ─────────────────────────────── */
   uploadImage:    (file: File) => uploadFile<{ url: string }>('/uploads/image', file),
@@ -62,6 +80,14 @@ export const api = {
   deleteLiveSession: (id: string) => del(`/live-sessions/${id}`),
 
   inscriptions:  () => get<Inscription[]>('/inscriptions'),
+  createInscription: (userId: string, courseId: string) =>
+    post<Inscription>('/inscriptions', { userId, courseId }),
+
+  /* ── Payments ─────────────────────────────────────────── */
+  createOrder: (courseId: string, accessType: 'monthly' | 'permanent' = 'permanent') =>
+    post<OrderCreateResponse>('/payments/orders', { courseId, accessType }),
+  getOrder:    (orderId: string) => get<OrderRecord>(`/payments/orders/${orderId}`),
+  courseEarnings: () => get<CourseEarnings[]>('/payments/earnings/courses'),
 
   califications: () => get<Calification[]>('/califications'),
 
@@ -72,8 +98,33 @@ export const api = {
 
   progress:      () => get<Progress[]>('/progress'),
 
+  /* ── Comentarios de curso ──────────────────────────────── */
+  courseComments: (courseId: string) => get<CourseComment[]>(`/courses/${courseId}/comments`),
+  createCourseComment: (courseId: string, content: string) =>
+    post<CourseComment[]>(`/courses/${courseId}/comments`, { content }),
+  toggleCommentLike: (id: string) =>
+    post<{ id: string; likes: number; likedByMe: boolean }>(`/comments/${id}/like`),
+  deleteComment: (id: string) => del(`/comments/${id}`),
+
+  /* ── Tareas pendientes del alumno ──────────────────────── */
+  pendingTasks: (courseId?: string) => {
+    const query = courseId ? '?courseId=' + encodeURIComponent(courseId) : '';
+    return get<PendingTasksResult>(`/tasks/pending${query}`);
+  },
+
+  setLessonCompleted: (lessonId: string, done: boolean) =>
+    post<{ lessonId: string; done: boolean }>(`/lessons/${lessonId}/completion`, { done }),
+
+  /* ── Estadísticas públicas de la plataforma ───────────── */
+  stats: () => get<PublicStats>('/stats/public'),
+
   /* ── Certification & Audit ────────────────────────────── */
   certificates:  () => get<Certificate[]>('/certificates'),
+
+  /** Verificación pública por folio — no requiere sesión (destino del QR). */
+  verifyCertificate: (folio: string) =>
+    get<CertificateVerification>(`/certificates/verify/${encodeURIComponent(folio)}`),
+
   audit:         (limit = 100) => get<AuditLog[]>(`/audit?limit=${limit}`),
 
   /* ── Users ────────────────────────────────────────────── */
@@ -81,6 +132,7 @@ export const api = {
   createUser: (dto: { fullName: string; email: string; password: string; roleIds: string[] }) =>
     post<User>('/users', dto),
   deleteUser: (id: string) => del(`/users/${id}`),
+  updateMyAvatar: (avatarUrl: string) => patch<{ id: string; avatarUrl: string }>('/users/me/avatar', { avatarUrl }),
 };
 
 /* Re-export error utilities so callers don't need two imports */

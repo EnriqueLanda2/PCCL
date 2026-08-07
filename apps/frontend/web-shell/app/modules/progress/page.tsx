@@ -1,7 +1,7 @@
 /* ───────────────────────────────────────────
    Progress Page — Progreso de estudiantes
-   Grilla de tarjetas por alumno (avatar Ready
-   Player Me con fallback de iniciales) · badge
+   Grilla de tarjetas por alumno (avatar 3D
+   NOVA Folks procedural) · badge
    de riesgo · paginado de 12 · panel lateral
    con detalle de sus inscripciones reales.
    ─────────────────────────────────────────── */
@@ -10,15 +10,18 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
+import MenuItem from '@mui/material/MenuItem';
 import { api } from '@/lib/api';
 import type { Progress } from '@/lib/types';
-import { Pagination } from '@/app/components/ui/Pagination';
+import { AppButton, AppInput, AppSelect } from '@/app/components/ui/AppControls';
+import { DEFAULT_PAGE_SIZE, Pagination } from '@/app/components/ui/Pagination';
 import { StatCard } from '@/app/components/shared/StatCard';
 import { EmptyState } from '@/app/components/shared/EmptyState';
+import { PageHeader } from '@/app/components/shared/PageHeader';
 import { StudentSummaryCard, StudentSummaryDetailPanel, type StudentCardSummary } from '@/app/components/shared/StudentSummaryCard';
 import { APP_ICONS } from '@/lib/icons';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 type RiskLevel = 'bajo' | 'medio' | 'alto';
 
@@ -40,6 +43,7 @@ function daysSince(iso: string | null, now: number): number | null {
 interface StudentSummary {
   userId: string;
   fullName: string;
+  avatarUrl?: string | null;
   avgProgress: number;
   riskLevel: RiskLevel;
   courses: CourseProgress[];
@@ -63,6 +67,10 @@ function groupByStudent(items: Progress[]): StudentSummary[] {
   for (const p of items) {
     const user = p.inscription?.user;
     if (!user) continue; // sin usuario resuelto (registro huérfano) — se omite
+    /* Solo alumnos con la cuenta activa. Las bajas conservan su historial de
+       progreso en la base, pero no deben aparecer en el seguimiento: inflan los
+       totales y no hay nada que hacer con ellos. */
+    if (user.active === false) continue;
     const course: CourseProgress = {
       inscriptionId: p.inscription?.id ?? p.id,
       title: p.inscription?.course?.title ?? 'Curso sin título',
@@ -82,6 +90,7 @@ function groupByStudent(items: Progress[]): StudentSummary[] {
       map.set(user.id, {
         userId: user.id,
         fullName: user.fullName,
+        avatarUrl: user.avatarUrl ?? null,
         courses: [course],
         lastAccessAt: p.lastAccessAt ?? null,
         avgProgress: 0,
@@ -126,6 +135,7 @@ function toCardSummary(s: StudentSummary, now: number): StudentCardSummary {
   return {
     userId: s.userId,
     fullName: s.fullName,
+    avatarUrl: s.avatarUrl,
     headerValue: `${s.avgProgress}%`,
     headerProgressPct: s.avgProgress,
     headerBadge: s.riskLevel === 'bajo' ? null : RISK_META[s.riskLevel],
@@ -143,10 +153,10 @@ function toCardSummary(s: StudentSummary, now: number): StudentCardSummary {
 /* ── Skeleton card ── */
 function SkeletonCard() {
   return (
-    <div style={{ padding: '18px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--neutral-100)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-      <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'var(--neutral-100)' }} />
-      <div style={{ height: '13px', width: '70%', borderRadius: '6px', background: 'var(--neutral-100)' }} />
-      <div style={{ height: '10px', width: '50%', borderRadius: '6px', background: 'var(--neutral-100)' }} />
+    <div style={{ padding: '1.125rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--neutral-100)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.625rem' }}>
+      <div style={{ width: '4.5rem', height: '4.5rem', borderRadius: '50%', background: 'var(--neutral-100)' }} />
+      <div style={{ height: '0.8125rem', width: '70%', borderRadius: '0.375rem', background: 'var(--neutral-100)' }} />
+      <div style={{ height: '0.625rem', width: '50%', borderRadius: '0.375rem', background: 'var(--neutral-100)' }} />
     </div>
   );
 }
@@ -211,21 +221,17 @@ export default function ProgressPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* ── Header ── */}
-      <div>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-          Progreso de <em style={{ color: 'var(--green-500)', fontStyle: 'italic' }}>estudiantes</em>
-        </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px' }}>
-          {loading ? 'Cargando…' : `Seguimiento de ${students.length} alumno${students.length !== 1 ? 's' : ''}`}
-        </p>
-      </div>
+      <PageHeader
+        title={<>Progreso de estudiantes</>}
+        subtitle={loading ? 'Cargando…' : `Seguimiento de ${students.length} alumno${students.length !== 1 ? 's' : ''}`}
+      />
 
       {/* ── Stat row ── */}
       {!loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))', gap: '1rem' }}>
           <StatCard label="Promedio"     value={avg}       unit="%" icon={<Icon icon={APP_ICONS.chart} width={20} height={20} />} />
           <StatCard label="Completados"  value={completed} delta={completed > 0 ? `de ${students.length}` : undefined} deltaUp icon={<Icon icon={APP_ICONS.checkFilled} width={20} height={20} />} variant="green" />
           <StatCard label="Activos (7d)" value={active}    icon={<Icon icon={APP_ICONS.liveDot} width={20} height={20} />} variant="blue" />
@@ -234,62 +240,50 @@ export default function ProgressPage() {
       )}
 
       {/* ── Search + chips ── */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
-          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
-          <input
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 240px', minWidth: '15rem', maxWidth: '23.75rem' }}>
+          <AppInput
             type="search"
             placeholder="Buscar alumno o curso…"
             value={search}
             onChange={(e) => resetToPage1(setSearch)(e.target.value)}
-            style={{
-              width: '100%', height: '40px', paddingLeft: '40px', paddingRight: '12px',
-              borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)',
-              background: 'var(--blue-50)', fontSize: '13.5px', color: 'var(--ink)',
-              fontFamily: 'var(--font-sans)', outline: 'none',
-            }}
+            withSearchIcon
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
           {RISK_CHIPS.map((chip) => (
-            <button
+            <AppButton
               key={chip.key}
               type="button"
               onClick={() => resetToPage1(setRiskFilter)(chip.key)}
-              style={{
-                border: riskFilter === chip.key ? '1.5px solid var(--green-500)' : '1.5px solid var(--neutral-200)',
-                background: riskFilter === chip.key ? 'var(--green-50)' : 'var(--panel)',
+              variant={riskFilter === chip.key ? 'contained' : 'outlined'}
+              sx={{
+                bgcolor: riskFilter === chip.key ? 'var(--green-50)' : 'var(--panel)',
                 color: riskFilter === chip.key ? 'var(--green-700)' : 'var(--ink-muted)',
-                borderRadius: 'var(--radius-full)', padding: '6px 16px',
-                fontSize: '13px', fontWeight: riskFilter === chip.key ? 600 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                borderColor: riskFilter === chip.key ? 'var(--green-500)' : 'var(--neutral-200)',
+                px: 2,
               }}
             >
               {chip.label}
-            </button>
+            </AppButton>
           ))}
         </div>
 
-        <select
+        <AppSelect
           value={sortBy}
           onChange={(e) => resetToPage1(setSortBy)(e.target.value as typeof sortBy)}
-          style={{
-            height: '40px', padding: '0 12px', borderRadius: 'var(--radius-md)',
-            border: '1.5px solid var(--neutral-200)', background: 'var(--panel)',
-            color: 'var(--ink)', fontSize: '13.5px', fontFamily: 'var(--font-sans)',
-            cursor: 'pointer', outline: 'none', marginLeft: 'auto',
-          }}
+          sx={{ maxWidth: 210, marginLeft: 'auto' }}
         >
-          <option value="progress">Mayor avance</option>
-          <option value="name">Nombre A→Z</option>
-          <option value="access">Último acceso</option>
-        </select>
+          <MenuItem value="progress">Mayor avance</MenuItem>
+          <MenuItem value="name">Nombre A→Z</MenuItem>
+          <MenuItem value="access">Último acceso</MenuItem>
+        </AppSelect>
       </div>
 
       {/* ── Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '14px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '0.875rem' }}>
           {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -309,10 +303,10 @@ export default function ProgressPage() {
         />
       ) : (
         <>
-          <div style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
             Mostrando <strong style={{ color: 'var(--ink)' }}>{paginated.length}</strong> de {filtered.length} alumnos
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '0.875rem' }}>
             {paginated.map((student) => (
               <StudentSummaryCard key={student.userId} student={toCardSummary(student, now)} onOpen={() => setSelected(student)} />
             ))}

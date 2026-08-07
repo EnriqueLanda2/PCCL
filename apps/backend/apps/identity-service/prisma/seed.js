@@ -4,7 +4,8 @@ const { users: SEED_USERS } = require('../../../prisma/seed-shared');
 
 const prisma = new PrismaClient();
 
-const baseRoles = ['alumno', 'instructor', 'admin', 'revisor'];
+const baseRoles = ['alumno', 'instructor', 'admin'];
+const legacyRoles = ['revisor'];
 
 /* ── Catálogo de módulos del sistema (debe calzar con buildMenu() en rbac.service.ts) ── */
 const MODULES = [
@@ -60,6 +61,7 @@ const ROLE_PRIVILEGES = {
     'califications:read', 'califications:create',
     'certificates:read', 'certificates:download',
     'progress:read',
+    'reports:audit',
   ],
   alumno: [
     'dashboard:read',
@@ -69,15 +71,6 @@ const ROLE_PRIVILEGES = {
     'califications:read',
     'certificates:read', 'certificates:download',
     'progress:read',
-  ],
-  revisor: [
-    'dashboard:read',
-    'courses:read',
-    'lessons:read',
-    'califications:read',
-    'certificates:read',
-    'progress:read',
-    'reports:audit',
   ],
 };
 
@@ -102,6 +95,20 @@ async function upsertUser({ id, fullName, email, password, roleName }, roleIdByN
 }
 
 async function main() {
+  /* ── Limpieza de roles heredados: el sistema solo conserva 3 roles base ── */
+  for (const name of legacyRoles) {
+    const legacyRole = await prisma.role.findUnique({ where: { name } });
+    if (!legacyRole) continue;
+    await prisma.userRole.deleteMany({ where: { roleId: legacyRole.id } });
+    await prisma.rolePrivilege.deleteMany({ where: { roleId: legacyRole.id } });
+    await prisma.role.delete({ where: { id: legacyRole.id } });
+  }
+
+  await prisma.user.updateMany({
+    where: { email: 'revisor@prueba.com' },
+    data: { active: false, updatedBy: 'seed' },
+  });
+
   /* ── Roles base ── */
   for (const name of baseRoles) {
     await prisma.role.upsert({
@@ -146,6 +153,14 @@ async function main() {
   /* ── Asignación rol → privilegios ── */
   for (const [roleName, codes] of Object.entries(ROLE_PRIVILEGES)) {
     const roleId = roleIdByName[roleName];
+    const allowedPrivilegeIds = codes.map((code) => privilegeIdByCode[code]).filter(Boolean);
+    await prisma.rolePrivilege.deleteMany({
+      where: {
+        roleId,
+        privilegeId: { notIn: allowedPrivilegeIds },
+      },
+    });
+
     for (const code of codes) {
       const privilegeId = privilegeIdByCode[code];
       if (!privilegeId) throw new Error(`Privilegio no encontrado: ${code}`);

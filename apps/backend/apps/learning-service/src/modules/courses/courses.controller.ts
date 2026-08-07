@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { LEARNING_PATTERNS } from '@app/contracts';
+import { DataScope, LEARNING_PATTERNS } from '@app/contracts';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dtos/create-course.dto';
 import { UpdateCourseDto } from './dtos/update-course.dto';
@@ -15,10 +15,15 @@ export class CoursesController {
   }
 
   @MessagePattern(LEARNING_PATTERNS.COURSE_FIND_ALL)
-  findAll() { return this.service.findAll(); }
+  findAll(@Payload() p: { scope?: DataScope }) { return this.service.findAll(p?.scope); }
 
   @MessagePattern(LEARNING_PATTERNS.COURSE_FIND_PUBLISHED)
   findPublished() { return this.service.findPublished(); }
+
+  @MessagePattern(LEARNING_PATTERNS.COURSE_COUNT_PUBLISHED)
+  countPublished() {
+    return this.service.countPublished();
+  }
 
   @MessagePattern(LEARNING_PATTERNS.COURSE_FIND_ONE)
   findOne(@Payload() p: { id: string }) { return this.service.findOne(p.id); }

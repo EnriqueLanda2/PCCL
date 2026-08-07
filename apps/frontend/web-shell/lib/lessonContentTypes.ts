@@ -22,3 +22,15 @@ export function formatDuration(minutes?: number | null) {
   if (h === 0) return `${m}min`;
   return m > 0 ? `${h}h ${m}min` : `${h}h`;
 }
+
+/**
+ * Deriva la miniatura de una lección de video a partir de su URL de Cloudinary
+ * (frame en el segundo 0, recortado a 16:9) — no hay campo de thumbnail propio,
+ * así que reutilizamos la transformación de video→imagen de Cloudinary en vez
+ * de guardar una imagen aparte. Devuelve null si la URL no es de Cloudinary.
+ */
+export function cloudinaryVideoThumbnail(url?: string | null): string | null {
+  if (!url?.includes('/video/upload/')) return null;
+  const withFrame = url.replace('/video/upload/', '/video/upload/so_0,w_480,h_270,c_fill,q_auto/');
+  return withFrame.replace(/\.[a-z0-9]{2,5}(\?.*)?$/i, '.jpg$1');
+}

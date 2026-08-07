@@ -26,8 +26,8 @@ export function BookIntro() {
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setPhase('ambient');
-      return;
+      const reduceMotion = requestAnimationFrame(() => setPhase('ambient'));
+      return () => cancelAnimationFrame(reduceMotion);
     }
     const recede = setTimeout(() => setPhase('receding'), OPEN_MS);
     const settle = setTimeout(() => setPhase('ambient'), OPEN_MS + RECEDE_MS);
@@ -58,7 +58,7 @@ export function BookIntro() {
         <RevealLetters text="Rumbo" startDelay={0.35} />
       </p>
 
-      <p className="book-intro-caption text-[13px] uppercase tracking-[0.24em] font-semibold text-[var(--green-600)]">
+      <p className="book-intro-caption text-[0.8125rem] uppercase tracking-[0.24em] font-semibold text-[var(--green-600)]">
         Abriendo tu biblioteca…
       </p>
     </div>

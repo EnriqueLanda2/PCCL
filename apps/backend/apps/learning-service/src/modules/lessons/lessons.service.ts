@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataScope } from '@app/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
+import { lessonWhereFor } from '../../common/scope-filter';
 import { CreateLessonDto } from './dtos/create-lesson.dto';
 import { UpdateLessonDto } from './dtos/update-lesson.dto';
 
@@ -16,8 +18,12 @@ export class LessonsService {
     return this.findOne(lesson.id);
   }
 
-  findAll() {
-    return this.prisma.lesson.findMany({ include: { course: true }, orderBy: { createdAt: 'desc' } });
+  findAll(scope?: DataScope) {
+    return this.prisma.lesson.findMany({
+      where: lessonWhereFor(scope),
+      include: { course: true },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(id: string) {

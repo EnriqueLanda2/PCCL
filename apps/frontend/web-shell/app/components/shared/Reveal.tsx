@@ -20,7 +20,7 @@ interface RevealProps {
   /** ms de paso entre elementos escalonados */
   step?: number;
   className?: string;
-  as?: keyof React.JSX.IntrinsicElements;
+  as?: keyof HTMLElementTagNameMap;
 }
 
 export function Reveal({ children, index = 0, step = 90, className, as: Tag = 'div' }: Readonly<RevealProps>) {
@@ -32,8 +32,8 @@ export function Reveal({ children, index = 0, step = 90, className, as: Tag = 'd
     if (!el) return;
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVisible(true);
-      return;
+      const reduceMotion = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(reduceMotion);
     }
 
     const observer = new IntersectionObserver(
@@ -49,7 +49,10 @@ export function Reveal({ children, index = 0, step = 90, className, as: Tag = 'd
     return () => observer.disconnect();
   }, []);
 
-  const Comp = Tag as React.ElementType;
+  /* ElementType deriva de JSX.IntrinsicElements, que @react-three/fiber
+     augmenta con los elementos de three. Sin acotarlo a props de HTML, la
+     union de todos ellos intersecta a never y rompe este componente. */
+  const Comp = Tag as unknown as React.FC<React.HTMLAttributes<HTMLElement> & { ref?: React.Ref<HTMLElement> }>;
 
   return (
     <Comp

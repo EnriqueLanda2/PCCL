@@ -11,9 +11,9 @@ interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const fillCls: Record<ProgressColor, string> = {
-  blue:   'bg-[var(--blue-500)]',
-  green:  'bg-[var(--green-600)]',
-  yellow: 'bg-[#D39A24]',
+  blue:   'bg-gradient-to-r from-[var(--blue-500)] to-[var(--blue-600)]',
+  green:  'bg-gradient-to-r from-[var(--green-500)] to-[var(--green-700)]',
+  yellow: 'bg-gradient-to-r from-[#E3B23C] to-[#D39A24]',
 };
 
 export function ProgressBar({ value, color = 'blue', size = 'sm', showLabel = false, className, ...rest }: ProgressBarProps) {
@@ -28,7 +28,7 @@ export function ProgressBar({ value, color = 'blue', size = 'sm', showLabel = fa
           <strong className="text-neutral-900 font-mono">{clamped}%</strong>
         </div>
       )}
-      <div className={cn('w-full bg-[#E5EBDF] rounded-full overflow-hidden', trackH)}>
+      <div className={cn('w-full bg-[#E5EBDF] border border-[#D6E2CC] rounded-full overflow-hidden', trackH)}>
         <div
           className={cn('h-full rounded-full transition-[width] duration-500', fillCls[color])}
           style={{ width: `${clamped}%` }}

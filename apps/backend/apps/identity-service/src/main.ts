@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
+import { ServiceExceptionFilter } from '@app/common';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
@@ -9,6 +10,9 @@ async function bootstrap() {
       servers: [process.env.NATS_URL ?? 'nats://localhost:4222'],
     },
   });
+
+  /* Conserva el código real de las excepciones al cruzar NATS. */
+  app.useGlobalFilters(new ServiceExceptionFilter());
 
   await app.listen();
   console.log('identity-service listening on NATS');

@@ -22,4 +22,14 @@ export class UsersController {
   create(@Payload() payload: { dto: CreateUserDto; actor: string }) {
     return this.usersService.create(payload.dto, payload.actor);
   }
+
+  @MessagePattern(IDENTITY_PATTERNS.USER_COUNT_ACTIVE)
+  countActive() {
+    return this.usersService.countActive();
+  }
+
+  @MessagePattern(IDENTITY_PATTERNS.USER_UPDATE_AVATAR)
+  updateAvatar(@Payload() payload: { userId: string; avatarUrl: string; actor: string }) {
+    return this.usersService.updateAvatar(payload.userId, payload.avatarUrl, payload.actor);
+  }
 }

@@ -1,0 +1,18 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package.json tsconfig.json nest-cli.json ./
+COPY apps/payment-service ./apps/payment-service
+COPY libs ./libs
+RUN npm install --no-audit --no-fund
+RUN npx prisma generate --schema=apps/payment-service/prisma/schema.prisma
+RUN npx nest build payment-service
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist/apps/payment-service ./dist/apps/payment-service
+COPY --from=builder /app/apps/payment-service/prisma ./apps/payment-service/prisma
+COPY --from=builder /app/apps/payment-service/src/prisma/generated ./apps/payment-service/src/prisma/generated
+ENV NODE_ENV=production
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=apps/payment-service/prisma/schema.prisma && node dist/apps/payment-service/main"]

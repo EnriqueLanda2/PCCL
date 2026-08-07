@@ -1,18 +1,22 @@
 'use client';
 
 import type React from 'react';
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import { Field, Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
 import { api, ApiError } from '@/lib/api';
-import { appRoutes, firstRoute } from '@/lib/routes';
+import { appRoutes, postLoginRoute, withNext } from '@/lib/routes';
 import { APP_ICONS } from '@/lib/icons';
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: Readonly<{ searchParams?: Promise<{ next?: string | string[] }> }>) {
   const router = useRouter();
+  /* `?next=` lo pone proxy.ts al expulsar de una ruta protegida. */
+  const nextParam = searchParams ? use(searchParams).next : undefined;
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
@@ -26,7 +30,7 @@ export default function LoginPage() {
       const { user, access } = await api.login(email, password);
       sessionStorage.setItem('pccl_user',   JSON.stringify(user));
       sessionStorage.setItem('pccl_access', JSON.stringify(access));
-      router.replace(firstRoute(access.menu));
+      router.replace(postLoginRoute(nextParam, access.menu));
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.status === 403
@@ -41,17 +45,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-screen" style={{ gridTemplateColumns: '1fr 1fr' }}>
+    /* Una sola columna por defecto; el panel decorativo solo aparece cuando hay
+       ancho real para él. Antes eran dos columnas fijas y en móvil el formulario
+       quedaba aplastado en la mitad de la pantalla. */
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
 
       {/* ── Left panel — JIRA navy ── */}
-      <div className="bg-neutral-900 text-white flex flex-col px-12 py-10 relative overflow-hidden">
+      <div className="relative hidden overflow-hidden bg-neutral-900 px-12 py-10 text-white lg:flex lg:flex-col">
         {/* Decorative blobs */}
         <div className="absolute -right-32 -top-24 w-96 h-96 rounded-full bg-primary-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -left-24 -bottom-32 w-80 h-80 rounded-full bg-warning-500/10 blur-3xl pointer-events-none" />
 
-        {/* Logo — clic lleva al dashboard (si hay sesión activa, entra; si no, proxy.ts redirige de vuelta al login) */}
+        {/* Logo — vuelve al landing. Antes apuntaba al dashboard, que sin sesión
+            rebotaba de inmediato al propio login: un clic que no hacía nada. */}
         <div className="relative z-10">
-          <Link href={appRoutes.dashboard} className="no-underline inline-flex items-center hover:opacity-90 transition-opacity">
+          <Link href={appRoutes.home} className="no-underline inline-flex items-center hover:opacity-90 transition-opacity">
             <span className="font-serif text-2xl text-white font-bold tracking-tight">PCCL</span>
             <span className="ml-2 text-xs font-semibold uppercase tracking-widest text-primary-300/80">Plataforma</span>
           </Link>
@@ -96,7 +104,7 @@ export default function LoginPage() {
           <h2 className="font-serif text-3xl text-neutral-900 mb-1">Iniciar sesión</h2>
           <p className="text-sm text-neutral-500 mb-8">
             ¿Primera vez?{' '}
-            <Link href={appRoutes.register} className="text-primary-500 font-medium hover:text-primary-600">
+            <Link href={withNext(appRoutes.register, nextParam)} className="text-primary-500 font-medium hover:text-primary-600">
               Crear cuenta →
             </Link>
           </p>

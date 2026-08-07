@@ -12,22 +12,24 @@ import { api } from '@/lib/api';
 import type { RbacCatalogs, RbacRole, RbacModule, RbacPrivilege } from '@/lib/types';
 import { Card } from '@/app/components/ui/Card';
 import { Badge } from '@/app/components/ui/Badge';
+import { AppInput } from '@/app/components/ui/AppControls';
 import { StatCard } from '@/app/components/shared/StatCard';
 import { EmptyState } from '@/app/components/shared/EmptyState';
+import { PageHeader } from '@/app/components/shared/PageHeader';
 import { APP_ICONS } from '@/lib/icons';
 
 /* ── Section panel ── */
 function Section({ title, icon, count, children }: { title: string; icon: string; count: number; children: React.ReactNode }) {
   return (
     <Card padding="default" style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--blue-50)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+          <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.625rem', background: 'var(--blue-50)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Icon icon={icon} width={18} height={18} />
           </div>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '20px', color: 'var(--ink)' }}>{title}</h2>
+          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', color: 'var(--ink)' }}>{title}</h2>
         </div>
-        <span style={{ fontSize: '12px', background: 'var(--blue-50)', color: 'var(--blue-600)', padding: '3px 10px', borderRadius: '999px', fontWeight: 600 }}>
+        <span style={{ fontSize: '0.75rem', background: 'var(--blue-50)', color: 'var(--blue-600)', padding: '3px 10px', borderRadius: '999px', fontWeight: 600 }}>
           {count}
         </span>
       </div>
@@ -40,9 +42,9 @@ function Section({ title, icon, count, children }: { title: string; icon: string
 function RoleRow({ role, last }: { role: RbacRole; last: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: last ? 'none' : '1px solid var(--neutral-100)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: role.active ? 'var(--green-400)' : 'var(--neutral-300)' }} />
-        <span style={{ fontSize: '14px', color: 'var(--ink)', fontWeight: 500 }}>{role.name}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+        <div style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: role.active ? 'var(--green-400)' : 'var(--neutral-300)' }} />
+        <span style={{ fontSize: '0.875rem', color: 'var(--ink)', fontWeight: 500 }}>{role.name}</span>
       </div>
       <Badge variant={role.active ? 'green' : 'yellow'}>{role.active ? 'Activo' : 'Inactivo'}</Badge>
     </div>
@@ -53,8 +55,8 @@ function RoleRow({ role, last }: { role: RbacRole; last: boolean }) {
 function ModuleRow({ mod, last }: { mod: RbacModule; last: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: last ? 'none' : '1px solid var(--neutral-100)' }}>
-      <span style={{ fontSize: '14px', color: 'var(--ink)', fontWeight: 500 }}>{mod.name}</span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--blue-600)', background: 'var(--blue-50)', padding: '3px 8px', borderRadius: '6px' }}>
+      <span style={{ fontSize: '0.875rem', color: 'var(--ink)', fontWeight: 500 }}>{mod.name}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--blue-600)', background: 'var(--blue-50)', padding: '3px 8px', borderRadius: '0.375rem' }}>
         {mod.key}
       </span>
     </div>
@@ -64,12 +66,12 @@ function ModuleRow({ mod, last }: { mod: RbacModule; last: boolean }) {
 /* ── Privilege row ── */
 function PrivilegeRow({ priv, last }: { priv: RbacPrivilege; last: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: last ? 'none' : '1px solid var(--neutral-100)', gap: '10px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: last ? 'none' : '1px solid var(--neutral-100)', gap: '0.625rem' }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: '14px', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12.5px', color: 'var(--blue-700)' }}>{priv.code}</span>
+        <div style={{ fontSize: '0.875rem', color: 'var(--ink)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7813rem', color: 'var(--blue-700)' }}>{priv.code}</span>
         </div>
-        <div style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '2px' }}>{priv.action}</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: '2px' }}>{priv.action}</div>
       </div>
       <Badge variant="dark">{priv.module.name}</Badge>
     </div>
@@ -80,12 +82,12 @@ function PrivilegeRow({ priv, last }: { priv: RbacPrivilege; last: boolean }) {
 function SkeletonSection() {
   return (
     <Card padding="default">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--neutral-100)' }} />
-        <div style={{ height: '18px', borderRadius: '6px', background: 'var(--neutral-100)', width: '80px' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '1rem' }}>
+        <div style={{ width: '2.25rem', height: '2.25rem', borderRadius: '0.625rem', background: 'var(--neutral-100)' }} />
+        <div style={{ height: '1.125rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: '5rem' }} />
       </div>
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} style={{ height: '14px', borderRadius: '6px', background: 'var(--neutral-100)', marginBottom: '14px', width: `${60 + i * 8}%` }} />
+        <div key={i} style={{ height: '0.875rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', marginBottom: '0.875rem', width: `${60 + i * 8}%` }} />
       ))}
     </Card>
   );
@@ -129,21 +131,17 @@ export default function RbacPage() {
   }, [catalogs, search]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* ── Header ── */}
-      <div>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-          Control de <em style={{ color: 'var(--blue-600)', fontStyle: 'italic' }}>acceso (RBAC)</em>
-        </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px' }}>
-          Catálogos de roles, módulos y privilegios del sistema.
-        </p>
-      </div>
+      <PageHeader
+        title={<>Control de acceso (RBAC)</>}
+        subtitle="Catálogos de roles, módulos y privilegios del sistema."
+      />
 
       {/* ── Stats ── */}
       {!loading && catalogs && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))', gap: '1rem' }}>
           <StatCard label="Roles"       value={catalogs.roles.length}      icon={<Icon icon={APP_ICONS.users} width={20} height={20} />} />
           <StatCard label="Módulos"     value={catalogs.modules.length}    icon={<Icon icon={APP_ICONS.folder} width={20} height={20} />} variant="blue" />
           <StatCard label="Privilegios" value={catalogs.privileges.length} icon={<Icon icon={APP_ICONS.key} width={20} height={20} />} variant="purple" />
@@ -151,25 +149,19 @@ export default function RbacPage() {
       )}
 
       {/* ── Search ── */}
-      <div style={{ position: 'relative', maxWidth: '380px' }}>
-        <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
-        <input
+      <div style={{ maxWidth: '26.25rem' }}>
+        <AppInput
           type="search"
           placeholder="Filtrar roles, módulos o privilegios…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: '100%', height: '40px', paddingLeft: '40px', paddingRight: '12px',
-            borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)',
-            background: 'var(--blue-50)', fontSize: '13.5px', color: 'var(--ink)',
-            fontFamily: 'var(--font-sans)', outline: 'none',
-          }}
+          withSearchIcon
         />
       </div>
 
       {/* ── Content ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(15rem, 1fr))', gap: '1.25rem' }}>
           <SkeletonSection />
           <SkeletonSection />
           <SkeletonSection />
@@ -181,11 +173,11 @@ export default function RbacPage() {
           description="No se pudieron cargar los catálogos RBAC. Verifica tu conexión al backend."
         />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
           {/* Roles */}
           <Section title="Roles" icon={APP_ICONS.users} count={filteredRoles.length}>
             {filteredRoles.length === 0 ? (
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', padding: '8px 0' }}>Sin coincidencias</p>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', padding: '8px 0' }}>Sin coincidencias</p>
             ) : (
               filteredRoles.map((role, i) => (
                 <RoleRow key={role.id} role={role} last={i === filteredRoles.length - 1} />
@@ -196,7 +188,7 @@ export default function RbacPage() {
           {/* Modules */}
           <Section title="Módulos" icon={APP_ICONS.folder} count={filteredModules.length}>
             {filteredModules.length === 0 ? (
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', padding: '8px 0' }}>Sin coincidencias</p>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', padding: '8px 0' }}>Sin coincidencias</p>
             ) : (
               filteredModules.map((mod, i) => (
                 <ModuleRow key={mod.id} mod={mod} last={i === filteredModules.length - 1} />
@@ -207,7 +199,7 @@ export default function RbacPage() {
           {/* Privileges */}
           <Section title="Privilegios" icon={APP_ICONS.key} count={filteredPrivileges.length}>
             {filteredPrivileges.length === 0 ? (
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', padding: '8px 0' }}>Sin coincidencias</p>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', padding: '8px 0' }}>Sin coincidencias</p>
             ) : (
               filteredPrivileges.map((priv, i) => (
                 <PrivilegeRow key={priv.id} priv={priv} last={i === filteredPrivileges.length - 1} />

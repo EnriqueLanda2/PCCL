@@ -16,6 +16,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
+import Button from '@mui/material/Button';
 import { cn } from '@/lib/cn';
 import { ProgressBar } from '@/app/components/ui/ProgressBar';
 
@@ -43,7 +44,7 @@ function CardLink({ item }: Readonly<{ item: CardCarouselItem }>) {
 
   const inner = (
     <>
-      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[6px] bg-[var(--green-500)] text-white transition-transform group-hover:translate-x-0.5">
+      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[0.375rem] bg-[var(--green-500)] text-white transition-transform group-hover:translate-x-0.5">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
           <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -52,17 +53,35 @@ function CardLink({ item }: Readonly<{ item: CardCarouselItem }>) {
     </>
   );
 
-  const className = 'mt-auto inline-flex w-fit items-center gap-2 pt-2.5 text-[13px] font-semibold text-[var(--green-700)] no-underline';
+  const className = 'mt-auto inline-flex w-fit items-center gap-2 pt-2.5 text-[0.8125rem] font-semibold text-[var(--green-700)] no-underline';
+  const linkSx = {
+    mt: 'auto',
+    width: 'fit-content',
+    minWidth: 0,
+    justifyContent: 'flex-start',
+    gap: 1,
+    pt: 1.25,
+    p: 0,
+    color: 'var(--green-700)',
+    fontFamily: 'var(--font-sans)',
+    fontSize: 13,
+    fontWeight: 700,
+    lineHeight: 1.4,
+    textTransform: 'none',
+    '&:hover': { bgcolor: 'transparent', color: 'var(--green-800)' },
+  };
 
   if (item.onSelect) {
     return (
-      <button
-        type="button"
+      <Button
         onClick={(e) => { e.stopPropagation(); item.onSelect!(); }}
-        className={className}
+        variant="text"
+        disableRipple
+        className="group"
+        sx={linkSx}
       >
         {inner}
-      </button>
+      </Button>
     );
   }
 
@@ -103,7 +122,7 @@ export function CourseHoloCard({ item, fluid = false }: Readonly<{ item: CardCar
   const toggleFlip = () => setFlipped((f) => !f);
 
   return (
-    <div data-carousel-card className={fluid ? 'w-full animate-fade-in' : 'w-[236px] flex-shrink-0 snap-start animate-fade-in sm:w-[260px]'}>
+    <div data-carousel-card className={fluid ? 'w-full animate-fade-in' : 'w-[14.75rem] flex-shrink-0 snap-start animate-fade-in sm:w-[16.25rem]'}>
       <div className="holo-scene">
         <div ref={tiltRef} className="holo-tilt" onPointerMove={handleMove} onPointerLeave={handleLeave}>
           <div
@@ -112,30 +131,30 @@ export function CourseHoloCard({ item, fluid = false }: Readonly<{ item: CardCar
             aria-label={flipped ? 'Ver frente de la tarjeta' : 'Girar para ver más detalle'}
             onClick={toggleFlip}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFlip(); } }}
-            className={cn('holo-flipper h-[420px] cursor-pointer outline-none', flipped && 'is-flipped')}
+            className={cn('holo-flipper h-[26.25rem] cursor-pointer outline-none', flipped && 'is-flipped')}
           >
             {/* ── Frente ── */}
-            <div className="holo-face group relative flex h-[420px] flex-col overflow-hidden rounded-[20px] border border-[#E4EBDD] bg-white shadow-[0_10px_28px_rgba(23,50,77,0.06)]">
-              <div className={cn(item.coverImageUrl ? 'bg-neutral-200' : item.coverClass, 'relative flex h-[150px] w-full flex-shrink-0 items-center justify-center overflow-hidden')} style={item.coverStyle}>
+            <div className="holo-face group relative flex h-[26.25rem] flex-col overflow-hidden rounded-[1.25rem] border border-[#E4EBDD] bg-white shadow-[0_10px_28px_rgba(23,50,77,0.06)]">
+              <div className={cn(item.coverImageUrl ? 'bg-neutral-200' : [item.coverClass, 'cover-pattern'], 'relative flex h-[9.375rem] w-full flex-shrink-0 items-center justify-center overflow-hidden')} style={item.coverStyle}>
                 {item.coverImageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={item.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 ) : (
-                  item.icon
+                  <span className="relative z-[1]">{item.icon}</span>
                 )}
               </div>
               <div className="flex flex-1 flex-col gap-2 overflow-hidden p-5">
                 {item.eyebrow && (
-                  <span className="line-clamp-1 flex-shrink-0 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[var(--green-600)]">
+                  <span className="line-clamp-1 flex-shrink-0 text-[0.6563rem] font-bold uppercase tracking-[0.18em] text-[var(--green-600)]">
                     {item.eyebrow}
                   </span>
                 )}
-                <h3 className="line-clamp-2 flex-shrink-0 font-serif text-[16px] leading-snug text-[var(--ink)]">{item.title}</h3>
-                <p className="line-clamp-2 text-[13px] leading-6 text-[var(--ink-soft)]">{item.description}</p>
+                <h3 className="line-clamp-2 flex-shrink-0 font-serif text-[1rem] leading-snug text-[var(--ink)]">{item.title}</h3>
+                <p className="line-clamp-2 text-[0.8125rem] leading-6 text-[var(--ink-soft)]">{item.description}</p>
                 {typeof item.progress === 'number' && (
                   <div className="mt-0.5 flex items-center gap-2.5">
                     <ProgressBar value={item.progress} color="green" className="flex-1" />
-                    <span className="text-[11px] font-semibold text-[var(--ink-muted)]">{item.progress}%</span>
+                    <span className="text-[0.6875rem] font-semibold text-[var(--ink-muted)]">{item.progress}%</span>
                   </div>
                 )}
                 <CardLink item={item} />
@@ -144,10 +163,10 @@ export function CourseHoloCard({ item, fluid = false }: Readonly<{ item: CardCar
             </div>
 
             {/* ── Reverso ── */}
-            <div className="holo-face holo-face-back group flex h-[420px] flex-col overflow-hidden rounded-[20px] border border-[#E4EBDD] bg-white p-5 shadow-[0_10px_28px_rgba(23,50,77,0.06)]">
+            <div className="holo-face holo-face-back group flex h-[26.25rem] flex-col overflow-hidden rounded-[1.25rem] border border-[#E4EBDD] bg-white p-5 shadow-[0_10px_28px_rgba(23,50,77,0.06)]">
               <div className="flex flex-shrink-0 items-center justify-between">
                 <span
-                  className={cn(item.coverImageUrl ? 'bg-neutral-200' : item.coverClass, 'relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[12px] text-[26px]')}
+                  className={cn(item.coverImageUrl ? 'bg-neutral-200' : item.coverClass, 'relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-[0.75rem] text-[1.625rem]')}
                   style={item.coverStyle}
                 >
                   {item.coverImageUrl ? (
@@ -162,19 +181,19 @@ export function CourseHoloCard({ item, fluid = false }: Readonly<{ item: CardCar
                 </svg>
               </div>
               {item.eyebrow && (
-                <span className="mt-3 line-clamp-1 flex-shrink-0 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[var(--green-600)]">
+                <span className="mt-3 line-clamp-1 flex-shrink-0 text-[0.6563rem] font-bold uppercase tracking-[0.18em] text-[var(--green-600)]">
                   {item.eyebrow}
                 </span>
               )}
-              <h3 className="mt-1 line-clamp-2 flex-shrink-0 font-serif text-[16px] leading-snug text-[var(--ink)]">{item.title}</h3>
-              <p className="mt-2 line-clamp-4 flex-1 text-[13px] leading-6 text-[var(--ink-soft)]">{item.description}</p>
+              <h3 className="mt-1 line-clamp-2 flex-shrink-0 font-serif text-[1rem] leading-snug text-[var(--ink)]">{item.title}</h3>
+              <p className="mt-2 line-clamp-4 flex-1 text-[0.8125rem] leading-6 text-[var(--ink-soft)]">{item.description}</p>
               <CardLink item={item} />
               <span className="holo-shine" aria-hidden />
             </div>
           </div>
         </div>
       </div>
-      <p className="mt-2 select-none text-center text-[11px] text-[var(--ink-muted)]">Gira para ver más ↻</p>
+      <p className="mt-2 select-none text-center text-[0.6875rem] text-[var(--ink-muted)]">Gira para ver más ↻</p>
     </div>
   );
 }
@@ -201,22 +220,66 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
 
       {items.length > 1 && (
         <>
-          <button
-            type="button"
+          <Button
             aria-label="Anterior"
             onClick={() => scrollByCards(-1)}
-            className="absolute -left-3 top-[36%] hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#E4EBDD] bg-white text-[var(--ink)] shadow-md hover:bg-neutral-50 sm:flex"
+            variant="outlined"
+            sx={{
+              position: 'absolute',
+              left: -16,
+              top: '36%',
+              display: { xs: 'none', sm: 'flex' },
+              minWidth: 44,
+              width: 44,
+              height: 44,
+              transform: 'translateY(-50%)',
+              borderRadius: '999px',
+              borderColor: '#E4EBDD',
+              bgcolor: '#fff',
+              color: 'var(--ink)',
+              fontSize: 22,
+              lineHeight: 1,
+              boxShadow: '0 8px 20px rgba(23,50,77,0.12)',
+              '&:hover': {
+                borderColor: 'var(--blue-400)',
+                bgcolor: '#fff',
+                color: 'var(--blue-600)',
+                boxShadow: '0 10px 24px rgba(23,50,77,0.16)',
+              },
+            }}
           >
             ‹
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             aria-label="Siguiente"
             onClick={() => scrollByCards(1)}
-            className="absolute -right-3 top-[36%] hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#E4EBDD] bg-white text-[var(--ink)] shadow-md hover:bg-neutral-50 sm:flex"
+            variant="outlined"
+            sx={{
+              position: 'absolute',
+              right: -16,
+              top: '36%',
+              display: { xs: 'none', sm: 'flex' },
+              minWidth: 44,
+              width: 44,
+              height: 44,
+              transform: 'translateY(-50%)',
+              borderRadius: '999px',
+              borderColor: '#E4EBDD',
+              bgcolor: '#fff',
+              color: 'var(--ink)',
+              fontSize: 22,
+              lineHeight: 1,
+              boxShadow: '0 8px 20px rgba(23,50,77,0.12)',
+              '&:hover': {
+                borderColor: 'var(--blue-400)',
+                bgcolor: '#fff',
+                color: 'var(--blue-600)',
+                boxShadow: '0 10px 24px rgba(23,50,77,0.16)',
+              },
+            }}
           >
             ›
-          </button>
+          </Button>
         </>
       )}
     </div>

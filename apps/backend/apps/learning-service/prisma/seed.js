@@ -129,6 +129,11 @@ for (const c of COURSES) {
   c.durationMinutes = c.lessons.reduce((sum, l) => sum + l.durationMinutes, 0);
 }
 
+/* Dueño de los cursos del catálogo. `courses.created_by` guarda el correo del
+   actor (así lo escribe el gateway), y el alcance de datos del panel de
+   instructor filtra por esa columna: sin esto sus gráficas salen vacías. */
+const COURSE_OWNER = users.instructor.email;
+
 /* ── Inscripciones de prueba (id fijo → certification-service las referencia) ── */
 const INSCRIPTIONS = [
   { id: INSCRIPTION_IDS.marianaApis,     userId: users.mariana.id, courseKey: 'apisRest',       status: 'in-progress', progress: 82,  completed: false },
@@ -160,6 +165,7 @@ async function main() {
         data: {
           coverImageUrl: c.coverImageUrl,
           durationMinutes: c.durationMinutes,
+          createdBy: COURSE_OWNER,
           updatedBy: 'seed',
         },
       });
@@ -175,7 +181,7 @@ async function main() {
           level: c.level,
           coverImageUrl: c.coverImageUrl,
           durationMinutes: c.durationMinutes,
-          createdBy: 'seed',
+          createdBy: COURSE_OWNER,
           updatedBy: 'seed',
         },
       });

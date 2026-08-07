@@ -11,8 +11,10 @@ import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
 import type { Calification } from '@/lib/types';
 import { Button } from '@/app/components/ui/Button';
+import { AppButton, AppInput } from '@/app/components/ui/AppControls';
 import { StatCard } from '@/app/components/shared/StatCard';
 import { EmptyState } from '@/app/components/shared/EmptyState';
+import { PageHeader } from '@/app/components/shared/PageHeader';
 import { CourseHoloCard, type CardCarouselItem } from '@/app/components/shared/CardCarousel';
 import { calificationType, getIcon, getLabel } from '@/types/status';
 import { APP_ICONS } from '@/lib/icons';
@@ -41,12 +43,12 @@ function toCarouselItem(cal: Calification, i: number): CardCarouselItem {
 /* ── Skeleton card — mismo alto (420px) que CourseHoloCard, para que el grid no salte al cargar ── */
 function SkeletonCalCard() {
   return (
-    <div style={{ height: '420px', borderRadius: '20px', border: '1px solid #E4EBDD', overflow: 'hidden', background: 'var(--panel)', animation: 'pulse 1.4s ease-in-out infinite' }}>
-      <div style={{ height: '150px', background: 'var(--neutral-100)' }} />
-      <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ height: '12px', borderRadius: '6px', background: 'var(--neutral-100)', width: '35%' }} />
-        <div style={{ height: '18px', borderRadius: '6px', background: 'var(--neutral-100)', width: '80%' }} />
-        <div style={{ height: '13px', borderRadius: '6px', background: 'var(--neutral-100)', width: '60%' }} />
+    <div style={{ height: '26.25rem', borderRadius: '1.25rem', border: '1px solid #E4EBDD', overflow: 'hidden', background: 'var(--panel)', animation: 'pulse 1.4s ease-in-out infinite' }}>
+      <div style={{ height: '9.375rem', background: 'var(--neutral-100)' }} />
+      <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+        <div style={{ height: '0.75rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: '35%' }} />
+        <div style={{ height: '1.125rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: '80%' }} />
+        <div style={{ height: '0.8125rem', borderRadius: '0.375rem', background: 'var(--neutral-100)', width: '60%' }} />
       </div>
     </div>
   );
@@ -95,26 +97,18 @@ export default function CalificationsPage() {
   }, [califications, typeChip, search]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.15, marginBottom: '6px' }}>
-            Evaluaciones <em style={{ color: 'var(--blue-600)', fontStyle: 'italic' }}>y calificaciones</em>
-          </h1>
-          <p style={{ color: 'var(--ink-muted)', fontSize: '15px' }}>
-            {loading ? 'Cargando…' : `${total} evaluaci${total !== 1 ? 'ones' : 'ón'} registradas`}
-          </p>
-        </div>
-        {canCreate && (
-          <Button variant="primary" size="md">+ Nueva evaluación</Button>
-        )}
-      </div>
+      <PageHeader
+        title={<>Evaluaciones y calificaciones</>}
+        subtitle={loading ? 'Cargando…' : `${total} evaluaci${total !== 1 ? 'ones' : 'ón'} registradas`}
+        action={canCreate ? <Button variant="primary" size="md">+ Nueva evaluación</Button> : undefined}
+      />
 
       {/* ── Stat row ── */}
       {!loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))', gap: '1rem' }}>
           <StatCard label="Total"    value={total}   icon={<Icon icon={APP_ICONS.chart} width={20} height={20} />} />
           <StatCard label="Quizzes"  value={quizzes} icon={<Icon icon={APP_ICONS.trophy} width={20} height={20} />} variant="blue" />
           <StatCard label="Tareas"   value={tasks}   icon={<Icon icon={APP_ICONS.folder} width={20} height={20} />} variant="yellow" />
@@ -123,46 +117,39 @@ export default function CalificationsPage() {
       )}
 
       {/* ── Search + chips ── */}
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
-          <Icon icon={APP_ICONS.search} width={16} height={16} style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', pointerEvents: 'none' }} />
-          <input
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 240px', minWidth: '15rem', maxWidth: '23.75rem' }}>
+          <AppInput
             type="search"
             placeholder="Buscar evaluación…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: '100%', height: '40px', paddingLeft: '40px', paddingRight: '12px',
-              borderRadius: 'var(--radius-md)', border: '1.5px solid var(--neutral-200)',
-              background: 'var(--blue-50)', fontSize: '13.5px', color: 'var(--ink)',
-              fontFamily: 'var(--font-sans)', outline: 'none',
-            }}
+            withSearchIcon
           />
         </div>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
           {TYPE_CHIPS.map((chip) => (
-            <button
+            <AppButton
               key={chip}
               type="button"
               onClick={() => setTypeChip(chip)}
-              style={{
-                border: typeChip === chip ? '1.5px solid var(--blue-600)' : '1.5px solid var(--neutral-200)',
-                background: typeChip === chip ? 'var(--blue-50)' : 'var(--panel)',
+              variant={typeChip === chip ? 'contained' : 'outlined'}
+              sx={{
+                borderColor: typeChip === chip ? 'var(--blue-500)' : 'var(--neutral-200)',
+                bgcolor: typeChip === chip ? 'var(--blue-50)' : 'var(--panel)',
                 color: typeChip === chip ? 'var(--blue-700)' : 'var(--ink-muted)',
-                borderRadius: 'var(--radius-full)', padding: '6px 16px',
-                fontSize: '13px', fontWeight: typeChip === chip ? 600 : 400,
-                cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                px: 2,
               }}
             >
               {chip}
-            </button>
+            </AppButton>
           ))}
         </div>
       </div>
 
       {/* ── Grid ── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCalCard key={i} />)}
         </div>
       ) : filtered.length === 0 ? (
@@ -183,12 +170,12 @@ export default function CalificationsPage() {
           }
         />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
           {filtered.map((cal, i) => (
             <div key={cal.id} style={{ display: 'flex', flexDirection: 'column' }}>
               <CourseHoloCard item={toCarouselItem(cal, i)} fluid />
               {canCreate && (
-                <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                   <Button variant="ghost" size="sm" style={{ flex: 1 }} leftIcon={<Icon icon={APP_ICONS.edit} width={14} height={14} />}>Editar</Button>
                   <Button variant="danger" size="sm" style={{ flex: 1 }} leftIcon={<Icon icon={APP_ICONS.trash} width={14} height={14} />}>Eliminar</Button>
                 </div>

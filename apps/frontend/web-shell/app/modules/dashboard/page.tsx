@@ -1,301 +1,442 @@
 'use client';
 
-import Link from 'next/link';
+import type React from 'react';
 import { useEffect, useState } from 'react';
-import { Icon } from '@iconify/react';
 import { api } from '@/lib/api';
-import { appRoutes } from '@/lib/routes';
-import type { AccessProfile, Course, Inscription, Certificate } from '@/lib/types';
+import type { AccessProfile, Certificate, Course, Inscription } from '@/lib/types';
 import { Card } from '@/app/components/ui/Card';
-import { ProgressBar } from '@/app/components/ui/ProgressBar';
 import { Badge } from '@/app/components/ui/Badge';
-import { StatCard } from '@/app/components/shared/StatCard';
-import { EmptyState } from '@/app/components/shared/EmptyState';
-import { CardCarousel, type CardCarouselItem } from '@/app/components/shared/CardCarousel';
-import { Reveal } from '@/app/components/shared/Reveal';
-import { RevealWords, RevealLetters, OpeningBook } from '@/app/components/shared/DashboardFx';
+import { PageHeader } from '@/app/components/shared/PageHeader';
+import { RadarChart } from '@/app/components/ui/RadarChart';
 import { WaveSpinner } from '@/app/components/ui/WaveSpinner';
-import { certificateStatus, getVariant, getLabel } from '@/types/status';
-import { APP_ICONS, COURSE_COVER_ICONS } from '@/lib/icons';
 
-const COVER_CLASSES = ['cover-1', 'cover-2', 'cover-3', 'cover-4', 'cover-5', 'cover-6'];
+type ChartDatum = {
+  label: string;
+  value: number;
+  color: string;
+};
+
+type ProgressDatum = {
+  label: string;
+  value: number;
+};
+
+const CHART_COLORS = ['#1F9A4B', '#2566CB', '#D99A2B', '#6D5BD0', '#DB5F57'];
+
+/** Lectura del panel según el rol de la sesión. */
+type ViewMode = 'admin' | 'instructor' | 'student';
+
+const MODE_COPY = {
+  admin: {
+    badge:       'Panel administrador',
+    badgeTone:   'green' as const,
+    subtitle:    'Estadísticas generales de toda la plataforma.',
+    donutTitle:  'Estado de cursos',
+    donutDesc:   'Publicados contra borradores en la plataforma',
+    barTitle:    'Finalización por curso',
+    barDesc:     'Porcentaje de alumnos que completaron cada curso',
+    radarSeries: ['Cursos', 'Publicación'] as [string, string],
+    certDesc:    'Certificados válidos emitidos por mes',
+  },
+  instructor: {
+    badge:       'Panel profesor',
+    badgeTone:   'green' as const,
+    subtitle:    'Estadísticas de los alumnos inscritos en tus cursos.',
+    donutTitle:  'Estado de cursos',
+    donutDesc:   'Publicados contra borradores',
+    barTitle:    'Finalización por curso',
+    barDesc:     'Porcentaje de tus alumnos que completaron cada curso',
+    radarSeries: ['Cursos', 'Publicación'] as [string, string],
+    certDesc:    'Certificados válidos de tus alumnos por mes',
+  },
+  student: {
+    badge:       'Panel alumno',
+    badgeTone:   'blue' as const,
+    subtitle:    'Estadísticas de tus cursos como alumno.',
+    donutTitle:  'Estado de aprendizaje',
+    donutDesc:   'Cursos activos, completados o pausados',
+    barTitle:    'Avance por curso',
+    barDesc:     'Progreso individual en tus cursos',
+    radarSeries: ['Actividad', 'Cierre'] as [string, string],
+    certDesc:    'Tus certificados válidos por mes',
+  },
+} as const;
 
 function getCached<T>(key: string): T | null {
   try { return JSON.parse(sessionStorage.getItem(key) ?? 'null') as T; }
   catch { return null; }
 }
 
-function greeting() {
-  const h = new Date().getHours();
-  return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+function pct(value: number, total: number) {
+  return total > 0 ? Math.round((value / total) * 100) : 0;
 }
 
-function courseIcon(iconName: string) {
-  return <Icon icon={iconName} width={40} height={40} style={{ color: 'rgba(255,255,255,0.9)' }} />;
+function clampPercent(value: number | null | undefined) {
+  return Math.max(0, Math.min(100, Math.round(value ?? 0)));
 }
 
-function buildCarouselItems(inscriptions: Inscription[], courses: Course[]): CardCarouselItem[] {
-  if (inscriptions.length > 0) {
-    return inscriptions.slice(0, 6).map((ins, i) => ({
-      id: ins.id,
-      title: ins.course?.title ?? 'Curso',
-      eyebrow: ins.course?.category ?? 'Curso',
-      description: ins.course?.description || 'Continúa avanzando en este curso a tu propio ritmo.',
-      progress: ins.progressPercentage ?? 0,
-      coverClass: COVER_CLASSES[i % COVER_CLASSES.length],
-      coverImageUrl: ins.course?.coverImageUrl ?? undefined,
-      icon: courseIcon(COURSE_COVER_ICONS[i % COURSE_COVER_ICONS.length]),
-      href: appRoutes.lessons,
-      linkLabel: ins.status === 'completed' ? 'Repasar' : 'Continuar',
-    }));
-  }
-  return courses
-    .filter((c) => c.status === 'published')
-    .slice(0, 6)
-    .map((c, i) => ({
-      id: c.id,
-      title: c.title,
-      eyebrow: c.category ?? 'Curso',
-      description: c.description || 'Explora este curso y comienza cuando quieras.',
-      coverClass: COVER_CLASSES[i % COVER_CLASSES.length],
-      coverImageUrl: c.coverImageUrl ?? undefined,
-      icon: courseIcon(COURSE_COVER_ICONS[i % COURSE_COVER_ICONS.length]),
-      href: appRoutes.courses,
-      linkLabel: 'Ver curso',
-    }));
+function DonutChart({ data, title, description }: Readonly<{ data: ChartDatum[]; title: string; description: string }>) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const segments = data.reduce<Array<ChartDatum & { dash: number; offset: number }>>((acc, item) => {
+    const previousOffset = acc.length > 0 ? acc[acc.length - 1].offset + acc[acc.length - 1].dash : 25;
+    const dash = total > 0 ? (item.value / total) * 263.89 : 0;
+    return [...acc, { ...item, dash, offset: previousOffset }];
+  }, []);
+
+  return (
+    <figure className="m-0">
+      <figcaption className="mb-3">
+        <p className="text-base font-semibold leading-tight text-[var(--ink)]">{title}</p>
+        <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{description}</p>
+      </figcaption>
+      <div className="grid items-center gap-4 sm:grid-cols-[140px_1fr]">
+        <svg viewBox="0 0 120 120" className="h-[8.75rem] w-[8.75rem]" role="img" aria-label={title}>
+          <circle cx="60" cy="60" r="42" fill="none" stroke="#E7EDE2" strokeWidth="18" />
+          {segments.map((item, index) => (
+              <circle
+                key={item.label}
+                className="dashboard-donut-segment"
+                cx="60"
+                cy="60"
+                r="42"
+                fill="none"
+                stroke={item.color}
+                strokeWidth="18"
+                strokeLinecap="round"
+                strokeDasharray={`${item.dash} 263.89`}
+                strokeDashoffset={-item.offset}
+                transform="rotate(-90 60 60)"
+                style={{ animationDelay: `${index * 120}ms` }}
+              />
+          ))}
+          <text x="60" y="56" textAnchor="middle" className="fill-[var(--ink)] text-[1.25rem] font-extrabold">
+            {total}
+          </text>
+          <text x="60" y="73" textAnchor="middle" className="fill-[var(--ink-muted)] text-[0.625rem] font-bold uppercase tracking-wide">
+            total
+          </text>
+        </svg>
+        <div className="space-y-2">
+          {data.map((item) => (
+            <div key={item.label} className="flex items-center justify-between gap-3">
+              <span className="inline-flex min-w-0 items-center gap-2 text-xs text-[var(--ink-soft)]">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                <span className="truncate">{item.label}</span>
+              </span>
+              <strong className="text-xs text-[var(--ink)]">{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      </div>
+    </figure>
+  );
+}
+
+function BarChart({ data, title, description }: Readonly<{ data: ProgressDatum[]; title: string; description: string }>) {
+  const chartData = data.length > 0 ? data : [{ label: 'Sin datos', value: 0 }];
+
+  return (
+    <figure className="m-0">
+      <figcaption className="mb-3">
+        <p className="text-base font-semibold leading-tight text-[var(--ink)]">{title}</p>
+        <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{description}</p>
+      </figcaption>
+      <div className="space-y-2.5">
+        {chartData.map((item, index) => {
+          const value = clampPercent(item.value);
+          return (
+            <div key={`${item.label}-${index}`} className="grid gap-1.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="min-w-0 truncate text-xs font-medium text-[var(--ink)]">{item.label}</span>
+                <span className="text-xs font-bold text-[var(--ink)]">{value}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-[#E7EDE2]">
+                <div
+                  className="dashboard-bar-fill h-full rounded-full"
+                  style={{
+                    '--bar-width': `${value}%`,
+                    backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+                    animationDelay: `${index * 70}ms`,
+                  } as React.CSSProperties}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </figure>
+  );
+}
+
+function AreaChart({ data, title, description }: Readonly<{ data: ProgressDatum[]; title: string; description: string }>) {
+  const values = data.length > 0 ? data : [{ label: 'Inicio', value: 0 }];
+  const max = Math.max(1, ...values.map((item) => item.value));
+  const points = values.map((item, index) => {
+    const x = values.length === 1 ? 160 : 24 + (index * 272) / (values.length - 1);
+    const y = 164 - (item.value / max) * 118;
+    return { ...item, x, y };
+  });
+  const line = points.map((point) => `${point.x},${point.y}`).join(' ');
+  const area = `24,176 ${line} 296,176`;
+
+  return (
+    <figure className="m-0">
+      <figcaption className="mb-2">
+        <p className="text-base font-semibold leading-tight text-[var(--ink)]">{title}</p>
+        <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{description}</p>
+      </figcaption>
+      {/* Sin alto fijo: el viewBox es 320×190 (1.68) y forzar 150px de alto daba
+          un contenedor de proporción 2.8, así que preserveAspectRatio ajustaba
+          al alto y dejaba franjas vacías a los lados. Dejando que mande el
+          ancho, el dibujo ocupa de verdad la tarjeta. */}
+      <svg viewBox="0 0 320 190" className="mx-auto block h-auto w-full max-w-[38rem]" role="img" aria-label={title}>
+        {[0, 1, 2, 3].map((row) => (
+          <line key={row} x1="24" x2="296" y1={46 + row * 43} y2={46 + row * 43} stroke="#E7EDE2" />
+        ))}
+        <polygon className="dashboard-area-fill" points={area} fill="#1F9A4B" opacity="0.12" />
+        <polyline className="dashboard-line-draw" points={line} fill="none" stroke="#1F9A4B" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        {points.map((point, index) => (
+          <g key={`${point.label}-${index}`}>
+            <circle className="dashboard-point-pop" cx={point.x} cy={point.y} r="5" fill="#1F9A4B" stroke="#FFFFFF" strokeWidth="2" style={{ animationDelay: `${350 + index * 70}ms` }} />
+            <text x={point.x} y="184" textAnchor="middle" className="fill-[var(--ink-muted)] text-[0.625rem] font-medium">
+              {point.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </figure>
+  );
+}
+
+function StatTile({ value, label, helper }: Readonly<{ value: string | number; label: string; helper: string }>) {
+  return (
+    <div className="rounded-xl border border-[#E4EBDD] bg-white p-3 dashboard-card-in">
+      <div className="text-xl font-extrabold leading-none text-[var(--ink)]">{value}</div>
+      <div className="mt-1.5 text-[0.625rem] font-bold uppercase tracking-[0.12em] text-[var(--ink-muted)]">{label}</div>
+      <div className="mt-0.5 truncate text-xs text-[var(--ink-soft)]">{helper}</div>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
-  /* Arrancan en null/[] en ambos lados (servidor y primer render del cliente) —
-     sessionStorage no existe en el servidor, así que su lectura vive solo
-     dentro del useEffect, nunca en el valor inicial de useState. */
-  const [access,       setAccess]       = useState<AccessProfile | null>(null);
-  const [courses,      setCourses]      = useState<Course[]>([]);
+  const [access, setAccess] = useState<AccessProfile | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [cachedUser,   setCachedUser]   = useState<{ fullName: string } | null>(null);
-  const [loading,      setLoading]      = useState(true);
+  const [cachedUser, setCachedUser] = useState<{ id?: string; fullName?: string; email?: string } | null>(null);
+  const [sessionName, setSessionName] = useState('Usuario');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     const cachedAccess = getCached<AccessProfile>('pccl_access');
-    const cachedUserData = getCached<{ fullName: string }>('pccl_user');
-    if (cachedAccess) setAccess(cachedAccess);
-    if (cachedUserData) setCachedUser(cachedUserData);
+    const cachedUserData = getCached<{ id?: string; fullName?: string; email?: string }>('pccl_user');
 
-    const fetchAccess = cachedAccess ? Promise.resolve(cachedAccess) : api.access();
-    Promise.allSettled([fetchAccess, api.courses(), api.inscriptions(), api.certificates()])
-      .then(([aR, cR, iR, certR]) => {
-        if (!alive) return;
-        if (aR.status     === 'fulfilled') setAccess(aR.value);
-        if (cR.status     === 'fulfilled') setCourses(cR.value);
-        if (iR.status     === 'fulfilled') setInscriptions(iR.value);
-        if (certR.status  === 'fulfilled') setCertificates(certR.value);
-        if (!cachedUserData) api.me().then((u) => { if (alive) setCachedUser({ fullName: u.email }); }).catch(() => {});
-        setLoading(false);
-      });
+    queueMicrotask(() => {
+      if (!alive) return;
+      if (cachedAccess) setAccess(cachedAccess);
+      if (cachedUserData) {
+        setCachedUser(cachedUserData);
+        setSessionName(cachedUserData.fullName ?? cachedUserData.email ?? 'Usuario');
+      }
+    });
+
+    Promise.allSettled([
+      cachedAccess ? Promise.resolve(cachedAccess) : api.access(),
+      api.courses(),
+      api.inscriptions(),
+      api.certificates(),
+    ]).then(([accessResult, coursesResult, inscriptionsResult, certificatesResult]) => {
+      if (!alive) return;
+      if (accessResult.status === 'fulfilled') setAccess(accessResult.value);
+      if (coursesResult.status === 'fulfilled') setCourses(coursesResult.value);
+      if (inscriptionsResult.status === 'fulfilled') setInscriptions(inscriptionsResult.value);
+      if (certificatesResult.status === 'fulfilled') setCertificates(certificatesResult.value);
+      setLoading(false);
+    });
+
+    if (!cachedUserData?.fullName) {
+      api.users()
+        .then((users) => {
+          if (!alive) return;
+          const current = users.find((user) => (
+            (cachedUserData?.id && user.id === cachedUserData.id) ||
+            (cachedUserData?.email && user.email === cachedUserData.email)
+          ));
+          if (current?.fullName) {
+            setCachedUser((prev) => ({ ...prev, id: current.id, email: current.email, fullName: current.fullName }));
+            setSessionName(current.fullName);
+            const cached = getCached<Record<string, unknown>>('pccl_user') ?? {};
+            sessionStorage.setItem('pccl_user', JSON.stringify({ ...cached, id: current.id, email: current.email, fullName: current.fullName }));
+            window.dispatchEvent(new Event('pccl_user_updated'));
+          }
+        })
+        .catch(() => {});
+    }
+
     return () => { alive = false; };
   }, []);
 
-  const firstName   = (cachedUser?.fullName ?? 'Usuario').split(' ')[0];
-  const canAdmin    = access?.permissions.some((p) => p.startsWith('users:') || p.startsWith('rbac:')) ?? false;
-  const published   = courses.filter((c) => c.status === 'published').length;
-  const drafts      = courses.filter((c) => c.status === 'draft').length;
-  const activeInsc  = inscriptions.filter((i) => i.status === 'in-progress');
-  const completed   = inscriptions.filter((i) => i.status === 'completed').length;
-  const validCerts  = certificates.filter((c) => c.status === 'valid').length;
-  const activeCourse = [...activeInsc].sort((a, b) => (b.progressPercentage ?? 0) - (a.progressPercentage ?? 0))[0] ?? null;
-  const recentCerts  = [...certificates].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt)).slice(0, 3);
-  const carouselItems = buildCarouselItems(inscriptions, courses);
+  /* El backend ya entrega inscripciones, avances y constancias acotados a la
+     sesión (admin = toda la plataforma, instructor = alumnos de sus cursos,
+     resto = solo lo propio). Aquí solo se elige la lectura y las etiquetas. */
+  const roles = access?.roles ?? [];
+  const mode: ViewMode = roles.includes('admin')
+    ? 'admin'
+    : roles.includes('instructor')
+      ? 'instructor'
+      : 'student';
+  const isManagerView = mode !== 'student';
+  const copy = MODE_COPY[mode];
 
-  const quickLinks = [
-    { label: 'Catálogo', desc: 'Explora cursos', href: appRoutes.courses,      show: true },
-    { label: 'Lecciones', desc: 'Tu contenido',  href: appRoutes.lessons,      show: true },
-    { label: 'Progreso', desc: 'Tu avance',       href: appRoutes.progress,     show: true },
-    { label: 'Constancias', desc: 'Certificados', href: appRoutes.certificates, show: true },
-    { label: 'Usuarios', desc: 'Gestión',         href: appRoutes.users,        show: canAdmin },
-    { label: 'Bitácora', desc: 'Actividad',       href: appRoutes.audit,        show: canAdmin },
-  ].filter((l) => l.show).slice(0, 4);
+  const firstName = (sessionName || cachedUser?.fullName || cachedUser?.email || 'Usuario').split(' ')[0];
+
+  /* `courses.createdBy` guarda el correo del actor, no su UUID: el gateway
+     escribe `user.email` como actor al crear el curso. */
+  const visibleCourses =
+    mode === 'admin'
+      ? courses
+      : mode === 'instructor'
+        ? courses.filter((course) => course.createdBy === cachedUser?.email)
+        : courses.filter((course) => inscriptions.some((item) => item.course?.id === course.id));
+
+  const published = visibleCourses.filter((course) => course.status === 'published').length;
+  const drafts = visibleCourses.filter((course) => course.status === 'draft').length;
+  const activeInscriptions = inscriptions.filter((item) => item.status === 'in-progress' || item.status === 'enrolled');
+  const completedInscriptions = inscriptions.filter((item) => item.status === 'completed');
+  const validCertificates = certificates.filter((cert) => cert.status === 'valid');
+  const averageProgress = pct(
+    inscriptions.reduce((sum, item) => sum + clampPercent(item.progressPercentage), 0),
+    Math.max(inscriptions.length, 1) * 100,
+  );
+
+  const courseStatusData: ChartDatum[] = isManagerView
+    ? [
+        { label: 'Publicados', value: published, color: CHART_COLORS[0] },
+        { label: 'Borradores', value: drafts, color: CHART_COLORS[2] },
+      ]
+    : [
+        { label: 'En curso', value: activeInscriptions.length, color: CHART_COLORS[0] },
+        { label: 'Completados', value: completedInscriptions.length, color: CHART_COLORS[1] },
+        { label: 'Pausados', value: inscriptions.filter((item) => item.status === 'dropped').length, color: CHART_COLORS[4] },
+      ];
+
+  const progressData = (isManagerView
+    ? visibleCourses.slice(0, 6).map((course) => ({
+        label: course.title,
+        value: pct(inscriptions.filter((item) => item.course?.id === course.id && item.status === 'completed').length, Math.max(1, inscriptions.filter((item) => item.course?.id === course.id).length)),
+      }))
+    : inscriptions.slice(0, 6).map((item) => ({
+        label: item.course?.title ?? 'Curso',
+        value: clampPercent(item.progressPercentage),
+      }))
+  ).filter((item) => item.label);
+
+  const categories = (isManagerView ? visibleCourses : inscriptions.map((item) => item.course).filter(Boolean) as Course[])
+    .reduce<Record<string, { total: number; completed: number }>>((acc, course) => {
+      const key = course.category ?? course.level ?? 'General';
+      acc[key] ??= { total: 0, completed: 0 };
+      acc[key].total += 1;
+      if (isManagerView ? course.status === 'published' : inscriptions.some((item) => item.course?.id === course.id && item.status === 'completed')) {
+        acc[key].completed += 1;
+      }
+      return acc;
+    }, {});
+
+  const radarData = Object.entries(categories).slice(0, 6).map(([categoria, values]) => ({
+    categoria,
+    actividad: pct(values.total, Math.max(1, isManagerView ? visibleCourses.length : inscriptions.length)),
+    cierre: pct(values.completed, Math.max(1, values.total)),
+  }));
+
+  const monthlyCertificates = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'].map((label, index) => ({
+    label,
+    value: validCertificates.filter((cert) => {
+      const issued = new Date(cert.issuedAt);
+      return Number.isFinite(issued.getTime()) && issued.getMonth() === index;
+    }).length,
+  }));
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[26.25rem] items-center justify-center">
+        <WaveSpinner size="md" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-7">
-      {/* ── Hero ── */}
-      <Reveal index={0} as="section">
-      <Card variant="dark" padding="default" className="relative overflow-hidden !py-3">
-        <div className="absolute -right-20 -top-16 w-56 h-56 rounded-full bg-primary-400/10 blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 -bottom-16 w-44 h-44 rounded-full bg-neutral-400/5 blur-3xl pointer-events-none" />
+    <div className="flex flex-col gap-4 pb-6">
+      <PageHeader
+        title={<>Hola, {firstName}</>}
+        subtitle={copy.subtitle}
+        action={<Badge variant={copy.badgeTone}>{copy.badge}</Badge>}
+      />
 
-        {/* Marca de agua gigante letra por letra */}
-        <span className="hero-watermark !text-[6vw] !opacity-30" aria-hidden>
-          <RevealLetters text="Rumbo" startDelay={0.4} />
-        </span>
-
-        <div className="grid gap-4 items-center relative grid-cols-1 lg:grid-cols-[1.4fr_1fr]">
-          <div>
-            <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-primary-300/80">
-              <span className="blinking-dot" aria-hidden />
-              {greeting()}, {firstName}
-            </span>
-            <h1 className="font-serif text-lg lg:text-xl text-white/90 mt-1.5 mb-1 leading-snug">
-              {activeCourse
-                ? <>
-                    <RevealWords text="Continúa" />
-                    <em className="text-primary-200 not-italic">
-                      <RevealWords text={activeCourse.course?.title ?? 'tu curso activo'} startDelay={0.15} />
-                    </em>
-                  </>
-                : <>
-                    <RevealWords text="Bienvenido a tu" />
-                    <em className="text-primary-200 not-italic">
-                      <RevealWords text="plataforma de aprendizaje" startDelay={0.3} />
-                    </em>
-                  </>}
-            </h1>
-            <p className="text-xs text-primary-300/70 mb-3">
-              {activeCourse ? `${activeCourse.progressPercentage ?? 0}% completado` : 'Explora los cursos disponibles.'}
-            </p>
-            <div className="flex gap-2.5 flex-wrap">
-              <Link href={activeCourse ? appRoutes.lessons : appRoutes.courses} data-cursor-expand
-                className="inline-flex items-center h-8 px-4 rounded-full bg-neutral-100 hover:bg-white text-neutral-900 font-semibold text-xs no-underline transition-all hover:-translate-y-0.5">
-                {activeCourse ? '▸ Continuar' : 'Explorar cursos'}
-              </Link>
-              <Link href={appRoutes.inscriptions} data-cursor-expand
-                className="inline-flex items-center h-8 px-4 rounded-full border border-white/15 text-white/80 hover:bg-white/10 text-xs no-underline transition-all hover:-translate-y-0.5">
-                Mis inscripciones
-              </Link>
-            </div>
-          </div>
-
-          {/* Libro abriéndose + avance */}
-          <div className="relative hidden lg:flex flex-col justify-center scale-[0.55] origin-center -my-10">
-            <OpeningBook />
-            {activeCourse && (
-              <div className="bg-white/5 rounded-xl px-4 py-3 backdrop-blur-sm border border-white/10 mt-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-primary-300/70">Tu avance</p>
-                  <p className="font-serif text-2xl text-white/90 leading-none">
-                    {activeCourse.progressPercentage ?? 0}<small className="text-sm text-primary-300/70 ml-0.5">%</small>
-                  </p>
-                </div>
-                <ProgressBar value={activeCourse.progressPercentage ?? 0} color="green" className="mt-2" />
-                <p className="text-[11px] text-primary-300/70 mt-1.5 truncate">{activeCourse.course?.title}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
-      </Reveal>
-
-      {/* ── Carrusel de cursos — foco principal del dashboard ── */}
-      <Reveal index={1}>
-        <div className="flex items-baseline justify-between gap-3 mb-4">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--green-600)]">
-              Tu contenido
-            </span>
-            <h2 className="font-serif text-2xl text-[var(--ink)] mt-1">
-              {inscriptions.length > 0 ? 'Tus cursos' : 'Cursos disponibles'}
-            </h2>
-          </div>
-          <Link href={inscriptions.length > 0 ? appRoutes.inscriptions : appRoutes.courses}
-            className="text-xs font-medium text-primary-500 hover:text-primary-700 no-underline flex-shrink-0">
-            Ver todos →
-          </Link>
-        </div>
-        {loading ? (
-          <div className="flex h-[300px] items-center justify-center rounded-[24px] border border-[#E4EBDD] bg-white">
-            <WaveSpinner size="md" />
-          </div>
-        ) : carouselItems.length > 0 ? (
-          <CardCarousel items={carouselItems} />
+      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+        {isManagerView ? (
+          <>
+            <StatTile
+              value={visibleCourses.length}
+              label="Cursos"
+              helper={mode === 'admin' ? 'Cursos en la plataforma' : 'Cursos bajo tu gestión'}
+            />
+            <StatTile value={published} label="Publicados" helper={`${pct(published, visibleCourses.length)}% visibles`} />
+            <StatTile
+              value={inscriptions.length}
+              label="Inscripciones"
+              helper={mode === 'admin' ? 'Total de alumnos inscritos' : 'Alumnos en tus cursos'}
+            />
+            <StatTile value={validCertificates.length} label="Constancias" helper="Emitidas y válidas" />
+          </>
         ) : (
-          <Card>
-            <EmptyState icon={APP_ICONS.book} title="Sin contenido aún" description="No hay cursos disponibles." />
-          </Card>
+          <>
+            <StatTile value={inscriptions.length} label="Inscripciones" helper="Cursos asignados" />
+            <StatTile value={activeInscriptions.length} label="En progreso" helper="Cursos activos" />
+            <StatTile value={`${averageProgress}%`} label="Avance" helper="Promedio general" />
+            <StatTile value={validCertificates.length} label="Constancias" helper="Obtenidas y válidas" />
+          </>
         )}
-      </Reveal>
+      </div>
 
-      {/* ── Todo lo demás: al fondo, discreto ── */}
-      <div className="mt-8 scale-[0.97] origin-top opacity-55 grayscale-[0.4] transition-all duration-300 hover:scale-100 hover:opacity-100 hover:grayscale-0">
-        {/* Stats compactos */}
-        <Reveal index={2}>
-        {loading
-          ? <div className="flex h-16 items-center justify-center rounded-xl border border-neutral-100 bg-neutral-50/60"><WaveSpinner size="sm" /></div>
-          : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-              {canAdmin ? (
-                <>
-                  <StatCard label="Cursos"      value={courses.length} className="p-3 rounded-xl shadow-none border-neutral-100 bg-neutral-50/70" />
-                  <StatCard label="Publicados"  value={published} className="p-3 rounded-xl shadow-none border-neutral-100 bg-neutral-50/70" />
-                  <StatCard label="Borradores"  value={drafts} className="p-3 rounded-xl shadow-none border-neutral-100 bg-neutral-50/70" />
-                  <StatCard label="Constancias" value={validCerts} className="p-3 rounded-xl shadow-none border-neutral-100 bg-neutral-50/70" />
-                </>
-              ) : (
-                <>
-                  <StatCard label="Inscripciones" value={inscriptions.length} className="p-3 rounded-xl shadow-none border-neutral-100 bg-neutral-50/70" />
-                  <StatCard label="En progreso"   value={activeInsc.length} className="p-3 rounded-xl shadow-none border-neutral-100 bg-neutral-50/70" />
-                  <StatCard label="Completados"   value={completed} className="p-3 rounded-xl shadow-none border-neutral-100 bg-neutral-50/70" />
-                  <StatCard label="Constancias"   value={validCerts} className="p-3 rounded-xl shadow-none border-neutral-100 bg-neutral-50/70" />
-                </>
-              )}
-            </div>
-          )}
-        </Reveal>
+      <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+        <Card className="p-4 dashboard-card-in">
+          <DonutChart
+            data={courseStatusData}
+            title={copy.donutTitle}
+            description={copy.donutDesc}
+          />
+        </Card>
 
-        {/* Two columns, más pequeñas y discretas */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
-          {/* Quick links */}
-          <Reveal index={3}>
-          <div className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-4">
-            <h2 className="text-sm font-semibold text-neutral-600 mb-3">Accesos rápidos</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {quickLinks.map((item) => (
-                <Link key={item.label} href={item.href}
-                  className="flex flex-col gap-0.5 p-2.5 rounded-lg bg-white/70 border border-neutral-100 no-underline hover:border-primary-200 hover:bg-primary-50/60 transition-colors group">
-                  <strong className="text-xs text-neutral-600 group-hover:text-primary-700">{item.label}</strong>
-                  <span className="text-[11px] text-neutral-400">{item.desc}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-          </Reveal>
+        <Card className="p-4 dashboard-card-in">
+          <BarChart
+            data={progressData}
+            title={copy.barTitle}
+            description={copy.barDesc}
+          />
+        </Card>
+      </div>
 
-          {/* Certificados recientes */}
-          <Reveal index={4}>
-          <div className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-sm font-semibold text-neutral-600">Certificados recientes</h2>
-              <Link href={appRoutes.certificates} className="text-[11px] font-medium text-primary-400 hover:text-primary-600 no-underline">
-                Ver todos →
-              </Link>
-            </div>
-            {loading ? (
-              <div className="flex h-20 items-center justify-center"><WaveSpinner size="sm" /></div>
-            ) : recentCerts.length > 0 ? (
-              <div className="flex flex-col divide-y divide-neutral-100">
-                {recentCerts.map((cert) => (
-                  <div key={cert.id} className="flex items-center gap-2.5 py-2">
-                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white text-neutral-400">
-                      <Icon icon={APP_ICONS.diploma} width={15} height={15} />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-neutral-600 truncate">
-                        {cert.inscription?.course?.title ?? 'Curso completado'}
-                      </p>
-                      <p className="text-[10px] text-neutral-400 font-mono">{cert.certificateNumber}</p>
-                    </div>
-                    <Badge variant={getVariant(certificateStatus, cert.status)}>
-                      {getLabel(certificateStatus, cert.status)}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState icon={APP_ICONS.diploma} title="Sin certificados aún" description="Termina un curso para obtener tu primera constancia." />
-            )}
-          </div>
-          </Reveal>
-        </div>
+      <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <Card className="dashboard-card-in dashboard-card-dots p-3">
+          <RadarChart
+            data={radarData.length > 0 ? radarData : [{ categoria: 'General', actividad: 0, cierre: 0 }]}
+            angleKey="categoria"
+            valueKeys={['actividad', 'cierre']}
+            seriesLabels={[...copy.radarSeries]}
+            title="Rendimiento por categoría"
+            description="Comparación entre actividad y cierre por área"
+            className="dashboard-radar-compact"
+          />
+        </Card>
+
+        <Card className="dashboard-card-in dashboard-card-dots p-3">
+          <AreaChart
+            data={monthlyCertificates}
+            title="Constancias emitidas"
+            description={copy.certDesc}
+          />
+        </Card>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
-import { IsIn, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUrl, IsUUID } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
 
 export const LESSON_CONTENT_TYPES = [
-  'text', 'video', 'link', 'file', 'quiz', 'practice', 'reading', 'live',
+  'video', 'file', 'reading', 'live',
 ] as const;
 export type LessonContentType = (typeof LESSON_CONTENT_TYPES)[number];
 
@@ -11,5 +11,5 @@ export class CreateLessonDto {
   @IsString() @IsIn(LESSON_CONTENT_TYPES) contentType!: LessonContentType;
   @IsUUID() courseId!: string;
   @IsInt() @IsPositive() @IsOptional() durationMinutes?: number;
-  @IsUrl() @IsOptional() fileUrl?: string;
+  @IsString() @IsOptional() fileUrl?: string;
 }

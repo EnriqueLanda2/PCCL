@@ -5,6 +5,7 @@ import {
   IDENTITY_CLIENT,
   LEARNING_CLIENT,
   CERTIFICATION_CLIENT,
+  PAYMENT_CLIENT,
 } from './clients';
 
 @Module({})
@@ -35,6 +36,15 @@ export class MessagingModule {
           },
           {
             name: CERTIFICATION_CLIENT,
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+              transport: Transport.NATS,
+              options: { servers: [config.get<string>('NATS_URL', 'nats://localhost:4222')] },
+            }),
+          },
+          {
+            name: PAYMENT_CLIENT,
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (config: ConfigService) => ({
@@ -77,6 +87,45 @@ export class MessagingModule {
         ClientsModule.registerAsync([
           {
             name: LEARNING_CLIENT,
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+              transport: Transport.NATS,
+              options: { servers: [config.get<string>('NATS_URL', 'nats://localhost:4222')] },
+            }),
+          },
+          {
+            name: IDENTITY_CLIENT,
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+              transport: Transport.NATS,
+              options: { servers: [config.get<string>('NATS_URL', 'nats://localhost:4222')] },
+            }),
+          },
+        ]),
+      ],
+      exports: [ClientsModule],
+    };
+  }
+
+  static forPayment(): DynamicModule {
+    return {
+      module: MessagingModule,
+      global: true,
+      imports: [
+        ClientsModule.registerAsync([
+          {
+            name: LEARNING_CLIENT,
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+              transport: Transport.NATS,
+              options: { servers: [config.get<string>('NATS_URL', 'nats://localhost:4222')] },
+            }),
+          },
+          {
+            name: PAYMENT_CLIENT,
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (config: ConfigService) => ({
