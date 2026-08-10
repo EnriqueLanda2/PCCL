@@ -108,6 +108,7 @@
   /* Verde principal */
   --green-50:  #EBFAF0;
   --green-100: #D2F2DE;
+  --green-200: #BFE3CC;
   --green-300: #8AD8A3;
   --green-400: #4FC276;
   --green-500: #62BD81;
@@ -201,11 +202,29 @@
   ::-webkit-scrollbar-thumb  { background: #BFCBB8; border-radius: 9999px; }
   ::-webkit-scrollbar-thumb:hover { background: #98A892; }
 
-  /* Focus ring */
-  :focus-visible {
-    outline: 2px solid #25A656;
-    outline-offset: 2px;
-  }
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid #25A656;
+  outline-offset: 2px;
+}
+
+.account-menu-trigger {
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-focus-ring-color: transparent;
+}
+
+.account-menu-trigger:hover,
+.account-menu-trigger:focus,
+.account-menu-trigger:focus-visible,
+.account-menu-trigger:active,
+.account-menu-trigger:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  filter: none !important;
+}
 
   /* Selection */
   ::selection {

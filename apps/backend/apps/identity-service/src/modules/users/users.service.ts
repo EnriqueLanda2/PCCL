@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dtos/create-user.dto';
+import { UpdateUserDto } from './dtos/update-user.dto';
 
 const USER_INCLUDE = {
   userRoles: {
@@ -52,6 +53,57 @@ export class UsersService {
 
     if (!created) throw new NotFoundException('Usuario no encontrado');
     return created;
+  }
+
+  async update(id: string, dto: UpdateUserDto, actor = 'system') {
+    const existing = await this.prisma.user.findUnique({
+      where: { id },
+      include: { userRoles: true },
+    });
+    if (!existing) throw new NotFoundException('Usuario no encontrado');
+
+    const email = dto.email?.toLowerCase();
+    if (email && email !== existing.email) {
+      const duplicate = await this.prisma.user.findFirst({
+        where: { email, id: { not: id } },
+      });
+      if (duplicate) throw new ConflictException('Ya existe una cuenta con ese correo electrónico.');
+    }
+
+    const roles = dto.roleIds?.length
+      ? await this.prisma.role.findMany({ where: { id: { in: dto.roleIds } } })
+      : null;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id },
+        data: {
+          fullName: dto.fullName ?? existing.fullName,
+          email: email ?? existing.email,
+          active: dto.active ?? existing.active,
+          updatedBy: actor,
+        },
+      });
+
+      if (dto.roleIds) {
+        await tx.userRole.deleteMany({ where: { userId: id } });
+        if (roles && roles.length > 0) {
+          await tx.userRole.createMany({
+            data: roles.map((role) => ({
+              userId: id,
+              roleId: role.id,
+              createdBy: actor,
+              updatedBy: actor,
+            })),
+          });
+        }
+      }
+
+      return tx.user.findUnique({ where: { id }, include: USER_INCLUDE });
+    });
+
+    if (!updated) throw new NotFoundException('Usuario no encontrado');
+    return updated;
   }
 
   async findOne(id: string) {

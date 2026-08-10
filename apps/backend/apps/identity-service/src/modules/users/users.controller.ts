@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { IDENTITY_PATTERNS } from '@app/contracts';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dtos/create-user.dto';
+import { UpdateUserDto } from './dtos/update-user.dto';
 
 @Controller()
 export class UsersController {
@@ -21,6 +22,11 @@ export class UsersController {
   @MessagePattern(IDENTITY_PATTERNS.USER_CREATE)
   create(@Payload() payload: { dto: CreateUserDto; actor: string }) {
     return this.usersService.create(payload.dto, payload.actor);
+  }
+
+  @MessagePattern(IDENTITY_PATTERNS.USER_UPDATE)
+  update(@Payload() payload: { id: string; dto: UpdateUserDto; actor: string }) {
+    return this.usersService.update(payload.id, payload.dto, payload.actor);
   }
 
   @MessagePattern(IDENTITY_PATTERNS.USER_COUNT_ACTIVE)

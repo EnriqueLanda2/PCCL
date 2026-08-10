@@ -231,7 +231,7 @@ export interface User {
   email: string;
   avatarUrl?: string | null;
   active: boolean;
-  userRoles?: { role?: { name?: string | null } | null }[];
+  userRoles?: { role?: { id?: string; name?: string | null } | null }[];
 }
 
 export interface RbacRole {

@@ -123,6 +123,21 @@ export class IdentityController {
     );
   }
 
+  @Patch('users/:id')
+  updateUser(
+    @Param('id') id: string,
+    @Body() dto: unknown,
+    @CurrentUser() user: RequestUser | null,
+  ) {
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.USER_UPDATE, {
+        id,
+        dto,
+        actor: user?.email ?? 'anonymous',
+      }),
+    );
+  }
+
   @Patch('users/me/avatar')
   updateMyAvatar(@Body() dto: { avatarUrl: string }, @CurrentUser() user: RequestUser) {
     return firstValueFrom(

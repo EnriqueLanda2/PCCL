@@ -131,6 +131,8 @@ export const api = {
   users:      () => get<User[]>('/users'),
   createUser: (dto: { fullName: string; email: string; password: string; roleIds: string[] }) =>
     post<User>('/users', dto),
+  updateUser: (id: string, dto: { fullName?: string; email?: string; active?: boolean; roleIds?: string[] }) =>
+    patch<User>(`/users/${id}`, dto),
   deleteUser: (id: string) => del(`/users/${id}`),
   updateMyAvatar: (avatarUrl: string) => patch<{ id: string; avatarUrl: string }>('/users/me/avatar', { avatarUrl }),
 };
