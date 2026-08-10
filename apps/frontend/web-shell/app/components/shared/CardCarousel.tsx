@@ -14,9 +14,10 @@
 'use client';
 
 import type { CSSProperties, ReactNode } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
 import { cn } from '@/lib/cn';
 import { ProgressBar } from '@/app/components/ui/ProgressBar';
 
@@ -96,9 +97,34 @@ function CardLink({ item }: Readonly<{ item: CardCarouselItem }>) {
  * Tarjeta holográfica de curso — tilt al mover el mouse, se voltea con un clic
  * para ver el reverso. Usada tanto en el carrusel horizontal (Tu contenido)
  * como en grids (p. ej. Mis cursos) vía la prop `fluid`.
+ *
+ * `active` la fija CardCarousel según qué tarjeta queda al centro del track;
+ * queda `undefined` en usos tipo grid (`fluid`), donde "centro" no aplica.
  */
-export function CourseHoloCard({ item, fluid = false }: Readonly<{ item: CardCarouselItem; fluid?: boolean }>) {
-  const [flipped, setFlipped] = useState(false);
+export function CourseHoloCard({
+  item,
+  fluid = false,
+  active,
+  flipped: flippedProp,
+  onToggleFlip,
+  onHoverEnter,
+  onHoverLeave,
+}: Readonly<{
+  item: CardCarouselItem;
+  fluid?: boolean;
+  active?: boolean;
+  /** CardCarousel las controla (una sola abierta a la vez) pasando `flipped` +
+      `onToggleFlip`; sin ellas la tarjeta administra su propio flip (grids `fluid`). */
+  flipped?: boolean;
+  onToggleFlip?: () => void;
+  /** CardCarousel las usa para enfocar esta tarjeta con solo pasar el cursor
+      — sin clic — y para soltar el enfoque al salir. */
+  onHoverEnter?: () => void;
+  onHoverLeave?: () => void;
+}>) {
+  const inCarousel = active !== undefined;
+  const [localFlipped, setLocalFlipped] = useState(false);
+  const flipped = flippedProp ?? localFlipped;
   const tiltRef = useRef<HTMLDivElement>(null);
 
   const handleMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -119,12 +145,44 @@ export function CourseHoloCard({ item, fluid = false }: Readonly<{ item: CardCar
     if (el) el.style.transform = 'rotateX(0deg) rotateY(0deg)';
   }, []);
 
-  const toggleFlip = () => setFlipped((f) => !f);
+  const toggleFlip = () => {
+    if (onToggleFlip) {
+      onToggleFlip();
+    } else {
+      setLocalFlipped((f) => !f);
+    }
+  };
 
   return (
-    <div data-carousel-card className={fluid ? 'w-full animate-fade-in' : 'w-[14.75rem] flex-shrink-0 snap-start animate-fade-in sm:w-[16.25rem]'}>
-      <div className="holo-scene">
+    <div
+      data-carousel-card
+      /* En este wrapper (no en holo-scene, que se encoge 6% cuando está
+         inactiva) para que el área de hover cubra toda la tarjeta tal como
+         se ve, sin el margen muerto que deja el scale-down cerca de los bordes. */
+      onMouseEnter={onHoverEnter}
+      onMouseLeave={onHoverLeave}
+      className={fluid ? 'w-full animate-fade-in' : 'w-[14.75rem] flex-shrink-0 snap-center animate-fade-in sm:w-[16.25rem]'}
+    >
+      {/* El scale/opacity de "activa" vive en holo-scene, no en el wrapper de
+          arriba — así el wrapper conserva su tamaño de layout tal cual y el
+          texto "Gira para ver más" no se mueve. El bleed del scale lo absorbe
+          el padding vertical del track (ver .card-carousel-track). */}
+      <div
+        className={cn(
+          'holo-scene relative',
+          inCarousel && 'transition-all duration-300 ease-out',
+          inCarousel && (active ? 'scale-[1.05] opacity-100 z-10 holo-scene-active' : 'scale-[0.94] opacity-60'),
+        )}
+      >
         <div ref={tiltRef} className="holo-tilt" onPointerMove={handleMove} onPointerLeave={handleLeave}>
+          <Tooltip
+            title={flipped ? 'Clic para volver al frente' : 'Clic para ver los detalles del curso'}
+            placement="top"
+            arrow
+            enterDelay={400}
+            enterTouchDelay={400}
+            slotProps={{ popper: { modifiers: [{ name: 'offset', options: { offset: [0, -8] } }] } }}
+          >
           <div
             role="button"
             tabIndex={0}
@@ -191,6 +249,7 @@ export function CourseHoloCard({ item, fluid = false }: Readonly<{ item: CardCar
               <span className="holo-shine" aria-hidden />
             </div>
           </div>
+          </Tooltip>
         </div>
       </div>
       <p className="mt-2 select-none text-center text-[0.6875rem] text-[var(--ink-muted)]">Gira para ver más ↻</p>
@@ -198,9 +257,109 @@ export function CourseHoloCard({ item, fluid = false }: Readonly<{ item: CardCar
   );
 }
 
+/** Estilo compartido por las flechas; se atenúan y dejan de responder en el extremo correspondiente en vez de quedar en un estado ambiguo de "no pasa nada". */
+function arrowSx(disabled: boolean, side: 'left' | 'right') {
+  return {
+    position: 'absolute' as const,
+    /* El padding lateral del contenedor (position:relative, ver el JSX) NO
+       reduce el área de este `left`/`right` — offsets de un absolute se miden
+       contra el borde completo del ancestro, no contra su padding-box. Por
+       eso este valor es chico y positivo (8px desde el borde real de la
+       pantalla): con los 3.5rem de padding de acá arriba sobra hueco de
+       sobra antes de que empiece la primera tarjeta. */
+    [side]: '0.5rem',
+    top: '36%',
+    display: 'flex',
+    minWidth: 40,
+    width: 40,
+    height: 40,
+    transform: 'translateY(-50%)',
+    borderRadius: '999px',
+    borderColor: '#E4EBDD',
+    bgcolor: '#fff',
+    color: disabled ? 'var(--ink-muted)' : 'var(--ink)',
+    opacity: disabled ? 0.45 : 1,
+    fontSize: 20,
+    lineHeight: 1,
+    boxShadow: '0 8px 20px rgba(23,50,77,0.12)',
+    '&:hover': disabled ? undefined : {
+      borderColor: 'var(--blue-400)',
+      bgcolor: '#fff',
+      color: 'var(--blue-600)',
+      boxShadow: '0 10px 24px rgba(23,50,77,0.16)',
+    },
+  };
+}
+
+/** Cada cuánto avanza el autoplay — mismo ritmo que el carrusel de destacados del hero (RumboHero2a). */
+const AUTOPLAY_MS = 4500;
+/** Cuánto debe descansar el cursor sobre una tarjeta antes de que el enfoque cambie a ella. */
+const HOVER_FOCUS_DELAY_MS = 500;
+
 export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>) {
   const trackRef = useRef<HTMLDivElement>(null);
-  if (items.length === 0) return null;
+  const rafRef = useRef<number | null>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openIndexRef = useRef<number | null>(null);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [hovered, setHovered] = useState(false);
+  /** Índice bajo el cursor — el enfoque lo sigue tras HOVER_FOCUS_DELAY_MS,
+      sin depender de que el scroll de centrado termine de asentarse. */
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  /** Índice de la única tarjeta que puede tener el reverso abierto a la vez. */
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  useEffect(() => {
+    openIndexRef.current = openIndex;
+  }, [openIndex]);
+
+  /* Tarjeta activa = la más cercana al centro visible del track, recalculada
+     en cada scroll/resize. Mismo listener que las flechas para no duplicar
+     trabajo por frame. */
+  const updateState = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    setAtStart(track.scrollLeft <= 4);
+    setAtEnd(track.scrollLeft + track.clientWidth >= track.scrollWidth - 4);
+
+    const cards = track.querySelectorAll<HTMLElement>('[data-carousel-card]');
+    if (cards.length === 0) return;
+    const trackRect = track.getBoundingClientRect();
+    const centerX = trackRect.left + trackRect.width / 2;
+    let closest = 0;
+    let closestDist = Infinity;
+    cards.forEach((card, i) => {
+      const rect = card.getBoundingClientRect();
+      const dist = Math.abs(rect.left + rect.width / 2 - centerX);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = i;
+      }
+    });
+    setActiveIndex(closest);
+  }, []);
+
+  const onScroll = useCallback(() => {
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      updateState();
+    });
+  }, [updateState]);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    updateState();
+    track.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      track.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [items.length, onScroll, updateState]);
 
   const scrollByCards = (dir: 1 | -1) => {
     const track = trackRef.current;
@@ -210,11 +369,102 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
     track.scrollBy({ left: dir * step, behavior: 'smooth' });
   };
 
+  /** Centra la tarjeta `i` — se dispara al abrir su reverso (para que "activa"
+      siga siempre a la que muestra detalle) y en cada paso del autoplay. */
+  const scrollToIndex = useCallback((i: number) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const card = track.querySelectorAll<HTMLElement>('[data-carousel-card]')[i];
+    if (!card) return;
+    const trackRect = track.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const delta = (cardRect.left + cardRect.width / 2) - (trackRect.left + trackRect.width / 2);
+    track.scrollBy({ left: delta, behavior: 'smooth' });
+  }, []);
+
+  /** Abrir una tarjeta cierra cualquier otra que estuviera abierta — solo una a la vez. */
+  const handleToggleFlip = useCallback((i: number) => {
+    setOpenIndex((prev) => (prev === i ? null : i));
+  }, []);
+
+  /** Enfocar por hover es inmediato. Cancela cualquier "vuelta al centro"
+      pendiente — si el cursor ya está sobre otra tarjeta, no hace falta
+      esperar a que esa vuelta se complete. */
+  const focusOnHover = useCallback((i: number) => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setHoverIndex(i);
+    if (openIndexRef.current === null) scrollToIndex(i);
+  }, [scrollToIndex]);
+
+  /** Al salir el cursor, el enfoque espera HOVER_FOCUS_DELAY_MS antes de
+      volver al centro — así pasar el mouse por un hueco entre tarjetas
+      (o hacia otra) no lo hace parpadear de vuelta al medio en el camino. */
+  const scheduleReturnToCenter = useCallback(() => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      hoverTimerRef.current = null;
+      setHoverIndex(null);
+    }, HOVER_FOCUS_DELAY_MS);
+  }, []);
+
+  useEffect(() => () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+  }, []);
+
+  /* Al abrirse una tarjeta (openIndex cambia a un índice válido), se centra.
+     Vive en un efecto aparte — nunca dentro del updater de setOpenIndex — para
+     no repetir el error de "setState durante el render de otro componente". */
+  useEffect(() => {
+    if (openIndex !== null) scrollToIndex(openIndex);
+  }, [openIndex, scrollToIndex]);
+
+  /* Autoplay: intercala en loop entre las tarjetas. Se reprograma solo cada
+     vez que activeIndex se asienta (manual o automático), así que scrollear
+     a mano reinicia la cuenta en vez de competir con el temporizador. Se
+     detiene con el mouse encima, con alguna tarjeta mostrando su reverso, o
+     si el sistema pide menos movimiento. */
+  useEffect(() => {
+    if (items.length <= 1 || hovered || openIndex !== null) return;
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const id = setTimeout(() => {
+      scrollToIndex((activeIndex + 1) % items.length);
+    }, AUTOPLAY_MS);
+    return () => clearTimeout(id);
+  }, [activeIndex, items.length, hovered, openIndex, scrollToIndex]);
+
+  if (items.length === 0) return null;
+
+  /* Una sola tarjeta enfocada a la vez, en orden de prioridad: la que tiene
+     el reverso abierto > la que está bajo el cursor (tras el delay de hover)
+     > la más cercana al centro. */
+  const focusIndex = openIndex ?? hoverIndex ?? activeIndex;
+
   return (
-    <div className="relative">
-      <div ref={trackRef} className="scrollbar-hide flex snap-x snap-mandatory items-start gap-5 overflow-x-auto scroll-smooth pb-1 pl-0.5 pt-0.5">
-        {items.map((item) => (
-          <CourseHoloCard key={item.id} item={item} />
+    <div
+      className="relative"
+      /* Se sale del contenedor angosto del padre (que tiene su propio padding
+         lateral) para ocupar el 100% del ancho de pantalla — el padding de
+         acá abajo es el que de verdad manda cuánto respiran las tarjetas Y
+         deja hueco fijo a los lados para las flechas, en vez de que floten
+         encima de la primera/última tarjeta como pasaba antes. */
+      style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '0 3.5rem' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div ref={trackRef} className="card-carousel-track scrollbar-hide flex snap-x snap-mandatory items-start gap-5 overflow-x-auto scroll-smooth px-1 py-6">
+        {items.map((item, i) => (
+          <CourseHoloCard
+            key={item.id}
+            item={item}
+            active={items.length > 1 ? i === focusIndex : undefined}
+            flipped={items.length > 1 ? i === openIndex : undefined}
+            onToggleFlip={items.length > 1 ? () => handleToggleFlip(i) : undefined}
+            onHoverEnter={items.length > 1 ? () => focusOnHover(i) : undefined}
+            onHoverLeave={items.length > 1 ? () => scheduleReturnToCenter() : undefined}
+          />
         ))}
       </div>
 
@@ -222,61 +472,19 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
         <>
           <Button
             aria-label="Anterior"
-            onClick={() => scrollByCards(-1)}
+            aria-disabled={atStart}
+            onClick={() => !atStart && scrollByCards(-1)}
             variant="outlined"
-            sx={{
-              position: 'absolute',
-              left: -16,
-              top: '36%',
-              display: { xs: 'none', sm: 'flex' },
-              minWidth: 44,
-              width: 44,
-              height: 44,
-              transform: 'translateY(-50%)',
-              borderRadius: '999px',
-              borderColor: '#E4EBDD',
-              bgcolor: '#fff',
-              color: 'var(--ink)',
-              fontSize: 22,
-              lineHeight: 1,
-              boxShadow: '0 8px 20px rgba(23,50,77,0.12)',
-              '&:hover': {
-                borderColor: 'var(--blue-400)',
-                bgcolor: '#fff',
-                color: 'var(--blue-600)',
-                boxShadow: '0 10px 24px rgba(23,50,77,0.16)',
-              },
-            }}
+            sx={arrowSx(atStart, 'left')}
           >
             ‹
           </Button>
           <Button
             aria-label="Siguiente"
-            onClick={() => scrollByCards(1)}
+            aria-disabled={atEnd}
+            onClick={() => !atEnd && scrollByCards(1)}
             variant="outlined"
-            sx={{
-              position: 'absolute',
-              right: -16,
-              top: '36%',
-              display: { xs: 'none', sm: 'flex' },
-              minWidth: 44,
-              width: 44,
-              height: 44,
-              transform: 'translateY(-50%)',
-              borderRadius: '999px',
-              borderColor: '#E4EBDD',
-              bgcolor: '#fff',
-              color: 'var(--ink)',
-              fontSize: 22,
-              lineHeight: 1,
-              boxShadow: '0 8px 20px rgba(23,50,77,0.12)',
-              '&:hover': {
-                borderColor: 'var(--blue-400)',
-                bgcolor: '#fff',
-                color: 'var(--blue-600)',
-                boxShadow: '0 10px 24px rgba(23,50,77,0.16)',
-              },
-            }}
+            sx={arrowSx(atEnd, 'right')}
           >
             ›
           </Button>

@@ -12,6 +12,7 @@ export const APP_ICONS = {
   filter:      'solar:tuning-2-linear',
   chevronUp:   'solar:alt-arrow-up-linear',
   chevronDown: 'solar:alt-arrow-down-linear',
+  chevronLeft: 'solar:alt-arrow-left-linear',
   close:       'solar:close-circle-linear',
   edit:        'solar:pen-bold',
   trash:       'solar:trash-bin-trash-bold',

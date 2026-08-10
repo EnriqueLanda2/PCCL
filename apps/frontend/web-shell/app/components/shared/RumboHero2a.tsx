@@ -56,6 +56,7 @@ function useCountUp(target: number, durationMs = 1600) {
 
 export function RumboHero2a({ sesionActiva = false, userName, courses, destacados, stats }: Readonly<RumboHero2aProps>) {
   const [slide, setSlide] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const heroTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* El landing se renderiza estático en el servidor, donde no hay forma de
@@ -106,9 +107,18 @@ export function RumboHero2a({ sesionActiva = false, userName, courses, destacado
 
         <nav className="rumbo2a-topbar-nav" style={{ fontFamily: SANS, fontWeight: 600, fontSize: 14, color: '#3d5147' }}>
           <Link href={appRoutes.home} style={{ color: '#1a7a4a', textDecoration: 'none' }}>Inicio</Link>
-          <Link href={appRoutes.courses} style={{ color: 'inherit', textDecoration: 'none' }}>Catálogo</Link>
-          <Link href={appRoutes.inscriptions} style={{ color: 'inherit', textDecoration: 'none' }}>Mis cursos</Link>
-          <Link href={appRoutes.certificates} style={{ color: 'inherit', textDecoration: 'none' }}>Certificados</Link>
+          {activa ? (
+            <>
+              <Link href={appRoutes.catalog} style={{ color: 'inherit', textDecoration: 'none' }}>Catálogo</Link>
+              <Link href={appRoutes.courses} style={{ color: 'inherit', textDecoration: 'none' }}>Mis cursos</Link>
+              <Link href={appRoutes.certificates} style={{ color: 'inherit', textDecoration: 'none' }}>Certificados</Link>
+            </>
+          ) : (
+            /* Sin sesión no hay "mis cursos" ni certificados que mostrar — el
+               catálogo público vive en esta misma landing (sección de abajo),
+               así que se enlaza como ancla en vez de a una ruta protegida. */
+            <a href="#catalogo-publico" style={{ color: 'inherit', textDecoration: 'none' }}>Catálogo</a>
+          )}
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
@@ -116,22 +126,66 @@ export function RumboHero2a({ sesionActiva = false, userName, courses, destacado
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2aa863', animation: 'rumbo2a-pulse 1.6s ease-in-out infinite', flexShrink: 0 }} />
             <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 12, letterSpacing: '0.08em', color: '#1a7a4a', whiteSpace: 'nowrap' }}>NUEVA COHORTE · JUNIO</span>
           </div>
-          {activa ? (
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#dcefe3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SANS, fontWeight: 700, fontSize: 13, color: '#1a7a4a', flexShrink: 0 }}>
-              {initials}
-            </div>
-          ) : (
-            <>
-              <Link href={appRoutes.login} className="rumbo2a-login-link" style={{ fontFamily: SANS, fontWeight: 600, fontSize: 14, color: '#16241c', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                Iniciar sesión
-              </Link>
-              <Link href={appRoutes.register} className="rumbo2a-cta-primary" style={{ background: '#1a7a4a', color: '#fff', fontFamily: SANS, fontWeight: 700, fontSize: 14, padding: '10px 22px', borderRadius: 999, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                Comenzar →
-              </Link>
-            </>
-          )}
+
+          <div className="rumbo2a-topbar-auth" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {activa ? (
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#dcefe3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SANS, fontWeight: 700, fontSize: 13, color: '#1a7a4a', flexShrink: 0 }}>
+                {initials}
+              </div>
+            ) : (
+              <>
+                <Link href={appRoutes.login} className="rumbo2a-login-link" style={{ fontFamily: SANS, fontWeight: 600, fontSize: 14, color: '#16241c', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  Iniciar sesión
+                </Link>
+                <Link href={appRoutes.register} className="rumbo2a-cta-primary" style={{ background: '#1a7a4a', color: '#fff', fontFamily: SANS, fontWeight: 700, fontSize: 14, padding: '10px 22px', borderRadius: 999, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  Comenzar →
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Reemplaza al nav horizontal por debajo de 900px (ver .rumbo2a-topbar-nav
+              en globals.css) — sin esto el menú desaparecía sin dejar forma de
+              navegar en móvil. */}
+          <button
+            type="button"
+            className="rumbo2a-menu-btn"
+            aria-label={mobileNavOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={mobileNavOpen}
+            aria-controls="rumbo2a-mobile-panel"
+            onClick={() => setMobileNavOpen((o) => !o)}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16241c" strokeWidth="2" strokeLinecap="round">
+              {mobileNavOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+            </svg>
+          </button>
         </div>
       </header>
+
+      {mobileNavOpen && (
+        <div id="rumbo2a-mobile-panel" className="rumbo2a-mobile-panel" style={{ fontFamily: SANS }}>
+          <Link href={appRoutes.home} onClick={() => setMobileNavOpen(false)}>Inicio</Link>
+          {activa ? (
+            <>
+              <Link href={appRoutes.catalog} onClick={() => setMobileNavOpen(false)}>Catálogo</Link>
+              <Link href={appRoutes.courses} onClick={() => setMobileNavOpen(false)}>Mis cursos</Link>
+              <Link href={appRoutes.certificates} onClick={() => setMobileNavOpen(false)}>Certificados</Link>
+            </>
+          ) : (
+            <a href="#catalogo-publico" onClick={() => setMobileNavOpen(false)}>Catálogo</a>
+          )}
+          {!activa && (
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <Link href={appRoutes.login} onClick={() => setMobileNavOpen(false)} style={{ flex: 1, textAlign: 'center', fontWeight: 600, color: '#16241c', border: '1px solid #e3efe7', borderRadius: 999, padding: '10px 0' }}>
+                Iniciar sesión
+              </Link>
+              <Link href={appRoutes.register} onClick={() => setMobileNavOpen(false)} style={{ flex: 1, textAlign: 'center', fontWeight: 700, color: '#fff', background: '#1a7a4a', borderRadius: 999, padding: '10px 0' }}>
+                Comenzar →
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Hero ── */}
       <div className="rumbo2a-hero-grid rumbo2a-fade-up">
@@ -238,7 +292,7 @@ export function RumboHero2a({ sesionActiva = false, userName, courses, destacado
       {/* ── Continúa aprendiendo / catálogo — reusa el carrusel de cursos compartido
           (CardCarousel/CourseHoloCard: flechas + tilt 3D + barra de progreso ya incluidos) ── */}
       {courses.length > 0 && (
-        <div className="rumbo2a-courses-section" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div id="catalogo-publico" className="rumbo2a-courses-section" style={{ display: 'flex', flexDirection: 'column', gap: 16, scrollMarginTop: 24 }}>
           <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 19, color: '#16241c' }}>
             {activa ? 'Continúa aprendiendo' : 'Cursos del catálogo'}
           </div>

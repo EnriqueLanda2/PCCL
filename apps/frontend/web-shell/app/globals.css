@@ -412,6 +412,19 @@
 
 .holo-scene:hover .holo-shine { opacity: 1; }
 
+/* Tarjeta al centro del CardCarousel — ver `active` en CourseHoloCard.
+   El track solo tiene 24px de padding vertical (py-6) para absorber el
+   bleed del scale + esta sombra sin que overflow-x:auto (que fuerza
+   overflow-y a "auto" también) la recorte — por eso el reach se mantiene
+   corto a propósito, nada de blurs grandes tipo "elevación". */
+.holo-scene-active {
+  border-radius: 24px;
+  transition: box-shadow 300ms ease;
+  box-shadow:
+    0 0 0 3px var(--green-300, #86e0b0),
+    0 6px 16px -6px rgba(26, 122, 74, 0.35);
+}
+
 @keyframes sparkle-twinkle {
   0%, 100% { opacity: 0;   transform: scale(0.4) rotate(0deg); }
   50%      { opacity: 0.9; transform: scale(1)   rotate(90deg); }
@@ -1208,6 +1221,45 @@
 .rumbo2a-cta-primary:hover { background: #15653d !important; transform: translateY(-2px); }
 .rumbo2a-login-link:hover { color: #1a7a4a !important; }
 
+/* Botón hamburguesa: reemplaza al nav horizontal por debajo de 900px */
+.rumbo2a-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid #e3efe7;
+  background: #fff;
+  cursor: pointer;
+}
+.rumbo2a-menu-btn:hover { border-color: #bfe0cd; }
+
+.rumbo2a-mobile-panel {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 20px 18px;
+  background: #ffffff;
+  border-bottom: 1px solid #e3efe7;
+}
+.rumbo2a-mobile-panel a {
+  color: #16241c;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px 4px;
+  border-bottom: 1px solid #eef4f0;
+}
+.rumbo2a-mobile-panel a:first-child { color: #1a7a4a; }
+
+@media (max-width: 900px) {
+  .rumbo2a-menu-btn { display: inline-flex; }
+  .rumbo2a-mobile-panel { display: flex; }
+  .rumbo2a-topbar-auth { display: none !important; }
+}
+
 .rumbo2a-hero-grid {
   display: grid;
   grid-template-columns: 440px 1fr;
@@ -1220,7 +1272,16 @@
 
 .rumbo2a-courses-section { padding: 32px 40px 12px; }
 
-.rumbo2a-stats-row { display: flex; gap: 56px; padding: 24px 40px 36px; flex-wrap: wrap; }
+/* Pocas tarjetas (no alcanzan a llenar el ancho) → se centran en vez de
+   quedar pegadas a la izquierda con espacio vacío a la derecha. Si de verdad
+   hay overflow (más tarjetas de las que caben), "safe" hace que el navegador
+   vuelva a flex-start automáticamente para no recortar el inicio del scroll. */
+.card-carousel-track { justify-content: flex-start; }
+@supports (justify-content: safe center) {
+  .card-carousel-track { justify-content: safe center; }
+}
+
+.rumbo2a-stats-row { display: flex; justify-content: center; gap: 56px; padding: 24px 40px 36px; flex-wrap: wrap; }
 
 @media (max-width: 900px) {
   .rumbo2a-hero-grid { grid-template-columns: 1fr; padding: 28px 24px 8px; }
@@ -1451,4 +1512,106 @@
   padding: 0.6rem 0.7rem;
   font-size: 0.8125rem;
   color: var(--ink-muted);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Auth (login / registro) — tarjeta del formulario sobre un fondo
+   temático de íconos de educación que flotan suavemente.
+   ════════════════════════════════════════════════════════════════ */
+@keyframes auth-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* El tilt viaja por --tilt para que cada ícono conserve su inclinación
+   propia mientras flota (si no, la animación la pisaría con un rotate fijo). */
+@keyframes auth-book-drift {
+  0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+  50%      { transform: translateY(-14px) rotate(calc(var(--tilt, 0deg) + 4deg)); }
+}
+
+/* Entrada escalonada de los bloques del formulario: cada hijo directo
+   entra un pelín después que el anterior. */
+.auth-stagger > * {
+  opacity: 0;
+  animation: auth-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.auth-stagger > *:nth-child(1) { animation-delay:  60ms; }
+.auth-stagger > *:nth-child(2) { animation-delay: 120ms; }
+.auth-stagger > *:nth-child(3) { animation-delay: 180ms; }
+.auth-stagger > *:nth-child(4) { animation-delay: 240ms; }
+.auth-stagger > *:nth-child(5) { animation-delay: 300ms; }
+.auth-stagger > *:nth-child(6) { animation-delay: 360ms; }
+
+.auth-card {
+  animation: auth-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Los campos van en blanco puro dentro de la tarjeta gris: su fondo normal
+   (#F8FBF5, verdoso) queda casi al mismo nivel de luz que la tarjeta y se
+   perdería. En blanco se leen como "huecos" sobre la superficie. */
+.auth-card input:not([type='checkbox']) {
+  background: #ffffff;
+}
+
+/* Azul en vez del verde de marca: sobre blanco rinde bastante más a baja
+   opacidad, y así el fondo no compite con los acentos verdes del formulario.
+   Ojo al bajar la opacidad: los íconos son `bold-duotone`, o sea que una de
+   sus dos capas ya viene translúcida de fábrica, y esa translucidez se
+   MULTIPLICA con esta — por eso valores que en un ícono sólido se verían
+   bien, acá salen casi blancos. */
+.auth-book {
+  position: absolute;
+  color: var(--blue-700);
+  opacity: 0.38;
+  animation: auth-book-drift var(--dur, 10s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  transform: rotate(var(--tilt, 0deg));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-stagger > *,
+  .auth-card { opacity: 1; animation: none; }
+  .auth-book { animation: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Intercambio de paneles login ↔ registro
+   ════════════════════════════════════════════════════════════════
+   Las dos pantallas viven en el MISMO componente (modules/auth/page.tsx) y sus
+   dos paneles están siempre montados. Por eso esto es un `transition` sobre
+   `transform` y no una animación de entrada/salida: al cambiar de modo cambia
+   la clase del contenedor y el navegador interpola entre las dos posiciones.
+   Es una animación real y continua — no hay desmontaje ni cambio de ruta que
+   la pueda cortar por la mitad.
+
+   Cada panel se desplaza exactamente el ancho de su columna (100% del suyo)
+   hasta caer en el hueco del otro. Solo en lg+, que es donde existen las dos
+   columnas: abajo el panel azul está oculto y mover el formulario lo sacaría
+   de la pantalla. */
+.auth-panel {
+  transition: transform 620ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@media (min-width: 1024px) {
+  .auth-mode-register .auth-panel-navy { transform: translateX(100%); }
+  .auth-mode-register .auth-panel-form { transform: translateX(-100%); }
+}
+
+/* Los paneles se cruzan por el medio; el azul siempre pasa por delante. */
+.auth-panel-navy { z-index: 2; }
+.auth-panel-form { z-index: 1; }
+
+/* El contenido (copy del panel azul, formulario) se reemplaza al cambiar de
+   modo. Sin esto el texto cambiaría de golpe a mitad del desplazamiento; el
+   retraso lo mete ya empezado el movimiento. */
+@keyframes auth-content-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.auth-content-in { animation: auth-content-in 420ms ease 140ms both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-panel { transition: none; }
+  .auth-content-in { animation: none; }
 }
