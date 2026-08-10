@@ -4,11 +4,10 @@
    RumboHero2a.tsx) · CTA final · Footer
    ─────────────────────────────────────────── */
 
-import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/app/components/layout/Footer';
 import { BookIntro } from '@/app/components/shared/BookIntro';
-import { Reveal } from '@/app/components/shared/Reveal';
+import { ExpandingCta } from '@/app/components/shared/ExpandingCta';
 import { RumboHero2a, type FeaturedSlideItem } from '@/app/components/shared/RumboHero2a';
 import { type CardCarouselItem } from '@/app/components/shared/CardCarousel';
 import { appRoutes } from '@/lib/routes';
@@ -145,54 +144,8 @@ export default async function HomePage() {
         stats={{ est: stats.activeStudents, cur: stats.publishedCourses, fin: stats.completionRate }}
       />
 
-      {/* ── Final CTA ── */}
-      <Reveal index={0}>
-      <section style={{
-        margin: '52px clamp(20px, 4vw, 48px)',
-        padding: 'clamp(32px, 4.5vw, 68px)',
-        borderRadius: '1.5rem',
-        background: 'linear-gradient(135deg, var(--green-700), var(--blue-900))',
-        color: 'var(--panel)',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 22rem), 1fr))',
-        gap: '2.25rem',
-        alignItems: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        <div style={{ position: 'absolute', right: '-100px', top: '-100px', width: '22.5rem', height: '22.5rem', background: 'radial-gradient(circle, rgba(255,255,255,0.16), transparent 60%)' }} />
-        <div style={{ position: 'relative' }}>
-          <span style={{ fontSize: '0.6563rem', textTransform: 'uppercase', letterSpacing: '0.16em', fontWeight: 600, color: 'var(--blue-300)' }}>Comienza hoy</span>
-            <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(22px,2.6vw,34px)', color: 'var(--panel)', margin: '10px 0 13px', fontWeight: 800 }}>
-            Tu próxima cohorte te <span style={{ color: 'var(--green-300)' }}>está esperando.</span>
-          </h2>
-          <p style={{ opacity: 0.7, marginBottom: '1.375rem', fontSize: '0.9063rem' }}>Crea tu cuenta gratis. Sin tarjeta. Sin pelusa.</p>
-          <div style={{ display: 'flex', gap: '0.625rem' }}>
-            <Link href={appRoutes.register} style={{ display: 'inline-flex', alignItems: 'center', height: '2.75rem', padding: '0 24px', borderRadius: '999px', background: 'var(--green-300)', color: 'var(--green-900)', fontSize: '0.875rem', fontWeight: 500 }}>
-              Crear cuenta
-            </Link>
-            <Link href={appRoutes.courses} style={{ display: 'inline-flex', alignItems: 'center', height: '2.75rem', padding: '0 24px', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--panel)', fontSize: '0.875rem' }}>
-              Ver catálogo
-            </Link>
-          </div>
-        </div>
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--panel)', borderRadius: '0.875rem', padding: '1.1875rem', transform: 'rotate(-2deg)', boxShadow: 'var(--sh-3)', width: '14.75rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8125rem' }}>
-              <span style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.16em', fontWeight: 600, color: 'var(--blue-600)' }}>Hoy</span>
-              <span style={{ fontSize: '0.6875rem', color: 'var(--ink-muted)' }}>10:42</span>
-            </div>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '0.9375rem', lineHeight: 1.3, marginBottom: '0.8125rem', color: 'var(--ink)' }}>
-              &ldquo;Camila terminó su quiz con 95 puntos.&rdquo;
-            </div>
-            <div style={{ display: 'flex', gap: '0.4375rem', alignItems: 'center' }}>
-              <div style={{ width: '1.6875rem', height: '1.6875rem', borderRadius: '50%', background: 'var(--green-300)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6563rem', fontWeight: 600, color: 'var(--green-900)' }}>CR</div>
-              <div style={{ fontSize: '0.7188rem', color: 'var(--ink-muted)' }}>Camila Ríos · Visualización de datos</div>
-            </div>
-          </div>
-        </div>
-      </section>
-      </Reveal>
+      {/* ── Final CTA — crece a pantalla completa con el scroll (ver ExpandingCta) ── */}
+      <ExpandingCta />
 
       <Footer />
     </>

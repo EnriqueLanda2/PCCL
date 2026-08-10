@@ -393,6 +393,19 @@
 
 .holo-scene:hover .holo-shine { opacity: 1; }
 
+/* Tarjeta al centro del CardCarousel — ver `active` en CourseHoloCard.
+   El track solo tiene 24px de padding vertical (py-6) para absorber el
+   bleed del scale + esta sombra sin que overflow-x:auto (que fuerza
+   overflow-y a "auto" también) la recorte — por eso el reach se mantiene
+   corto a propósito, nada de blurs grandes tipo "elevación". */
+.holo-scene-active {
+  border-radius: 24px;
+  transition: box-shadow 300ms ease;
+  box-shadow:
+    0 0 0 3px var(--green-300, #86e0b0),
+    0 6px 16px -6px rgba(26, 122, 74, 0.35);
+}
+
 @keyframes sparkle-twinkle {
   0%, 100% { opacity: 0;   transform: scale(0.4) rotate(0deg); }
   50%      { opacity: 0.9; transform: scale(1)   rotate(90deg); }
@@ -1189,6 +1202,45 @@
 .rumbo2a-cta-primary:hover { background: #15653d !important; transform: translateY(-2px); }
 .rumbo2a-login-link:hover { color: #1a7a4a !important; }
 
+/* Botón hamburguesa: reemplaza al nav horizontal por debajo de 900px */
+.rumbo2a-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid #e3efe7;
+  background: #fff;
+  cursor: pointer;
+}
+.rumbo2a-menu-btn:hover { border-color: #bfe0cd; }
+
+.rumbo2a-mobile-panel {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 20px 18px;
+  background: #ffffff;
+  border-bottom: 1px solid #e3efe7;
+}
+.rumbo2a-mobile-panel a {
+  color: #16241c;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px 4px;
+  border-bottom: 1px solid #eef4f0;
+}
+.rumbo2a-mobile-panel a:first-child { color: #1a7a4a; }
+
+@media (max-width: 900px) {
+  .rumbo2a-menu-btn { display: inline-flex; }
+  .rumbo2a-mobile-panel { display: flex; }
+  .rumbo2a-topbar-auth { display: none !important; }
+}
+
 .rumbo2a-hero-grid {
   display: grid;
   grid-template-columns: 440px 1fr;
@@ -1201,7 +1253,16 @@
 
 .rumbo2a-courses-section { padding: 32px 40px 12px; }
 
-.rumbo2a-stats-row { display: flex; gap: 56px; padding: 24px 40px 36px; flex-wrap: wrap; }
+/* Pocas tarjetas (no alcanzan a llenar el ancho) → se centran en vez de
+   quedar pegadas a la izquierda con espacio vacío a la derecha. Si de verdad
+   hay overflow (más tarjetas de las que caben), "safe" hace que el navegador
+   vuelva a flex-start automáticamente para no recortar el inicio del scroll. */
+.card-carousel-track { justify-content: flex-start; }
+@supports (justify-content: safe center) {
+  .card-carousel-track { justify-content: safe center; }
+}
+
+.rumbo2a-stats-row { display: flex; justify-content: center; gap: 56px; padding: 24px 40px 36px; flex-wrap: wrap; }
 
 @media (max-width: 900px) {
   .rumbo2a-hero-grid { grid-template-columns: 1fr; padding: 28px 24px 8px; }
