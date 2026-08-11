@@ -37,13 +37,20 @@ const FALLBACK_COVERS = [
   'linear-gradient(135deg, #F3FAF0 0%, #DCE9FF 48%, #2EA761 49%, #15395D 100%)',
 ];
 
-function levelLabel(level: string) {
+/* Exportados para que CoursePreviewModal pinte la misma portada y las mismas
+   etiquetas que la tarjeta de la que sale — si divergen, el modal parecería
+   de otro curso. */
+export function levelLabel(level: string) {
   return LEVEL_LABEL[level] ?? level;
 }
 
-function fallbackCover(course: Course) {
+export function fallbackCover(course: Pick<Course, 'id'>) {
   const index = Math.abs([...course.id].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % FALLBACK_COVERS.length;
   return FALLBACK_COVERS[index];
+}
+
+export function courseCategory(course: Pick<Course, 'category' | 'level'>) {
+  return course.category ?? CATEGORY_BY_LEVEL[course.level] ?? 'Curso';
 }
 
 function lessonCount(course: Course) {
@@ -76,7 +83,7 @@ export function CourseCard({
 }: Readonly<CourseCardProps>) {
   if (loading) return <CourseCardSkeleton />;
 
-  const category = course.category ?? CATEGORY_BY_LEVEL[course.level] ?? 'Curso';
+  const category = courseCategory(course);
   const duration = formatDuration(course.durationMinutes);
   const lessons = lessonCount(course);
   const primaryContentType = course.lessons?.[0]?.contentType;

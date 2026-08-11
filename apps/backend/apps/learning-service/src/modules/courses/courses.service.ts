@@ -87,6 +87,47 @@ export class CoursesService {
     return this.withCourseStats(courses);
   }
 
+  /**
+   * Un curso publicado con su temario — alimenta la vista previa del catálogo,
+   * donde el usuario todavía NO está inscrito.
+   *
+   * Dos cosas que no pueden cambiarse a la ligera:
+   *  · Solo `status: 'published'`. Un borrador debe responder 404 igual que un
+   *    id inexistente; si filtráramos después de leerlo, la diferencia entre
+   *    "no existe" y "existe pero no está publicado" ya sería observable.
+   *  · De cada lección solo salen título, tipo y duración. `content` y
+   *    `fileUrl` son el material del curso: son exactamente lo que se paga al
+   *    inscribirse, así que no viajan por una ruta pública.
+   */
+  async findPublishedOne(id: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { id, status: 'published' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        level: true,
+        coverImageUrl: true,
+        durationMinutes: true,
+        price: true,
+        currency: true,
+        isFree: true,
+        lessons: {
+          select: {
+            id: true,
+            title: true,
+            contentType: true,
+            durationMinutes: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+    if (!course) throw new NotFoundException('Curso no encontrado');
+    return course;
+  }
+
   /** Total de cursos publicados — para las estadísticas públicas del landing. */
   countPublished() {
     return this.prisma.course.count({ where: { status: 'published' } });

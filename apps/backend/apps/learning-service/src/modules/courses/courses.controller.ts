@@ -20,6 +20,11 @@ export class CoursesController {
   @MessagePattern(LEARNING_PATTERNS.COURSE_FIND_PUBLISHED)
   findPublished() { return this.service.findPublished(); }
 
+  @MessagePattern(LEARNING_PATTERNS.COURSE_FIND_PUBLISHED_ONE)
+  findPublishedOne(@Payload() p: { id: string }) {
+    return this.service.findPublishedOne(p.id);
+  }
+
   @MessagePattern(LEARNING_PATTERNS.COURSE_COUNT_PUBLISHED)
   countPublished() {
     return this.service.countPublished();

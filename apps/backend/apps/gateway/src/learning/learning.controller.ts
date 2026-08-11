@@ -44,6 +44,16 @@ export class LearningController {
     );
   }
 
+  /* Detalle público con temario. Va aquí arriba a propósito: Nest resuelve por
+     orden de declaración y 'courses/:id' se tragaría 'courses/public/...'. */
+  @Public()
+  @Get('courses/public/:id')
+  findPublishedCourse(@Param('id') id: string) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.COURSE_FIND_PUBLISHED_ONE, { id }),
+    );
+  }
+
   @Post('courses')
   createCourse(@Body() dto: unknown, @CurrentUser() u: RequestUser) {
     return firstValueFrom(

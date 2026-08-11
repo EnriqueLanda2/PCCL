@@ -26,6 +26,7 @@ import type {
   PendingTasksResult,
   Progress,
   PublicCourse,
+  PublicCourseDetail,
   RbacCatalogs,
   SessionUser,
   User,
@@ -63,6 +64,9 @@ export const api = {
 
   /** Catálogo de cursos publicados, sin acotar al usuario — para inscribirse. */
   publicCourses: () => get<PublicCourse[]>('/courses/public'),
+
+  /** Detalle con temario de un curso publicado — vista previa antes de inscribirse. */
+  publicCourse: (id: string) => get<PublicCourseDetail>(`/courses/public/${id}`),
 
   createCourse:  (dto: Partial<Course>) => post<Course>('/courses', dto),
   publishCourse: (id: string) => patch<Course>(`/courses/${id}/publish`, {}),

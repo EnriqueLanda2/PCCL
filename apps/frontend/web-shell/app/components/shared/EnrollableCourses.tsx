@@ -18,6 +18,7 @@ import { Badge } from '@/app/components/ui/Badge';
 import { EmptyState } from '@/app/components/shared/EmptyState';
 import { CheckoutModal } from '@/app/components/shared/CheckoutModal';
 import { CourseCard } from '@/app/components/shared/CourseCard';
+import { CoursePreviewModal } from '@/app/components/shared/CoursePreviewModal';
 import { DEFAULT_PAGE_SIZE, Pagination } from '@/app/components/ui/Pagination';
 import { WaveSpinner } from '@/app/components/ui/WaveSpinner';
 import { APP_ICONS } from '@/lib/icons';
@@ -56,6 +57,7 @@ export function EnrollableCourses({
   const [enrolling,    setEnrolling]    = useState<string | null>(null);
   const [error,        setError]        = useState<string | null>(null);
   const [checkout,     setCheckout]     = useState<Course | null>(null);
+  const [preview,      setPreview]      = useState<PublicCourse | null>(null);
   const [page,         setPage]         = useState(1);
 
   const load = useCallback(async () => {
@@ -115,6 +117,20 @@ export function EnrollableCourses({
     else void enrollFree(course);
   };
 
+  /* Desde la vista previa: el checkout sustituye al modal, pero la inscripción
+     gratuita lo mantiene abierto para que el botón muestre "Inscribiendo…" y
+     solo se cierra al terminar. Si falla, enrollFree deja el aviso de error
+     visible en la lista. */
+  const handlePreviewEnroll = async (course: PublicCourse) => {
+    if (requiresPayment(course)) {
+      setPreview(null);
+      setCheckout(toCourse(course));
+      return;
+    }
+    await enrollFree(course);
+    setPreview(null);
+  };
+
   const handlePaid = async () => {
     setCheckout(null);
     /* El pago dispara payment.completed y learning-service crea la inscripción;
@@ -164,7 +180,7 @@ export function EnrollableCourses({
                 progress={0}
                 actionLabel={enrolling === course.id ? 'Inscribiendo…' : requiresPayment(course) ? 'Comprar' : 'Inscribirme'}
                 onAction={() => handleSelect(course)}
-                onDetails={() => handleSelect(course)}
+                onDetails={() => setPreview(course)}
               />
             </div>
           ))}
@@ -179,7 +195,7 @@ export function EnrollableCourses({
                   progress={0}
                   actionLabel={enrolling === course.id ? 'Inscribiendo…' : requiresPayment(course) ? 'Comprar' : 'Inscribirme'}
                   onAction={() => handleSelect(course)}
-                  onDetails={() => handleSelect(course)}
+                  onDetails={() => setPreview(course)}
                 />
                 <div className="mt-2 flex justify-between gap-2">
                   <Badge variant={requiresPayment(course) ? 'dark' : 'green'}>{priceLabel(course)}</Badge>
@@ -190,6 +206,16 @@ export function EnrollableCourses({
           </div>
           <Pagination className="mt-6" page={pageSafe} totalItems={available.length} onChange={setPage} label="cursos" />
         </>
+      )}
+
+      {preview && (
+        <CoursePreviewModal
+          open={Boolean(preview)}
+          course={preview}
+          busy={enrolling === preview.id}
+          onClose={() => setPreview(null)}
+          onEnroll={(course) => { void handlePreviewEnroll(course); }}
+        />
       )}
 
       {checkout && (

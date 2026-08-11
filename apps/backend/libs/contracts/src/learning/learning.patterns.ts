@@ -2,6 +2,7 @@ export const LEARNING_PATTERNS = {
   COURSE_CREATE: 'learning.course.create',
   COURSE_FIND_ALL: 'learning.course.find_all',
   COURSE_FIND_PUBLISHED: 'learning.course.find_published',
+  COURSE_FIND_PUBLISHED_ONE: 'learning.course.find_published_one',
   COURSE_COUNT_PUBLISHED: 'learning.course.count_published',
   COURSE_FIND_ONE: 'learning.course.find_one',
   COURSE_UPDATE: 'learning.course.update',

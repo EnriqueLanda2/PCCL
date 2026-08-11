@@ -10,6 +10,7 @@ export type { CardCarouselItem } from './CardCarousel';
 export { Carousel3DRing } from './Carousel3DRing';
 export type { Carousel3DItem } from './Carousel3DRing';
 export { Reveal } from './Reveal';
+export { CoursePreviewModal } from './CoursePreviewModal';
 export { CreateCourseModal } from './CreateCourseModal';
 export { CreateLessonModal } from './CreateLessonModal';
 export { LiveClassRoom } from './LiveClassRoom';

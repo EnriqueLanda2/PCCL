@@ -64,16 +64,16 @@ export default function CatalogPage() {
             />
           </div>
           <div className="min-w-[13.75rem]">
-            <label className="mb-1.5 block text-[0.8125rem] font-bold text-[var(--ink)]">Nivel</label>
-              <AppSelect
-                value={level}
-                onChange={(e: SelectChangeEvent) => setLevel(e.target.value)}
-              >
-                <MenuItem value="Todos">Todos los niveles</MenuItem>
-                {levelOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>{option.value} ({option.count})</MenuItem>
-                ))}
-              </AppSelect>
+            <AppSelect
+              value={level}
+              onChange={(e: SelectChangeEvent) => setLevel(e.target.value)}
+              aria-label="Nivel"
+            >
+              <MenuItem value="Todos">Todos los niveles</MenuItem>
+              {levelOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>{option.value} ({option.count})</MenuItem>
+              ))}
+            </AppSelect>
           </div>
           {(search || level !== 'Todos') && (
               <div>

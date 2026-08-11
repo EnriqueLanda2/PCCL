@@ -33,6 +33,23 @@ export interface PublicCourse {
   isFree?: boolean;
 }
 
+/**
+ * Lección tal y como la ve alguien que aún no está inscrito: solo el encabezado
+ * del temario. Sin `content` ni `fileUrl` — el material solo lo sirve
+ * GET /lessons, que sí exige estar inscrito.
+ */
+export interface PublicLesson {
+  id: string;
+  title: string;
+  contentType: string;
+  durationMinutes?: number | null;
+}
+
+/** Curso publicado con su temario — GET /courses/public/:id. */
+export interface PublicCourseDetail extends PublicCourse {
+  lessons: PublicLesson[];
+}
+
 export interface Course {
   id: string;
   title: string;
