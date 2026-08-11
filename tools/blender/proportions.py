@@ -130,11 +130,11 @@ def _variant(name: str, *, shoulder_half: float, chest_half: float, waist_half: 
         foot_len=-0.165,
         foot_width=0.075,
         foot_height=0.055,
-        eye_z=1.400,
-        eye_x=0.077,
+        eye_z=1.396,
+        eye_x=0.082,
         eye_r=eye_r,
-        nose_z=1.343,
-        mouth_z=1.283,
+        nose_z=1.332,
+        mouth_z=1.270,
         ear_z=1.396,
     )
 
@@ -143,26 +143,26 @@ PROPORTIONS: dict[str, Proportions] = {
     # Hombros algo más estrechos, cadera más marcada, mandíbula más suave.
     "feminine": _variant(
         "feminine",
-        shoulder_half=0.158, chest_half=0.136, waist_half=0.114, hip_half=0.146,
-        torso_depth=0.120, head_rx=0.176, head_ry=0.194, head_rz=0.240,
-        jaw_taper=0.62, upper_arm_r=0.048, fore_arm_r=0.042,
-        thigh_r=0.082, calf_r=0.060, eye_r=0.045,
+        shoulder_half=0.148, chest_half=0.126, waist_half=0.104, hip_half=0.144,
+        torso_depth=0.120, head_rx=0.190, head_ry=0.194, head_rz=0.232,
+        jaw_taper=0.50, upper_arm_r=0.053, fore_arm_r=0.046,
+        thigh_r=0.089, calf_r=0.066, eye_r=0.058,
     ),
     # Hombros más anchos y musculatura discreta; misma calidad y materiales.
     "masculine": _variant(
         "masculine",
-        shoulder_half=0.184, chest_half=0.156, waist_half=0.132, hip_half=0.134,
-        torso_depth=0.132, head_rx=0.184, head_ry=0.202, head_rz=0.248,
-        jaw_taper=0.34, upper_arm_r=0.056, fore_arm_r=0.048,
-        thigh_r=0.087, calf_r=0.065, eye_r=0.042,
+        shoulder_half=0.185, chest_half=0.166, waist_half=0.140, hip_half=0.138,
+        torso_depth=0.132, head_rx=0.198, head_ry=0.202, head_rz=0.240,
+        jaw_taper=0.30, upper_arm_r=0.063, fore_arm_r=0.054,
+        thigh_r=0.095, calf_r=0.071, eye_r=0.055,
     ),
     # Base intermedia: no restringe ropa por género.
     "androgynous": _variant(
         "androgynous",
-        shoulder_half=0.171, chest_half=0.146, waist_half=0.123, hip_half=0.140,
-        torso_depth=0.125, head_rx=0.180, head_ry=0.198, head_rz=0.244,
-        jaw_taper=0.48, upper_arm_r=0.052, fore_arm_r=0.045,
-        thigh_r=0.084, calf_r=0.062, eye_r=0.044,
+        shoulder_half=0.164, chest_half=0.146, waist_half=0.120, hip_half=0.142,
+        torso_depth=0.125, head_rx=0.194, head_ry=0.198, head_rz=0.236,
+        jaw_taper=0.40, upper_arm_r=0.058, fore_arm_r=0.050,
+        thigh_r=0.091, calf_r=0.068, eye_r=0.057,
     ),
 }
 

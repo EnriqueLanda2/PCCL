@@ -43,7 +43,7 @@ const io = new NodeIO()
   .registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
 
 /** Carpetas de imágenes: no se optimizan como glTF, solo se publican. */
-const IMAGE_DIRS = ['thumbnails', 'portraits'];
+const IMAGE_DIRS = ['thumbnails', 'portraits', 'figures'];
 const GLB_DIRS = ASSET_DIRS.filter((dir) => !IMAGE_DIRS.includes(dir));
 
 async function listGlb(dir) {

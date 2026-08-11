@@ -31,8 +31,30 @@ model Course {
   evaluations     Evaluation[]
   liveSessions    LiveSession[]
   comments        CourseComment[]
+  reviews         CourseReview[]
 
   @@map("courses")
+}
+
+/// Reseña real de un alumno sobre un curso. Una reseña por alumno/curso.
+/// userId apunta a identity-service, por eso se guarda sin relación SQL.
+model CourseReview {
+  id              String   @id @default(uuid()) @db.Uuid
+  transactionDate DateTime @default(now()) @map("transaction_date") @db.Timestamp(6)
+  createdBy       String?  @map("created_by") @db.VarChar(100)
+  updatedBy       String?  @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  courseId        String   @map("course_id") @db.Uuid
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId          String   @map("user_id") @db.Uuid
+  rating          Int
+  comment         String?  @db.Text
+
+  @@unique([courseId, userId])
+  @@index([courseId])
+  @@index([userId])
+  @@map("course_reviews")
 }
 
 /// Comentario público de un alumno en un curso. userId apunta a
@@ -187,6 +209,10 @@ model Evaluation {
   updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamp(6)
   title           String              @db.VarChar(140)
   description     String?             @db.Text
+  topic           String?             @db.VarChar(120)
+  kind            String              @default("kahoot") @db.VarChar(20)
+  passingScore    Int                 @default(70) @map("passing_score")
+  questions       Json?
   courseId        String              @map("course_id") @db.Uuid
   course          Course              @relation(fields: [courseId], references: [id])
   attempts        EvaluationAttempt[]

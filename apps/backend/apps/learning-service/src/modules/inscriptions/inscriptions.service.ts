@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -127,6 +128,12 @@ export class InscriptionsService {
 
   async update(id: string, dto: UpdateInscriptionDto, actor: string) {
     await this.findOne(id);
+    if (dto.status === 'completed') {
+      const eligibility = await this.certificateEligibility(id);
+      if (!eligibility.eligible) {
+        throw new BadRequestException(eligibility.reason);
+      }
+    }
     await this.prisma.inscription.update({
       where: { id },
       data: {
@@ -154,5 +161,58 @@ export class InscriptionsService {
     ]);
     const rate = total === 0 ? 0 : Math.round((completed / total) * 100);
     return { total, completed, rate };
+  }
+
+  async certificateEligibility(inscriptionId: string) {
+    const inscription = await this.prisma.inscription.findUnique({
+      where: { id: inscriptionId },
+      select: { id: true, userId: true, courseId: true },
+    });
+    if (!inscription) throw new NotFoundException('Inscripcion no encontrada');
+
+    const [lessonCount, completedLessons, evaluations, attempts] = await Promise.all([
+      this.prisma.lesson.count({ where: { courseId: inscription.courseId } }),
+      this.prisma.lessonCompletion.count({
+        where: { userId: inscription.userId, lesson: { courseId: inscription.courseId } },
+      }),
+      this.prisma.evaluation.findMany({
+        where: { courseId: inscription.courseId },
+        select: { id: true, title: true, passingScore: true },
+      }),
+      this.prisma.evaluationAttempt.findMany({
+        where: { studentId: inscription.userId, evaluation: { courseId: inscription.courseId } },
+        select: { evaluationId: true, score: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const bestScore = new Map<string, number>();
+    for (const attempt of attempts) {
+      const score = Number(attempt.score ?? 0);
+      bestScore.set(attempt.evaluationId, Math.max(bestScore.get(attempt.evaluationId) ?? 0, score));
+    }
+
+    const missingEvaluations = evaluations
+      .filter((evaluation) => (bestScore.get(evaluation.id) ?? 0) < evaluation.passingScore)
+      .map((evaluation) => evaluation.title);
+    const evaluationsPassed = evaluations.length - missingEvaluations.length;
+    const lessonsDone = lessonCount === 0 || completedLessons >= lessonCount;
+    const evaluationsDone = evaluations.length > 0 && evaluationsPassed >= evaluations.length;
+    const eligible = lessonsDone && evaluationsDone;
+
+    return {
+      inscriptionId,
+      courseId: inscription.courseId,
+      userId: inscription.userId,
+      eligible,
+      lessonsCompleted: completedLessons,
+      lessonsTotal: lessonCount,
+      evaluationsPassed,
+      evaluationsTotal: evaluations.length,
+      missingEvaluations,
+      reason: eligible
+        ? null
+        : 'Completa todas las lecciones y aprueba todos los exámenes tipo Kahoot del curso.',
+    };
   }
 }

@@ -325,6 +325,121 @@ Cascada de resolución, en este orden:
 Consumido por: tabla de usuarios, tarjetas de alumno (inscripciones y
 progreso), panel de detalle, barra superior, menú lateral, appbar y notas.
 
+### Dos encuadres del mismo personaje
+
+- **`portraits/`** — rostro y hombros, 384×384. Avatares pequeños de listas,
+  tablas, tarjetas, barra superior y menú lateral.
+- **`figures/`** — cuerpo entero, 420×630. Panel de detalle del alumno, donde
+  hay sitio para ver postura y ropa completas.
+
+Comparten índice, cámara y luz: un alumno es reconociblemente la misma persona
+en los dos. Si el alumno publicó su propio avatar (un retrato cuadrado), se
+respeta también en el panel de detalle — no existe versión de cuerpo entero de
+una foto subida.
+
+### Cuerpo articulado por bloques
+
+Cambio de dirección artística pedido por el equipo, con referencia visual: el
+cuerpo pasa de malla orgánica continua a **figura articulada por bloques**
+(torso, cintura, cadera, brazos y piernas como piezas redondeadas separadas por
+un hueco en la articulación).
+
+Consecuencias técnicas, todas a favor:
+
+- **El pesado vuelve a ser rígido, y aquí eso es lo correcto.** Cada bloque
+  pertenece por entero a su hueso. No hay superficie continua que estirar, así
+  que el pesado automático por calor sobra: repartir un bloque rígido entre dos
+  huesos lo deformaría al animar, que es justo lo que una figura articulada no
+  debe hacer.
+- **De 58 668 a 27 568 triángulos** visibles y de 2,6 a 1,5 MB por cuerpo.
+- La ropa se deriva de la misma tabla de segmentos (`body_segments`) inflada, así
+  que envuelve el bloque por construcción y el clipping deja de ser posible.
+
+> Nota sobre el README: §19 marcaba como no aceptable un cuerpo «construido con
+> cápsulas y esferas provisionales». Esto no es eso — es un estilo articulado
+> deliberado, con referencia visual aportada por el equipo y juntas diseñadas.
+> La prohibición apuntaba a un blockout sin terminar, no a esta estética.
+
+### Guardarropa propio por variante
+
+Cada cuerpo viste distinto, no solo con otra etiqueta. En este estilo **la ropa
+es la silueta**, así que un corte distinto es lo que remata la lectura del
+cuerpo más allá de sus proporciones.
+
+| Ranura | Masculino | Femenino | Neutral |
+|---|---|---|---|
+| Superior A | Bomber holgada (manga larga) | Sudadera holgada (al codo) | Sudadera básica |
+| Superior B | Camiseta sin mangas | Polo de manga corta | Camiseta |
+| Inferior A | Pantalón cargo (ancho) | Pantalón recto | Pantalón largo |
+| Inferior B | Short deportivo | Bermuda | Bermuda |
+| Calzado A | Botas (con caña) | Tenis redondeados | Tenis |
+| Calzado B | Tenis deportivos | Zapato bajo | Zapato vinilo |
+
+Dos cambios de contrato que esto obligó:
+
+- `build_garment` acepta tramos `(inicio, fin)` sobre una extremidad, no solo
+  una longitud desde el hombro. Hacía falta para la caña de la bota, que cubre
+  el tramo BAJO de la espinilla.
+- El manifest emite una entrada de pieza **por cuerpo** en vez de una compartida
+  entre los tres. El `pieceId` sigue siendo común (es lo que persiste la
+  configuración), pero la etiqueta ya no puede serlo.
+
+Defecto encontrado y corregido en el camino: la caña de la bota quedaba dentro
+del pantalón cargo (holgura 0.019 contra 0.028) y la bota se veía como un zapato
+normal. Ahora la caña va más holgada que el pantalón.
+
+### Por qué cambiar de género no se notaba
+
+No era un fallo de código: el modelo masculino sí se cargaba. El problema es que
+los dos cuerpos eran casi idénticos —26 mm de diferencia en el semiancho de
+hombros sobre una figura de 1,70 m, ~3 %— y la sudadera, que es un volumen
+inflado, tapaba lo poco que había.
+
+Con bloques el ancho del torso se ve, y las proporciones se separaron:
+
+| | Femenino | Masculino |
+|---|---:|---:|
+| Semiancho de hombros | 0,148 | 0,185 |
+| Semiancho de cintura | 0,104 | 0,140 |
+
+### Afinado del rostro
+
+Pasada de acercamiento al estilo de referencia (personaje 3D estilizado, tipo
+ilustración). Lo que más movió la aguja, en orden:
+
+1. **Ojos mucho mayores** (radio de 0.044 a ~0.057) con iris oscuro que deja ver
+   esclerótica alrededor, pupila y un reflejo especular de geometría propia. El
+   reflejo va desplazado igual en ambos ojos, no espejado: espejarlo hace
+   bizquear la mirada.
+2. **Cejas con material propio** (`PCCL_Brow`), teñido con el tono del cabello
+   llevado un 55 % hacia negro. Compartiendo el material del pelo, en rubio o
+   pelirrojo desaparecían contra la piel.
+3. **Rubor** en las mejillas, teñido como la piel desplazada hacia el rosa —no
+   un rosa fijo, que sobre pieles oscuras se ve como una pegatina.
+4. **Cara más redonda y ancha**, con menos afinado de mandíbula para que el
+   mentón no salga en punta.
+
+Hubo que calibrar por iteración, mirando renders: con el iris al 80 % del ojo y
+la cuenca hundida, el resultado leía como cuencas huecas en vez de mirada.
+
+### Gesto de saludo
+
+Los alumnos aparecen saludando en todo el apartado de estudiantes, tarjeta y
+panel de detalle. El brazo derecho sube y el codo se pliega para que la mano
+quede junto a la cabeza: con el brazo solo levantado, la mano cae fuera del
+encuadre de rostro y hombros y el gesto no se entiende. El encuadre de retrato
+se abrió un poco para darle sitio.
+
+### Nitidez y movilidad
+
+- Muestreo de EEVEE subido de 64 a 256 y filtro de píxel estrechado a 0.85 (el
+  valor por defecto, 1.5 px, reparte cada muestra sobre los vecinos y deja el
+  contorno algodonoso contra el fondo transparente).
+- La pose se recalcula por variante a partir del índice: desplaza el peso a un
+  lado u otro, cambia la inclinación de columna y el giro de cabeza, y flexiona
+  los codos de forma distinta. Sin esto la galería se leía como el mismo
+  maniquí repetido con distinto color.
+
 ### Galería pre-renderizada
 
 24 retratos (8 por cuerpo) generados por `tools/blender/render_portraits.py`

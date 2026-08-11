@@ -19,6 +19,11 @@ export class CertificatesService {
   ) {}
 
   async generate(inscriptionId: string, actor: string) {
+    const eligibility = await this.eligibility(inscriptionId);
+    if (!eligibility.eligible) {
+      throw new BadRequestException(eligibility.reason ?? 'Curso no completado');
+    }
+
     const insc = await firstValueFrom<{
       status: string;
       userId: string;
@@ -56,6 +61,26 @@ export class CertificatesService {
       },
     });
     return this.findOne(cert.id);
+  }
+
+  async eligibility(inscriptionId: string) {
+    return firstValueFrom<{
+      inscriptionId: string;
+      courseId: string;
+      userId: string;
+      eligible: boolean;
+      lessonsCompleted: number;
+      lessonsTotal: number;
+      evaluationsPassed: number;
+      evaluationsTotal: number;
+      missingEvaluations: string[];
+      reason: string | null;
+    }>(
+      this.learningClient.send(
+        LEARNING_PATTERNS.INSCRIPTION_CERTIFICATE_ELIGIBILITY,
+        { id: inscriptionId },
+      ),
+    );
   }
 
   async findOne(id: string) {

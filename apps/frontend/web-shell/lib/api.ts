@@ -10,10 +10,13 @@ import type {
   AuditLog,
   Calification,
   Certificate,
+  CertificateEligibility,
   CertificateVerification,
   Course,
   CourseEarnings,
   CourseComment,
+  CourseReview,
+  Evaluation,
   Inscription,
   Lesson,
   LiveSession,
@@ -63,6 +66,8 @@ export const api = {
 
   createCourse:  (dto: Partial<Course>) => post<Course>('/courses', dto),
   publishCourse: (id: string) => patch<Course>(`/courses/${id}/publish`, {}),
+  courseCertificateEligibility: (courseId: string) =>
+    get<CertificateEligibility>(`/courses/${courseId}/certificate-eligibility`),
 
   /* ── Uploads (Cloudinary) ─────────────────────────────── */
   uploadImage:    (file: File) => uploadFile<{ url: string }>('/uploads/image', file),
@@ -90,6 +95,9 @@ export const api = {
   courseEarnings: () => get<CourseEarnings[]>('/payments/earnings/courses'),
 
   califications: () => get<Calification[]>('/califications'),
+  evaluations: (courseId: string) => get<Evaluation[]>(`/evaluations?courseId=${encodeURIComponent(courseId)}`),
+  submitEvaluationAttempt: (evaluationId: string, answers: unknown[]) =>
+    post(`/evaluations/${evaluationId}/attempts`, { answers }),
 
   notes:       (lessonId: string) => get<Note[]>(`/lessons/${lessonId}/notes`),
   createNote:  (lessonId: string, content: string) => post<Note>(`/lessons/${lessonId}/notes`, { content }),
@@ -106,6 +114,10 @@ export const api = {
     post<{ id: string; likes: number; likedByMe: boolean }>(`/comments/${id}/like`),
   deleteComment: (id: string) => del(`/comments/${id}`),
 
+  courseReviews: (courseId: string) => get<CourseReview[]>(`/courses/${courseId}/reviews`),
+  upsertCourseReview: (courseId: string, rating: number, comment?: string | null) =>
+    post<CourseReview[]>(`/courses/${courseId}/reviews`, { rating, comment }),
+
   /* ── Tareas pendientes del alumno ──────────────────────── */
   pendingTasks: (courseId?: string) => {
     const query = courseId ? '?courseId=' + encodeURIComponent(courseId) : '';
@@ -120,6 +132,10 @@ export const api = {
 
   /* ── Certification & Audit ────────────────────────────── */
   certificates:  () => get<Certificate[]>('/certificates'),
+  certificateEligibility: (inscriptionId: string) =>
+    get<CertificateEligibility>(`/certificates/eligibility/${inscriptionId}`),
+  generateCertificate: (inscriptionId: string) =>
+    post<Certificate>(`/certificates/${inscriptionId}`, {}),
 
   /** Verificación pública por folio — no requiere sesión (destino del QR). */
   verifyCertificate: (folio: string) =>

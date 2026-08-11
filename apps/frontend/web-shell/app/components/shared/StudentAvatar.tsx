@@ -57,6 +57,12 @@ export interface StudentAvatarProps {
   /** Avatar publicado por el alumno. Si existe, manda sobre la galería. */
   avatarUrl?: string | null;
   size?: StudentAvatarSize;
+  /**
+   * `portrait` (por defecto) es el disco de rostro y hombros que usan listas y
+   * tarjetas. `figure` muestra el cuerpo entero, para cuando hay sitio y
+   * conviene ver postura y ropa completas.
+   */
+  shape?: 'portrait' | 'figure';
   /** Anillo claro alrededor; se usa sobre fondos de color. */
   ring?: boolean;
   className?: string;
@@ -67,10 +73,11 @@ export function StudentAvatar({
   fullName,
   avatarUrl,
   size = 'md',
+  shape = 'portrait',
   ring = false,
   className,
 }: Readonly<StudentAvatarProps>) {
-  const source = avatarImageFor(userId, avatarUrl);
+  const source = avatarImageFor(userId, avatarUrl, shape);
   /* Se guarda QUÉ imagen falló, no un booleano. Así, cuando cambia la fuente
      (por ejemplo el alumno publica su avatar), el fallo anterior deja de
      aplicar solo — sin un efecto que reinicie el estado. */
@@ -78,9 +85,15 @@ export function StudentAvatar({
   const failed = source !== null && failedSource === source;
 
   const px = SIZE_PX[size];
+  const figure = shape === 'figure';
+  /* La figura no se recorta en círculo: se muestra entera sobre el fondo, por
+     eso alto 3:2 y `object-contain` en vez de `cover`. */
+  const width = px;
+  const height = figure ? Math.round(px * 1.5) : px;
+
   const shell = cn(
-    'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full',
-    'bg-[var(--green-50)]',
+    'inline-flex shrink-0 items-center justify-center overflow-hidden',
+    figure ? 'rounded-[1.25rem] bg-transparent' : 'rounded-full bg-[var(--green-50)]',
     ring && 'ring-2 ring-white shadow-[0_2px_10px_rgba(31,154,75,0.18)]',
     className,
   );
@@ -88,8 +101,13 @@ export function StudentAvatar({
   if (!source || failed) {
     return (
       <span
-        className={cn(shell, 'font-semibold text-[var(--green-700)]', TEXT_CLS[size])}
-        style={{ width: px, height: px }}
+        className={cn(
+          shell,
+          'font-semibold text-[var(--green-700)]',
+          TEXT_CLS[size],
+          figure && 'bg-[var(--green-50)]',
+        )}
+        style={{ width, height }}
         title={fullName}
       >
         {getInitials(fullName)}
@@ -98,7 +116,7 @@ export function StudentAvatar({
   }
 
   return (
-    <span className={shell} style={{ width: px, height: px }} title={fullName}>
+    <span className={shell} style={{ width, height }} title={fullName}>
       {/* <img> y no next/image: la fuente puede ser una URL del almacenamiento
           remoto configurado en el backend, que exigiría declarar el host en
           next.config y cambia según el despliegue. */}
@@ -106,14 +124,15 @@ export function StudentAvatar({
       <img
         src={source}
         alt=""
-        width={px}
-        height={px}
+        width={width}
+        height={height}
         loading="lazy"
         decoding="async"
         onError={() => setFailedSource(source)}
-        /* `object-top` porque los retratos encuadran cabeza y hombros: centrar
-           recortaría la cara en los tamaños pequeños. */
-        className="h-full w-full object-cover object-top"
+        /* Retrato: `cover` + `object-top`, porque encuadra cabeza y hombros y
+           centrar recortaría la cara en tamaños pequeños.
+           Figura: `contain`, para no cortar ni pies ni cabeza. */
+        className={cn('h-full w-full', figure ? 'object-contain' : 'object-cover object-top')}
       />
     </span>
   );

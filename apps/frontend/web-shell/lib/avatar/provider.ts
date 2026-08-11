@@ -73,9 +73,22 @@ export function resolveBoneName(provider: AvatarProvider, name: string): string 
 
 /** Subdominio del creador. Configurable por entorno: cada organización tiene el
  *  suyo y no debe quedar cableado en el código. `demo` es el público de RPM. */
-export const RPM_SUBDOMAIN = process.env.NEXT_PUBLIC_RPM_SUBDOMAIN ?? 'demo';
+export const RPM_SUBDOMAIN = process.env.NEXT_PUBLIC_RPM_SUBDOMAIN ?? '';
 
-export const RPM_CREATOR_ORIGIN = `https://${RPM_SUBDOMAIN}.readyplayer.me`;
+export const RPM_CREATOR_ORIGIN = `https://${RPM_SUBDOMAIN || 'demo'}.readyplayer.me`;
+
+/**
+ * Si Ready Player Me está utilizable en este despliegue.
+ *
+ * El subdominio `demo` que se usaba por defecto **ya no existe** (devuelve
+ * NXDOMAIN): Ready Player Me lo retiró, y el creador abría un iframe a un
+ * dominio inexistente con el consiguiente error de red a la vista del usuario.
+ *
+ * Cada organización tiene su propio subdominio y no puede adivinarse, así que
+ * la integración solo se ofrece cuando hay uno configurado de verdad. Sin él,
+ * la UI no muestra la opción en lugar de mostrarla rota.
+ */
+export const isReadyPlayerMeEnabled = RPM_SUBDOMAIN.length > 0;
 
 /**
  * Parámetros de optimización soportados por el endpoint de avatares de Ready

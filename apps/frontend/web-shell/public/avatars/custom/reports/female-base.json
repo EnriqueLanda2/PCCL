@@ -4,14 +4,14 @@
   "rigId": "pccl-human-rig-v1",
   "blend": "C:\\Users\\fcere\\OneDrive\\Documentos\\ULISES\\PCCL\\PCCL\\assets\\avatar-source\\blender\\avatar-female.blend",
   "glb": "/avatars/custom/bodies/female-base.glb",
-  "bytes": 2427416,
-  "trianglesVisible": 56092,
+  "bytes": 2622880,
+  "trianglesVisible": 53768,
   "trianglesByObject": {
-    "Body_Skin": 23000,
-    "Head_Face": 12392,
-    "Top_A": 6500,
-    "Bottom_A": 6500,
-    "Shoes_A": 3200,
+    "Body_Skin": 4800,
+    "Head_Face": 14968,
+    "Top_A": 12000,
+    "Bottom_A": 12000,
+    "Shoes_A": 5500,
     "Hair_chunky-short": 4500
   },
   "bones": [
@@ -55,23 +55,31 @@
     "layered-bob": {
       "url": "/avatars/custom/hair/female-base__layered-bob.glb",
       "triangles": 4500,
-      "bytes": 213912
+      "bytes": 242816
     },
     "top-b": {
       "url": "/avatars/custom/clothing/female-base__top-b.glb",
-      "triangles": 6500,
-      "bytes": 242488
+      "triangles": 12000,
+      "bytes": 522592
     },
     "bottom-b": {
       "url": "/avatars/custom/clothing/female-base__bottom-b.glb",
-      "triangles": 6500,
-      "bytes": 242812
+      "triangles": 12000,
+      "bytes": 492436
     },
     "shoes-b": {
       "url": "/avatars/custom/clothing/female-base__shoes-b.glb",
-      "triangles": 3200,
-      "bytes": 131052
+      "triangles": 5500,
+      "bytes": 230600
     }
+  },
+  "garmentLabels": {
+    "top-a": "Sudadera holgada",
+    "top-b": "Polo de manga corta",
+    "bottom-a": "Pantal\u00f3n recto",
+    "bottom-b": "Bermuda",
+    "shoes-a": "Tenis redondeados",
+    "shoes-b": "Zapato bajo"
   },
   "thumbnail": "/avatars/custom/thumbnails/female-base.png",
   "qaImages": [

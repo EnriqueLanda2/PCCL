@@ -7,6 +7,9 @@ export const LEARNING_PATTERNS = {
   COURSE_UPDATE: 'learning.course.update',
   COURSE_DELETE: 'learning.course.delete',
   COURSE_PUBLISH: 'learning.course.publish',
+  COURSE_REVIEW_FIND_BY_COURSE: 'learning.course.review.find_by_course',
+  COURSE_REVIEW_UPSERT: 'learning.course.review.upsert',
+  COURSE_CERTIFICATE_ELIGIBILITY: 'learning.course.certificate_eligibility',
 
   LESSON_CREATE: 'learning.lesson.create',
   LESSON_FIND_ALL: 'learning.lesson.find_all',
@@ -21,6 +24,7 @@ export const LEARNING_PATTERNS = {
   INSCRIPTION_DELETE: 'learning.inscription.delete',
   INSCRIPTION_STATS_PUBLIC: 'learning.inscription.stats_public',
   INSCRIPTION_FIND_IDS_BY_SCOPE: 'learning.inscription.find_ids_by_scope',
+  INSCRIPTION_CERTIFICATE_ELIGIBILITY: 'learning.inscription.certificate_eligibility',
 
   PROGRESS_FIND_BY_INSCRIPTION: 'learning.progress.find_by_inscription',
   PROGRESS_FIND_ALL: 'learning.progress.find_all',

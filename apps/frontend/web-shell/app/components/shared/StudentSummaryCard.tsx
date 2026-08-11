@@ -1,13 +1,15 @@
 /* ───────────────────────────────────────────
    StudentSummaryCard / StudentSummaryDetailPanel
-   Tarjeta de alumno con avatar 3D procedural
-   NOVA Folks (original, modular y determinístico
-   por userId) y panel lateral con detalle (mismo
-   avatar en grande, interactivo con OrbitControls).
+
+   Tarjeta de alumno y su panel lateral de detalle.
+   Ambos pintan el avatar con `StudentAvatar`: en la
+   tarjeta como retrato de rostro y hombros, y en el
+   panel como figura de cuerpo entero, donde hay
+   sitio para ver postura y ropa.
+
    Vista genérica compartida entre "Progreso de
-   estudiantes" (riesgo por curso) e
-   "Inscripciones" (estado por curso) para no
-   duplicar el layout.
+   estudiantes" (riesgo por curso) e "Inscripciones"
+   (estado por curso) para no duplicar el layout.
    ─────────────────────────────────────────── */
 
 'use client';
@@ -32,7 +34,7 @@ export interface StudentSummaryEntry {
 export interface StudentCardSummary {
   userId: string;
   fullName: string;
-  /** Foto de perfil real. Si falta, se cae al avatar 3D generado por userId. */
+  /** Avatar publicado por el alumno. Si falta, se usa el retrato de la galería. */
   avatarUrl?: string | null;
   headerValue: string;
   /** % que llena la mini barra bajo el header (0-100) */
@@ -164,11 +166,14 @@ export function StudentSummaryDetailPanel({ student, entriesLabel = 'Sus cursos'
 
         <div style={{ padding: '0 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.625rem', borderBottom: '1px solid var(--neutral-100)' }}>
           <AvatarStage>
+            {/* Panel de detalle: aquí sí hay sitio para el cuerpo entero, que
+                es donde se aprecian postura y ropa. */}
             <StudentAvatar
               userId={student.userId}
               fullName={student.fullName}
               avatarUrl={student.avatarUrl}
               size="2xl"
+              shape="figure"
             />
           </AvatarStage>
           <div style={{ textAlign: 'center' }}>
@@ -177,7 +182,6 @@ export function StudentSummaryDetailPanel({ student, entriesLabel = 'Sus cursos'
               {student.entries.length} curso{student.entries.length === 1 ? '' : 's'} · {student.headerValue} global
             </div>
           </div>
-          <p style={{ fontSize: '0.6563rem', color: 'var(--neutral-300)' }}>NOVA Folks · arrastra para rotar</p>
         </div>
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>

@@ -1,21 +1,26 @@
 /* ───────────────────────────────────────────
    Progress Page — Progreso de estudiantes
-   Grilla de tarjetas por alumno (avatar 3D
-   NOVA Folks procedural) · badge
-   de riesgo · paginado de 12 · panel lateral
-   con detalle de sus inscripciones reales.
+   Grilla de tarjetas por alumno (retrato de la
+   galería o su avatar publicado) · badge de riesgo ·
+   paginado de 12 · panel lateral con detalle de sus
+   inscripciones reales. Solo alumnos activos.
    ─────────────────────────────────────────── */
 
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Icon } from '@iconify/react';
 import MenuItem from '@mui/material/MenuItem';
 import { api } from '@/lib/api';
-import type { Progress } from '@/lib/types';
+import type { Inscription, Progress } from '@/lib/types';
+import {
+  assessInscription,
+  assessStudent,
+  riskMessage,
+  type CourseRisk,
+  type StudentRiskSummary,
+} from '@/lib/studentRisk';
 import { AppButton, AppInput, AppSelect } from '@/app/components/ui/AppControls';
 import { DEFAULT_PAGE_SIZE, Pagination } from '@/app/components/ui/Pagination';
-import { StatCard } from '@/app/components/shared/StatCard';
 import { EmptyState } from '@/app/components/shared/EmptyState';
 import { PageHeader } from '@/app/components/shared/PageHeader';
 import { StudentSummaryCard, StudentSummaryDetailPanel, type StudentCardSummary } from '@/app/components/shared/StudentSummaryCard';
@@ -23,14 +28,15 @@ import { APP_ICONS } from '@/lib/icons';
 
 const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
-type RiskLevel = 'bajo' | 'medio' | 'alto';
-
 interface CourseProgress {
   inscriptionId: string;
   title: string;
   category?: string;
   pct: number;
   lastAccessAt: string | null;
+  /** Situación de ESTE curso, no del alumno. */
+  risk: CourseRisk;
+  riskReason: string | null;
 }
 
 const INACTIVITY_WARNING_DAYS = 7;
@@ -45,24 +51,23 @@ interface StudentSummary {
   fullName: string;
   avatarUrl?: string | null;
   avgProgress: number;
-  riskLevel: RiskLevel;
+  risk: StudentRiskSummary;
   courses: CourseProgress[];
+  /** Inscripciones crudas: las reglas de riesgo se evalúan sobre ellas. */
+  inscriptions: Inscription[];
   lastAccessAt: string | null;
 }
 
-const RISK_META: Record<RiskLevel, { label: string; variant: 'green' | 'yellow' | 'red' }> = {
-  bajo:  { label: 'BAJO',  variant: 'green'  },
-  medio: { label: 'MEDIO', variant: 'yellow' },
-  alto:  { label: 'ALTO',  variant: 'red'    },
+/* Solo dos estados, y ambos significan algo concreto y accionable. La escala
+   anterior (bajo/medio/alto) salía del promedio de avance, que ya no es el
+   criterio: un alumno con poco avance en un curso permanente no está en riesgo
+   de nada. */
+const RISK_META: Record<Exclude<CourseRisk, 'none'>, { label: string; variant: 'yellow' | 'red' }> = {
+  'at-risk':   { label: 'EN RIESGO',  variant: 'yellow' },
+  abandoned:   { label: 'ABANDONÓ',   variant: 'red'    },
 };
 
-function riskFromAvg(avg: number): RiskLevel {
-  if (avg < 35) return 'alto';
-  if (avg < 65) return 'medio';
-  return 'bajo';
-}
-
-function groupByStudent(items: Progress[]): StudentSummary[] {
+function groupByStudent(items: Progress[], now: number): StudentSummary[] {
   const map = new Map<string, StudentSummary>();
   for (const p of items) {
     const user = p.inscription?.user;
@@ -71,6 +76,10 @@ function groupByStudent(items: Progress[]): StudentSummary[] {
        progreso en la base, pero no deben aparecer en el seguimiento: inflan los
        totales y no hay nada que hacer con ellos. */
     if (user.active === false) continue;
+    /* El riesgo se evalúa sobre la inscripción, no sobre el registro de
+       progreso: las reglas dependen del tipo de acceso y de la fecha de compra,
+       que viven ahí. */
+    const assessment = assessInscription(p.inscription!, now);
     const course: CourseProgress = {
       inscriptionId: p.inscription?.id ?? p.id,
       title: p.inscription?.course?.title ?? 'Curso sin título',
@@ -79,10 +88,13 @@ function groupByStudent(items: Progress[]): StudentSummary[] {
       // Number() evita que el reduce de más abajo concatene strings en vez de sumar.
       pct: Number(p.progressPercentage),
       lastAccessAt: p.lastAccessAt ?? null,
+      risk: assessment.risk,
+      riskReason: assessment.reason,
     };
     const existing = map.get(user.id);
     if (existing) {
       existing.courses.push(course);
+      existing.inscriptions.push(p.inscription!);
       if (p.lastAccessAt && (!existing.lastAccessAt || p.lastAccessAt > existing.lastAccessAt)) {
         existing.lastAccessAt = p.lastAccessAt;
       }
@@ -92,16 +104,17 @@ function groupByStudent(items: Progress[]): StudentSummary[] {
         fullName: user.fullName,
         avatarUrl: user.avatarUrl ?? null,
         courses: [course],
+        inscriptions: [p.inscription!],
         lastAccessAt: p.lastAccessAt ?? null,
         avgProgress: 0,
-        riskLevel: 'bajo',
+        risk: { level: 'none', atRisk: [], abandoned: [] },
       });
     }
   }
   const list = Array.from(map.values());
   for (const s of list) {
     s.avgProgress = Math.round(s.courses.reduce((sum, c) => sum + c.pct, 0) / s.courses.length);
-    s.riskLevel = riskFromAvg(s.avgProgress);
+    s.risk = assessStudent(s.inscriptions, now);
   }
   return list;
 }
@@ -110,27 +123,29 @@ function groupByStudent(items: Progress[]): StudentSummary[] {
 function toCardSummary(s: StudentSummary, now: number): StudentCardSummary {
   const entries = s.courses.map((c) => {
     const inactiveDays = daysSince(c.lastAccessAt, now);
+    const inactivity = inactiveDays !== null && inactiveDays >= INACTIVITY_WARNING_DAYS
+      ? `${inactiveDays} días sin actividad`
+      : null;
     return {
       key: c.inscriptionId,
       title: c.title,
       subtitle: c.category,
       pct: c.pct,
-      inactiveDays,
-      warning: inactiveDays !== null && inactiveDays >= INACTIVITY_WARNING_DAYS
-        ? `${inactiveDays} días sin actividad`
-        : undefined,
+      /* El motivo del riesgo va en la propia fila del curso: es donde el
+         profesor mira para saber en cuál intervenir. */
+      badge: c.risk === 'none' ? undefined : RISK_META[c.risk],
+      warning: c.riskReason ?? inactivity ?? undefined,
     };
   });
 
-  let riskBanner: StudentCardSummary['riskBanner'];
-  if (s.riskLevel === 'alto' || s.riskLevel === 'medio') {
-    const worst = [...entries].sort((a, b) => a.pct - b.pct)[0];
-    const variant = s.riskLevel === 'alto' ? 'red' as const : 'yellow' as const;
-    const message = worst.warning
-      ? `Sin actividad hace ${worst.inactiveDays} días en "${worst.title}" y avance muy bajo (${worst.pct}%). Conviene contactarlo esta semana.`
-      : `Avance de ${worst.pct}% en "${worst.title}". Conviene dar seguimiento.`;
-    riskBanner = { title: `Riesgo ${s.riskLevel}`, message, variant };
-  }
+  const message = riskMessage(s.risk);
+  const riskBanner: StudentCardSummary['riskBanner'] = message
+    ? {
+        title: s.risk.level === 'abandoned' ? 'Mensualidad dada de baja' : 'Riesgo de abandono',
+        message,
+        variant: s.risk.level === 'abandoned' ? 'red' : 'yellow',
+      }
+    : undefined;
 
   return {
     userId: s.userId,
@@ -138,15 +153,9 @@ function toCardSummary(s: StudentSummary, now: number): StudentCardSummary {
     avatarUrl: s.avatarUrl,
     headerValue: `${s.avgProgress}%`,
     headerProgressPct: s.avgProgress,
-    headerBadge: s.riskLevel === 'bajo' ? null : RISK_META[s.riskLevel],
+    headerBadge: s.risk.level === 'none' ? null : RISK_META[s.risk.level],
     riskBanner,
-    entries: entries.map(({ key, title, subtitle, pct, warning }) => ({
-      key,
-      title,
-      subtitle,
-      pct,
-      warning,
-    })),
+    entries,
   };
 }
 
@@ -165,7 +174,7 @@ export default function ProgressPage() {
   const [progressItems, setProgressItems] = useState<Progress[]>([]);
   const [loading,       setLoading]       = useState(true);
   const [search,        setSearch]        = useState('');
-  const [riskFilter,    setRiskFilter]    = useState<'all' | RiskLevel>('all');
+  const [riskFilter,    setRiskFilter]    = useState<'all' | Exclude<CourseRisk, 'none'>>('all');
   const [sortBy,        setSortBy]        = useState<'progress' | 'name' | 'access'>('progress');
   const [page,          setPage]          = useState(1);
   const [selected,      setSelected]      = useState<StudentSummary | null>(null);
@@ -180,15 +189,7 @@ export default function ProgressPage() {
     return () => { alive = false; };
   }, []);
 
-  const students = useMemo(() => groupByStudent(progressItems), [progressItems]);
-
-  /* ── Stats ── */
-  const avg = useMemo(() =>
-    students.length ? Math.round(students.reduce((s, p) => s + p.avgProgress, 0) / students.length) : 0,
-  [students]);
-  const completed = useMemo(() => students.filter((s) => s.avgProgress >= 100).length, [students]);
-  const atRisk    = useMemo(() => students.filter((s) => s.riskLevel === 'alto').length, [students]);
-  const active    = useMemo(() => students.filter((s) => s.lastAccessAt && new Date(s.lastAccessAt).getTime() > now - 7 * 86400000).length, [students, now]);
+  const students = useMemo(() => groupByStudent(progressItems, now), [progressItems, now]);
 
   /* ── Filtered + sorted ── */
   const filtered = useMemo(() => {
@@ -200,7 +201,7 @@ export default function ProgressPage() {
         s.courses.some((c) => c.title.toLowerCase().includes(q)),
       );
     }
-    if (riskFilter !== 'all') list = list.filter((s) => s.riskLevel === riskFilter);
+    if (riskFilter !== 'all') list = list.filter((s) => s.risk.level === riskFilter);
     if (sortBy === 'progress') list.sort((a, b) => b.avgProgress - a.avgProgress);
     if (sortBy === 'name')     list.sort((a, b) => a.fullName.localeCompare(b.fullName));
     if (sortBy === 'access')   list.sort((a, b) => (b.lastAccessAt ?? '').localeCompare(a.lastAccessAt ?? ''));
@@ -214,10 +215,9 @@ export default function ProgressPage() {
   const resetToPage1 = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); };
 
   const RISK_CHIPS: { key: typeof riskFilter; label: string }[] = [
-    { key: 'all',   label: 'Todos' },
-    { key: 'bajo',  label: 'Bajo'  },
-    { key: 'medio', label: 'Medio' },
-    { key: 'alto',  label: 'Alto'  },
+    { key: 'all',       label: 'Todos'        },
+    { key: 'at-risk',   label: 'En riesgo'    },
+    { key: 'abandoned', label: 'Abandonaron'  },
   ];
 
   return (
@@ -229,15 +229,9 @@ export default function ProgressPage() {
         subtitle={loading ? 'Cargando…' : `Seguimiento de ${students.length} alumno${students.length !== 1 ? 's' : ''}`}
       />
 
-      {/* ── Stat row ── */}
-      {!loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))', gap: '1rem' }}>
-          <StatCard label="Promedio"     value={avg}       unit="%" icon={<Icon icon={APP_ICONS.chart} width={20} height={20} />} />
-          <StatCard label="Completados"  value={completed} delta={completed > 0 ? `de ${students.length}` : undefined} deltaUp icon={<Icon icon={APP_ICONS.checkFilled} width={20} height={20} />} variant="green" />
-          <StatCard label="Activos (7d)" value={active}    icon={<Icon icon={APP_ICONS.liveDot} width={20} height={20} />} variant="blue" />
-          <StatCard label="En riesgo"    value={atRisk}    deltaUp={false} icon={<Icon icon={APP_ICONS.warning} width={20} height={20} />} variant="red" />
-        </div>
-      )}
+      {/* La fila de estadísticas se retiró a propósito: esta vista es para
+          recorrer alumnos, y las cifras agregadas empujaban la rejilla fuera de
+          pantalla. El seguimiento agregado vive en el Resumen. */}
 
       {/* ── Search + chips ── */}
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>

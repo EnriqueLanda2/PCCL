@@ -59,9 +59,19 @@ def parse_args():
     parser.add_argument("--variants", type=int, default=4)
     parser.add_argument("--start-index", type=int, default=0)
     parser.add_argument("--resolution", type=int, default=384)
+    parser.add_argument("--framing", choices=sorted(FRAMINGS), default="portrait")
+    parser.add_argument("--greeting", action="store_true",
+                        help="Brazo derecho saludando (pose del listado de alumnos).")
     parser.add_argument("--manifest", default="")
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     return parser.parse_args(argv)
+
+
+def mix_hex(a: str, b: str, amount: float) -> str:
+    """Mezcla dos colores sRGB. `amount` 0 → `a`, 1 → `b`."""
+    ca = [int(a.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    cb = [int(b.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(f"{round(x + (y - x) * amount):02X}" for x, y in zip(ca, cb))
 
 
 def tint(material_name: str, hex_color: str) -> None:
@@ -80,12 +90,18 @@ def set_visible(names: set[str]) -> None:
             obj.hide_render = obj.name not in names
 
 
-def relaxed_pose(armature) -> None:
+def relaxed_pose(armature, variation: int = 0, greeting: bool = False) -> None:
     """Pose natural: peso a un lado, brazos descansando, ligera torsión.
 
     La pose A del rig es de trabajo, no de presentación: brazos rectos y
     simétricos leen como maniquí. Aquí se rompe la simetría y se cierran algo
     los brazos, que es lo que da lectura de persona relajada.
+
+    `variation` desplaza la pose para que cada retrato de la galería tenga su
+    propia postura en vez de repetir la misma figura con distinto color.
+
+    Con `greeting`, el brazo derecho sube saludando: es la pose con la que los
+    alumnos aparecen en el listado.
     """
     bpy.context.view_layer.objects.active = armature
     bpy.ops.object.mode_set(mode="POSE")
@@ -96,14 +112,23 @@ def relaxed_pose(armature) -> None:
             track.mute = True
 
     r = math.radians
+    # Variación por índice: sin esto los avatares se leen como copias del mismo
+    # maniquí en fila. `sway` inclina el peso a un lado u otro, `lean` mete algo
+    # de inclinación y `turn` gira la cabeza distinto en cada uno.
+    phase = variation * 0.7
+    sway = math.sin(phase) * 4.5
+    lean = math.cos(phase * 1.3) * 2.5
+    turn = math.sin(phase * 0.9 + 1.1) * 6.0
+    tilt = math.cos(phase * 1.7) * 2.2
+
     pose = {
         # Torsión suave de columna y cadera: rompe la simetría del maniquí.
-        "Hips": (0.0, r(-6.0), r(1.5)),
-        "Spine": (r(1.5), r(-3.0), r(-1.0)),
-        "Spine1": (r(-1.0), r(-2.0), r(1.0)),
+        "Hips": (0.0, r(-6.0 + sway), r(1.5 + lean * 0.4)),
+        "Spine": (r(1.5 + lean * 0.3), r(-3.0 + sway * 0.5), r(-1.0 - lean * 0.3)),
+        "Spine1": (r(-1.0), r(-2.0 + sway * 0.3), r(1.0 + lean * 0.2)),
         # Cabeza ligeramente girada hacia cámara y apenas inclinada.
-        "Neck": (r(1.0), r(4.0), r(1.0)),
-        "Head": (r(-2.0), r(7.0), r(-1.5)),
+        "Neck": (r(1.0), r(4.0 + turn * 0.3), r(1.0 + tilt * 0.3)),
+        "Head": (r(-2.0 + tilt), r(7.0 + turn), r(-1.5 + tilt * 0.6)),
         # Brazos: bajan contra el cuerpo y flexionan el codo hacia adelante.
         #
         # Los signos están medidos sobre este rig, no deducidos: en `RightArm`
@@ -112,19 +137,39 @@ def relaxed_pose(armature) -> None:
         # -X lleva la mano hacia adelante, que es la flexión natural del codo.
         # Con los signos invertidos el personaje queda en cruz, que es
         # exactamente la pose rígida que hay que evitar.
-        "LeftShoulder": (0.0, 0.0, r(4.0)),
-        "LeftArm": (r(2.0), 0.0, r(24.0)),
-        "LeftForeArm": (r(-22.0), 0.0, r(6.0)),
+        "LeftShoulder": (0.0, 0.0, r(4.0 - lean * 0.5)),
+        "LeftArm": (r(2.0 + lean), 0.0, r(24.0 + sway * 0.6)),
+        "LeftForeArm": (r(-22.0 - lean * 2.0), 0.0, r(6.0)),
         "LeftHand": (0.0, 0.0, r(4.0)),
-        "RightShoulder": (0.0, 0.0, r(-4.0)),
-        "RightArm": (r(2.0), 0.0, r(-21.0)),
-        "RightForeArm": (r(-26.0), 0.0, r(-7.0)),
+        "RightShoulder": (0.0, 0.0, r(-4.0 + lean * 0.5)),
+        "RightArm": (r(2.0 - lean), 0.0, r(-21.0 + sway * 0.6)),
+        "RightForeArm": (r(-26.0 + lean * 2.0), 0.0, r(-7.0)),
         "RightHand": (0.0, 0.0, r(-5.0)),
-        # Peso sobre una pierna.
-        "LeftUpLeg": (r(-2.0), 0.0, r(-2.0)),
-        "RightUpLeg": (r(3.0), 0.0, r(2.5)),
-        "RightLeg": (r(-4.0), 0.0, 0.0),
+        # Peso sobre una pierna; `sway` decide sobre cuál.
+        "LeftUpLeg": (r(-2.0 - sway * 0.3), 0.0, r(-2.0)),
+        "RightUpLeg": (r(3.0 + sway * 0.3), 0.0, r(2.5)),
+        "RightLeg": (r(-4.0 - abs(sway) * 0.4), 0.0, 0.0),
+        "LeftLeg": (r(-1.0 + abs(sway) * 0.3), 0.0, 0.0),
     }
+
+    if greeting:
+        # Saludo: el brazo derecho sube y el codo se pliega para que la mano
+        # quede junto a la cabeza, dentro del encuadre de rostro y hombros. Con
+        # el brazo solo levantado la mano cae fuera de cuadro y el gesto no se
+        # entiende.
+        #
+        # Los signos vienen medidos sobre el rig: en `RightArm` el +Z levanta.
+        pose.update({
+            "RightShoulder": (0.0, 0.0, r(-12.0)),
+            "RightArm": (r(6.0), 0.0, r(86.0 + sway * 0.8)),
+            "RightForeArm": (r(-6.0), 0.0, r(58.0 + lean * 1.5)),
+            "RightHand": (0.0, r(10.0), r(6.0 + sway)),
+            # El torso acompaña un poco: un brazo que sube solo, con el resto
+            # del cuerpo inmóvil, se lee como un muñeco articulado.
+            "Spine1": (r(-1.0), r(-2.0 + sway * 0.3), r(3.5 + lean * 0.2)),
+            "Head": (r(-2.0 + tilt), r(9.0 + turn), r(-3.0 + tilt * 0.6)),
+        })
+
     for bone_name, rotation in pose.items():
         bone = armature.pose.bones.get(bone_name)
         if not bone:
@@ -146,22 +191,36 @@ def smile(face) -> None:
             block.value = value
 
 
-def setup_studio(resolution: int):
-    """Cámara y luz de estudio. Idénticas para todos los retratos, a propósito."""
+"""Encuadres disponibles.
+
+`portrait` es rostro y hombros, para los avatares pequeños de listas y tarjetas.
+`figure` es cuerpo entero, para el panel de detalle, donde hay sitio y se quiere
+ver la ropa y la postura completas.
+
+Ambos comparten cámara en tres cuartos y la misma luz, así que un alumno se ve
+como la misma persona en los dos.
+"""
+FRAMINGS = {
+    # (aim_z, posición de cámara, FOV, relación alto/ancho)
+    "portrait": (1.30, Vector((0.98, -2.66, 1.48)), 22.0, 1.0),
+    "figure": (0.86, Vector((1.62, -4.30, 1.36)), 25.0, 1.5),
+}
+
+
+def setup_studio(resolution: int, framing: str):
+    """Cámara y luz de estudio. Idénticas entre variantes, a propósito."""
     scene = bpy.context.scene
+    aim_z, location, fov, aspect = FRAMINGS[framing]
 
     camera_data = bpy.data.cameras.new("PortraitCam")
     camera_data.lens_unit = "FOV"
     # FOV estrecho: comprime la perspectiva y evita la nariz agrandada del
     # primer plano con gran angular.
-    camera_data.angle = math.radians(22.0)
+    camera_data.angle = math.radians(fov)
     camera = bpy.data.objects.new("PortraitCam", camera_data)
     scene.collection.objects.link(camera)
-    # Tres cuartos a la altura de los ojos. Se apunta al punto entre cabeza y
-    # pecho para que el retrato encuadre rostro y hombros; más abajo entran los
-    # brazos por las esquinas y la composición se ensucia.
-    aim = Vector((0.0, 0.0, 1.33))
-    camera.location = Vector((0.92, -2.44, 1.50))
+    aim = Vector((0.0, 0.0, aim_z))
+    camera.location = location
     camera.rotation_euler = (camera.location - aim).to_track_quat("Z", "Y").to_euler()
     scene.camera = camera
 
@@ -184,7 +243,7 @@ def setup_studio(resolution: int):
 
     scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = resolution
-    scene.render.resolution_y = resolution
+    scene.render.resolution_y = int(resolution * aspect)
     # Fondo transparente: cada vista de la app pone el suyo y así el retrato
     # encaja igual sobre tarjeta clara u oscura.
     scene.render.film_transparent = True
@@ -192,8 +251,16 @@ def setup_studio(resolution: int):
     scene.render.image_settings.color_mode = "RGBA"
     scene.render.image_settings.compression = 90
     scene.view_settings.view_transform = "AgX"
+
+    # ── Nitidez del contorno ──
+    # El borde del personaje contra el fondo transparente es lo que más se nota
+    # a tamaño pequeño. Se sube el muestreo temporal (más muestras = menos
+    # dentado en la silueta) y se estrecha el filtro de píxel: el valor por
+    # defecto (1.5 px) reparte cada muestra sobre vecinos y deja el contorno
+    # algodonoso.
     if hasattr(scene.eevee, "taa_render_samples"):
-        scene.eevee.taa_render_samples = 64
+        scene.eevee.taa_render_samples = 256
+    scene.render.filter_size = 0.85
     return camera, lights
 
 
@@ -205,14 +272,15 @@ def main() -> None:
     armature = next(o for o in bpy.context.scene.objects if o.type == "ARMATURE")
     face = bpy.data.objects.get("Head_Face")
 
-    relaxed_pose(armature)
     if face:
         smile(face)
-    setup_studio(args.resolution)
+    setup_studio(args.resolution, args.framing)
 
     written = []
     for offset in range(args.variants):
         index = args.start_index + offset
+        # La pose se recalcula por variante: es lo que da movilidad a la galería.
+        relaxed_pose(armature, variation=index, greeting=args.greeting)
         # Índices desfasados por número primo: recorre combinaciones distintas
         # en vez de repetir el mismo patrón entre cuerpos.
         skin = SKIN_TONES[(index * 3) % len(SKIN_TONES)]
@@ -227,6 +295,13 @@ def main() -> None:
 
         tint("PCCL_Skin", skin)
         tint("PCCL_Hair", hair_color)
+        # Ceja: el propio tono de cabello llevado muy hacia el negro. Así
+        # acompaña al color del pelo pero nunca se pierde contra la piel, que es
+        # lo que pasa con rubios y pelirrojos si comparten material.
+        tint("PCCL_Brow", mix_hex(hair_color, "#170F0B", 0.55))
+        # Rubor: piel desplazada hacia el rosa, no un rosa fijo. Sobre pieles
+        # oscuras un rosa constante se vería como una mancha pegada encima.
+        tint("PCCL_Blush", mix_hex(skin, "#B4514C", 0.42))
         tint("PCCL_TopA", top_color)
         tint("PCCL_TopB", top_color)
         tint("PCCL_BottomA", bottom_color)

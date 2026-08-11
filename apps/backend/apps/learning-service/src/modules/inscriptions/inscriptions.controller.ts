@@ -31,6 +31,11 @@ export class InscriptionsController {
     return this.service.findOne(p.id);
   }
 
+  @MessagePattern(LEARNING_PATTERNS.INSCRIPTION_CERTIFICATE_ELIGIBILITY)
+  certificateEligibility(@Payload() p: { id: string }) {
+    return this.service.certificateEligibility(p.id);
+  }
+
   @MessagePattern(LEARNING_PATTERNS.INSCRIPTION_UPDATE)
   update(
     @Payload() p: { id: string; dto: UpdateInscriptionDto; actor: string },

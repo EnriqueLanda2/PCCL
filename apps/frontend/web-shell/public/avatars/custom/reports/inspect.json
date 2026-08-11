@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-08-06T20:54:06.856Z",
+  "generatedAt": "2026-08-10T16:24:52.298Z",
   "assets": [
     {
       "file": "/avatars/custom/bodies/female-base.glb",
-      "bytes": 479932,
+      "bytes": 450504,
       "scenes": 1,
       "nodes": 27,
       "meshes": 6,
@@ -23,7 +23,7 @@
         "Shoes_A",
         "Top_A"
       ],
-      "primitives": 11,
+      "primitives": 13,
       "materials": [
         "PCCL_Skin",
         "PCCL_BottomA",
@@ -31,6 +31,9 @@
         "PCCL_EyeWhite",
         "PCCL_EyeIris",
         "PCCL_EyePupil",
+        "PCCL_EyeGlint",
+        "PCCL_Brow",
+        "PCCL_Blush",
         "PCCL_Mouth",
         "PCCL_ShoeA",
         "PCCL_TopA"
@@ -59,7 +62,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 56092,
+      "triangles": 53768,
       "morphTargets": [
         "blinkLeft",
         "blinkRight",
@@ -83,7 +86,7 @@
     },
     {
       "file": "/avatars/custom/bodies/male-base.glb",
-      "bytes": 482520,
+      "bytes": 456180,
       "scenes": 1,
       "nodes": 27,
       "meshes": 6,
@@ -103,7 +106,7 @@
         "Shoes_A",
         "Top_A"
       ],
-      "primitives": 11,
+      "primitives": 13,
       "materials": [
         "PCCL_Skin",
         "PCCL_BottomA",
@@ -111,6 +114,9 @@
         "PCCL_EyeWhite",
         "PCCL_EyeIris",
         "PCCL_EyePupil",
+        "PCCL_EyeGlint",
+        "PCCL_Brow",
+        "PCCL_Blush",
         "PCCL_Mouth",
         "PCCL_ShoeA",
         "PCCL_TopA"
@@ -139,7 +145,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 56092,
+      "triangles": 53768,
       "morphTargets": [
         "blinkLeft",
         "blinkRight",
@@ -163,7 +169,7 @@
     },
     {
       "file": "/avatars/custom/bodies/neutral-base.glb",
-      "bytes": 483584,
+      "bytes": 449728,
       "scenes": 1,
       "nodes": 27,
       "meshes": 6,
@@ -183,7 +189,7 @@
         "Shoes_A",
         "Top_A"
       ],
-      "primitives": 11,
+      "primitives": 13,
       "materials": [
         "PCCL_Skin",
         "PCCL_BottomA",
@@ -191,6 +197,9 @@
         "PCCL_EyeWhite",
         "PCCL_EyeIris",
         "PCCL_EyePupil",
+        "PCCL_EyeGlint",
+        "PCCL_Brow",
+        "PCCL_Blush",
         "PCCL_Mouth",
         "PCCL_ShoeA",
         "PCCL_TopA"
@@ -219,7 +228,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 56092,
+      "triangles": 53768,
       "morphTargets": [
         "blinkLeft",
         "blinkRight",
@@ -243,7 +252,7 @@
     },
     {
       "file": "/avatars/custom/hair/female-base__layered-bob.glb",
-      "bytes": 38724,
+      "bytes": 43592,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -292,7 +301,7 @@
     },
     {
       "file": "/avatars/custom/hair/male-base__layered-bob.glb",
-      "bytes": 39060,
+      "bytes": 41876,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -341,7 +350,7 @@
     },
     {
       "file": "/avatars/custom/hair/neutral-base__layered-bob.glb",
-      "bytes": 38808,
+      "bytes": 42344,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -390,7 +399,7 @@
     },
     {
       "file": "/avatars/custom/clothing/female-base__bottom-b.glb",
-      "bytes": 51484,
+      "bytes": 75708,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -428,7 +437,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 6500,
+      "triangles": 12000,
       "morphTargets": [],
       "animations": [],
       "extensions": [
@@ -439,7 +448,7 @@
     },
     {
       "file": "/avatars/custom/clothing/female-base__shoes-b.glb",
-      "bytes": 31588,
+      "bytes": 39464,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -477,7 +486,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 3200,
+      "triangles": 5500,
       "morphTargets": [],
       "animations": [],
       "extensions": [
@@ -488,7 +497,7 @@
     },
     {
       "file": "/avatars/custom/clothing/female-base__top-b.glb",
-      "bytes": 55712,
+      "bytes": 79864,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -526,7 +535,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 6500,
+      "triangles": 12000,
       "morphTargets": [],
       "animations": [],
       "extensions": [
@@ -537,7 +546,7 @@
     },
     {
       "file": "/avatars/custom/clothing/male-base__bottom-b.glb",
-      "bytes": 52076,
+      "bytes": 73840,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -575,7 +584,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 6500,
+      "triangles": 12000,
       "morphTargets": [],
       "animations": [],
       "extensions": [
@@ -586,7 +595,7 @@
     },
     {
       "file": "/avatars/custom/clothing/male-base__shoes-b.glb",
-      "bytes": 31236,
+      "bytes": 38284,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -624,7 +633,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 3200,
+      "triangles": 5500,
       "morphTargets": [],
       "animations": [],
       "extensions": [
@@ -635,7 +644,7 @@
     },
     {
       "file": "/avatars/custom/clothing/male-base__top-b.glb",
-      "bytes": 56692,
+      "bytes": 69448,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -673,7 +682,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 6500,
+      "triangles": 12000,
       "morphTargets": [],
       "animations": [],
       "extensions": [
@@ -684,7 +693,7 @@
     },
     {
       "file": "/avatars/custom/clothing/neutral-base__bottom-b.glb",
-      "bytes": 52360,
+      "bytes": 75712,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -722,7 +731,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 6498,
+      "triangles": 12000,
       "morphTargets": [],
       "animations": [],
       "extensions": [
@@ -733,7 +742,7 @@
     },
     {
       "file": "/avatars/custom/clothing/neutral-base__shoes-b.glb",
-      "bytes": 31584,
+      "bytes": 38488,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -771,7 +780,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 3200,
+      "triangles": 5500,
       "morphTargets": [],
       "animations": [],
       "extensions": [
@@ -782,7 +791,7 @@
     },
     {
       "file": "/avatars/custom/clothing/neutral-base__top-b.glb",
-      "bytes": 56252,
+      "bytes": 77572,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -820,7 +829,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 6498,
+      "triangles": 12000,
       "morphTargets": [],
       "animations": [],
       "extensions": [
@@ -831,7 +840,7 @@
     },
     {
       "file": "/avatars/custom/accessories/male-base__facial-hair-goatee.glb",
-      "bytes": 21156,
+      "bytes": 21776,
       "scenes": 1,
       "nodes": 22,
       "meshes": 1,
@@ -869,7 +878,7 @@
         "Spine",
         "Spine1"
       ],
-      "triangles": 2324,
+      "triangles": 2424,
       "morphTargets": [],
       "animations": [],
       "extensions": [

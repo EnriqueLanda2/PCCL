@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogVersion": "2.0.0",
-  "generatedAt": "2026-08-06T23:42:44.359Z",
+  "generatedAt": "2026-08-10T16:24:49.951Z",
   "rig": {
     "id": "pccl-human-rig-v1",
     "bones": [
@@ -89,14 +89,14 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 479932,
-      "triangles": 56092,
+      "bytes": 450504,
+      "triangles": 53768,
       "trianglesByObject": {
-        "Body_Skin": 23000,
-        "Head_Face": 12392,
-        "Top_A": 6500,
-        "Bottom_A": 6500,
-        "Shoes_A": 3200,
+        "Body_Skin": 4800,
+        "Head_Face": 14968,
+        "Top_A": 12000,
+        "Bottom_A": 12000,
+        "Shoes_A": 5500,
         "Hair_chunky-short": 4500
       },
       "morphTargets": [
@@ -134,14 +134,14 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 482520,
-      "triangles": 56092,
+      "bytes": 456180,
+      "triangles": 53768,
       "trianglesByObject": {
-        "Body_Skin": 23000,
-        "Head_Face": 12392,
-        "Top_A": 6500,
-        "Bottom_A": 6500,
-        "Shoes_A": 3200,
+        "Body_Skin": 4800,
+        "Head_Face": 14968,
+        "Top_A": 12000,
+        "Bottom_A": 12000,
+        "Shoes_A": 5500,
         "Hair_chunky-short": 4500
       },
       "morphTargets": [
@@ -178,14 +178,14 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 483584,
-      "triangles": 56092,
+      "bytes": 449728,
+      "triangles": 53768,
       "trianglesByObject": {
-        "Body_Skin": 23000,
-        "Head_Face": 12392,
-        "Top_A": 6500,
-        "Bottom_A": 6500,
-        "Shoes_A": 3200,
+        "Body_Skin": 4800,
+        "Head_Face": 14968,
+        "Top_A": 12000,
+        "Bottom_A": 12000,
+        "Shoes_A": 5500,
         "Hair_chunky-short": 4500
       },
       "morphTargets": [
@@ -208,16 +208,15 @@
   ],
   "hair": [
     {
-      "id": "chunky-short",
+      "id": "chunky-short__female-base",
+      "pieceId": "chunky-short",
       "revision": 1,
       "label": "Corto por mechones",
       "delivery": "bundled",
       "meshName": "Hair_chunky-short",
       "thumbnail": "/avatars/custom/thumbnails/female-base.png",
       "compatibleBodies": [
-        "female-base",
-        "male-base",
-        "neutral-base"
+        "female-base"
       ],
       "compatibleRigs": [
         "pccl-human-rig-v1"
@@ -249,11 +248,33 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 38724,
+      "bytes": 43592,
       "triangles": 4500,
       "dependencies": [
         "female-base"
       ]
+    },
+    {
+      "id": "chunky-short__male-base",
+      "pieceId": "chunky-short",
+      "revision": 1,
+      "label": "Corto por mechones",
+      "delivery": "bundled",
+      "meshName": "Hair_chunky-short",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "compatibleBodies": [
+        "male-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 4500,
+      "dependencies": []
     },
     {
       "id": "layered-bob__male-base",
@@ -274,11 +295,33 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 39060,
+      "bytes": 41876,
       "triangles": 4500,
       "dependencies": [
         "male-base"
       ]
+    },
+    {
+      "id": "chunky-short__neutral-base",
+      "pieceId": "chunky-short",
+      "revision": 1,
+      "label": "Corto por mechones",
+      "delivery": "bundled",
+      "meshName": "Hair_chunky-short",
+      "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
+      "compatibleBodies": [
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 4500,
+      "dependencies": []
     },
     {
       "id": "layered-bob__neutral-base",
@@ -299,7 +342,7 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 38808,
+      "bytes": 42344,
       "triangles": 4500,
       "dependencies": [
         "neutral-base"
@@ -308,16 +351,15 @@
   ],
   "tops": [
     {
-      "id": "top-a",
+      "id": "top-a__female-base",
+      "pieceId": "top-a",
       "revision": 1,
-      "label": "Sudadera vinilo",
+      "label": "Sudadera holgada",
       "delivery": "bundled",
       "meshName": "Top_A",
       "thumbnail": "/avatars/custom/thumbnails/female-base.png",
       "compatibleBodies": [
-        "female-base",
-        "male-base",
-        "neutral-base"
+        "female-base"
       ],
       "compatibleRigs": [
         "pccl-human-rig-v1"
@@ -327,14 +369,14 @@
       ],
       "hiddenBodyMasks": [],
       "bytes": 0,
-      "triangles": 6500,
+      "triangles": 12000,
       "dependencies": []
     },
     {
       "id": "top-b__female-base",
       "pieceId": "top-b",
       "revision": 1,
-      "label": "Polo suave",
+      "label": "Polo de manga corta",
       "delivery": "lazy",
       "url": "/avatars/custom/clothing/female-base__top-b.glb",
       "hidesMesh": "Top_A",
@@ -349,17 +391,39 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 55712,
-      "triangles": 6500,
+      "bytes": 79864,
+      "triangles": 12000,
       "dependencies": [
         "female-base"
       ]
     },
     {
+      "id": "top-a__male-base",
+      "pieceId": "top-a",
+      "revision": 1,
+      "label": "Bomber holgada",
+      "delivery": "bundled",
+      "meshName": "Top_A",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "compatibleBodies": [
+        "male-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 12000,
+      "dependencies": []
+    },
+    {
       "id": "top-b__male-base",
       "pieceId": "top-b",
       "revision": 1,
-      "label": "Polo suave",
+      "label": "Camiseta sin mangas",
       "delivery": "lazy",
       "url": "/avatars/custom/clothing/male-base__top-b.glb",
       "hidesMesh": "Top_A",
@@ -374,17 +438,39 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 56692,
-      "triangles": 6500,
+      "bytes": 69448,
+      "triangles": 12000,
       "dependencies": [
         "male-base"
       ]
     },
     {
+      "id": "top-a__neutral-base",
+      "pieceId": "top-a",
+      "revision": 1,
+      "label": "Sudadera básica",
+      "delivery": "bundled",
+      "meshName": "Top_A",
+      "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
+      "compatibleBodies": [
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 12000,
+      "dependencies": []
+    },
+    {
       "id": "top-b__neutral-base",
       "pieceId": "top-b",
       "revision": 1,
-      "label": "Polo suave",
+      "label": "Camiseta",
       "delivery": "lazy",
       "url": "/avatars/custom/clothing/neutral-base__top-b.glb",
       "hidesMesh": "Top_A",
@@ -399,8 +485,8 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 56252,
-      "triangles": 6498,
+      "bytes": 77572,
+      "triangles": 12000,
       "dependencies": [
         "neutral-base"
       ]
@@ -408,16 +494,15 @@
   ],
   "bottoms": [
     {
-      "id": "bottom-a",
+      "id": "bottom-a__female-base",
+      "pieceId": "bottom-a",
       "revision": 1,
-      "label": "Pantalón largo",
+      "label": "Pantalón recto",
       "delivery": "bundled",
       "meshName": "Bottom_A",
       "thumbnail": "/avatars/custom/thumbnails/female-base.png",
       "compatibleBodies": [
-        "female-base",
-        "male-base",
-        "neutral-base"
+        "female-base"
       ],
       "compatibleRigs": [
         "pccl-human-rig-v1"
@@ -427,7 +512,7 @@
       ],
       "hiddenBodyMasks": [],
       "bytes": 0,
-      "triangles": 6500,
+      "triangles": 12000,
       "dependencies": []
     },
     {
@@ -449,17 +534,39 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 51484,
-      "triangles": 6500,
+      "bytes": 75708,
+      "triangles": 12000,
       "dependencies": [
         "female-base"
       ]
     },
     {
+      "id": "bottom-a__male-base",
+      "pieceId": "bottom-a",
+      "revision": 1,
+      "label": "Pantalón cargo",
+      "delivery": "bundled",
+      "meshName": "Bottom_A",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "compatibleBodies": [
+        "male-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 12000,
+      "dependencies": []
+    },
+    {
       "id": "bottom-b__male-base",
       "pieceId": "bottom-b",
       "revision": 1,
-      "label": "Bermuda",
+      "label": "Short deportivo",
       "delivery": "lazy",
       "url": "/avatars/custom/clothing/male-base__bottom-b.glb",
       "hidesMesh": "Bottom_A",
@@ -474,11 +581,33 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 52076,
-      "triangles": 6500,
+      "bytes": 73840,
+      "triangles": 12000,
       "dependencies": [
         "male-base"
       ]
+    },
+    {
+      "id": "bottom-a__neutral-base",
+      "pieceId": "bottom-a",
+      "revision": 1,
+      "label": "Pantalón largo",
+      "delivery": "bundled",
+      "meshName": "Bottom_A",
+      "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
+      "compatibleBodies": [
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 12000,
+      "dependencies": []
     },
     {
       "id": "bottom-b__neutral-base",
@@ -499,8 +628,8 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 52360,
-      "triangles": 6498,
+      "bytes": 75712,
+      "triangles": 12000,
       "dependencies": [
         "neutral-base"
       ]
@@ -508,16 +637,15 @@
   ],
   "shoes": [
     {
-      "id": "shoes-a",
+      "id": "shoes-a__female-base",
+      "pieceId": "shoes-a",
       "revision": 1,
       "label": "Tenis redondeados",
       "delivery": "bundled",
       "meshName": "Shoes_A",
       "thumbnail": "/avatars/custom/thumbnails/female-base.png",
       "compatibleBodies": [
-        "female-base",
-        "male-base",
-        "neutral-base"
+        "female-base"
       ],
       "compatibleRigs": [
         "pccl-human-rig-v1"
@@ -527,14 +655,14 @@
       ],
       "hiddenBodyMasks": [],
       "bytes": 0,
-      "triangles": 3200,
+      "triangles": 5500,
       "dependencies": []
     },
     {
       "id": "shoes-b__female-base",
       "pieceId": "shoes-b",
       "revision": 1,
-      "label": "Zapato vinilo",
+      "label": "Zapato bajo",
       "delivery": "lazy",
       "url": "/avatars/custom/clothing/female-base__shoes-b.glb",
       "hidesMesh": "Shoes_A",
@@ -549,17 +677,39 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 31588,
-      "triangles": 3200,
+      "bytes": 39464,
+      "triangles": 5500,
       "dependencies": [
         "female-base"
       ]
     },
     {
+      "id": "shoes-a__male-base",
+      "pieceId": "shoes-a",
+      "revision": 1,
+      "label": "Botas",
+      "delivery": "bundled",
+      "meshName": "Shoes_A",
+      "thumbnail": "/avatars/custom/thumbnails/male-base.png",
+      "compatibleBodies": [
+        "male-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 5500,
+      "dependencies": []
+    },
+    {
       "id": "shoes-b__male-base",
       "pieceId": "shoes-b",
       "revision": 1,
-      "label": "Zapato vinilo",
+      "label": "Tenis deportivos",
       "delivery": "lazy",
       "url": "/avatars/custom/clothing/male-base__shoes-b.glb",
       "hidesMesh": "Shoes_A",
@@ -574,11 +724,33 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 31236,
-      "triangles": 3200,
+      "bytes": 38284,
+      "triangles": 5500,
       "dependencies": [
         "male-base"
       ]
+    },
+    {
+      "id": "shoes-a__neutral-base",
+      "pieceId": "shoes-a",
+      "revision": 1,
+      "label": "Tenis",
+      "delivery": "bundled",
+      "meshName": "Shoes_A",
+      "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
+      "compatibleBodies": [
+        "neutral-base"
+      ],
+      "compatibleRigs": [
+        "pccl-human-rig-v1"
+      ],
+      "colorVariants": [
+        "default"
+      ],
+      "hiddenBodyMasks": [],
+      "bytes": 0,
+      "triangles": 5500,
+      "dependencies": []
     },
     {
       "id": "shoes-b__neutral-base",
@@ -599,8 +771,8 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 31584,
-      "triangles": 3200,
+      "bytes": 38488,
+      "triangles": 5500,
       "dependencies": [
         "neutral-base"
       ]
@@ -631,8 +803,8 @@
         "default"
       ],
       "hiddenBodyMasks": [],
-      "bytes": 21156,
-      "triangles": 2324,
+      "bytes": 21776,
+      "triangles": 2424,
       "dependencies": [
         "male-base"
       ]

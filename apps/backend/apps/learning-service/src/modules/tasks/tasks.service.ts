@@ -107,6 +107,64 @@ export class TasksService {
       await this.prisma.lessonCompletion.deleteMany({ where: { userId, lessonId } });
     }
 
+    await this.recalculateCourseProgress(userId, lesson.courseId, actor);
+
     return { lessonId, done };
+  }
+
+  private async recalculateCourseProgress(userId: string, courseId: string, actor: string) {
+    const inscription = await this.prisma.inscription.findFirst({
+      where: { userId, courseId },
+      select: { id: true },
+    });
+    if (!inscription) return;
+
+    const [lessonCount, completedLessons, evaluations, attempts] = await Promise.all([
+      this.prisma.lesson.count({ where: { courseId } }),
+      this.prisma.lessonCompletion.count({ where: { userId, lesson: { courseId } } }),
+      this.prisma.evaluation.findMany({ where: { courseId }, select: { id: true, passingScore: true } }),
+      this.prisma.evaluationAttempt.findMany({
+        where: { studentId: userId, evaluation: { courseId } },
+        select: { evaluationId: true, score: true },
+      }),
+    ]);
+    const bestScore = new Map<string, number>();
+    for (const attempt of attempts) {
+      const score = Number(attempt.score ?? 0);
+      bestScore.set(attempt.evaluationId, Math.max(bestScore.get(attempt.evaluationId) ?? 0, score));
+    }
+    const evaluationsPassed = evaluations.filter((evaluation) => (bestScore.get(evaluation.id) ?? 0) >= evaluation.passingScore).length;
+    const totalItems = lessonCount + evaluations.length;
+    const doneItems = completedLessons + evaluationsPassed;
+    const progressPercentage = totalItems === 0 ? 0 : Math.round((doneItems / totalItems) * 100);
+    const complete = lessonCount > 0 && evaluations.length > 0 && completedLessons >= lessonCount && evaluationsPassed >= evaluations.length;
+
+    await this.prisma.inscription.update({
+      where: { id: inscription.id },
+      data: {
+        status: complete ? 'completed' : progressPercentage > 0 ? 'in-progress' : 'enrolled',
+        progressPercentage,
+        completedAt: complete ? new Date() : null,
+        updatedBy: actor,
+      },
+    });
+
+    const averageScore = attempts.length
+      ? Math.round(attempts.reduce((sum, attempt) => sum + Number(attempt.score ?? 0), 0) / attempts.length)
+      : 0;
+    const existing = await this.prisma.progress.findFirst({ where: { inscriptionId: inscription.id } });
+    const data = {
+      lessonsCompleted: completedLessons,
+      evaluationsCompleted: evaluationsPassed,
+      averageScore,
+      progressPercentage,
+      lastAccessAt: new Date(),
+      updatedBy: actor,
+    };
+    if (existing) {
+      await this.prisma.progress.update({ where: { id: existing.id }, data });
+    } else {
+      await this.prisma.progress.create({ data: { ...data, inscriptionId: inscription.id, createdBy: actor } });
+    }
   }
 }

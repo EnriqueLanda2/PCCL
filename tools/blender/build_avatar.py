@@ -58,9 +58,9 @@ REQUIRED_ANIMATIONS = ["Idle", "Breathing", "Wave", "Presentation"]
 # decima hasta aquí; es más barato que intentar acertar la densidad del vóxel.
 BUDGET_BODY = 23000
 BUDGET_HAIR = 4500
-BUDGET_TOP = 6500
-BUDGET_BOTTOM = 6500
-BUDGET_SHOES = 3200
+BUDGET_TOP = 12000
+BUDGET_BOTTOM = 12000
+BUDGET_SHOES = 5500
 
 
 # ── Utilidades ───────────────────────────────────────────────────────────────
@@ -146,6 +146,43 @@ def clean_mesh(obj, merge_distance: float = 0.0004) -> None:
     mesh.update()
 
 
+def add_cloth_folds(obj, strength: float = 0.020, noise_scale: float = 0.055,
+                    levels: int = 2) -> None:
+    """Arrugas y caída de tela sobre una prenda.
+
+    Se resuelve con GEOMETRÍA, no con un mapa de imagen: a tamaño de avatar un
+    tejido pintado en una textura no se distingue, mientras que una superficie
+    que ondula sí cambia por completo la lectura — deja de parecer plástico
+    rígido y pasa a parecer ropa.
+
+    La subdivisión es SIMPLE y no Catmull-Clark a propósito: la de Catmull-Clark
+    redondearía los bloques y se perdería la silueta del estilo. Aquí solo hace
+    falta densidad de vértices sobre la que desplazar.
+    """
+    activate(obj)
+
+    subdivide = obj.modifiers.new("PCCL_ClothSubdiv", "SUBSURF")
+    subdivide.subdivision_type = "SIMPLE"
+    subdivide.levels = levels
+    subdivide.render_levels = levels
+    bpy.ops.object.modifier_apply(modifier=subdivide.name)
+
+    texture = bpy.data.textures.new(f"{obj.name}_Folds", type="CLOUDS")
+    texture.noise_scale = noise_scale
+    texture.noise_depth = 2
+
+    folds = obj.modifiers.new("PCCL_ClothFolds", "DISPLACE")
+    folds.texture = texture
+    folds.strength = strength
+    folds.mid_level = 0.5
+    # Coordenadas locales: el patrón acompaña a la prenda al animar en vez de
+    # deslizarse por encima de ella.
+    folds.texture_coords = "LOCAL"
+    bpy.ops.object.modifier_apply(modifier=folds.name)
+
+    bpy.ops.object.shade_auto_smooth(angle=math.radians(38.0))
+
+
 def limit_influences(obj) -> None:
     """Reimpone el techo de 4 influencias por vértice y normaliza.
 
@@ -173,6 +210,56 @@ def trim_faces(obj, keep) -> None:
 
 
 # ── Blockout por cadenas de elipsoides ───────────────────────────────────────
+
+def add_rounded_box(name, location, half_extents, bevel=0.018, bevel_segments=4, rotation=None):
+    """Bloque de esquinas redondeadas: la pieza básica del cuerpo.
+
+    El bevel es lo que separa "caja" de "pieza de juguete": con las aristas
+    vivas el personaje parece un prototipo sin acabar. Se usa suavizado por
+    ángulo para que las esquinas redondeadas se vean lisas y las caras planas
+    sigan planas — un `shade_smooth` global las abombaría todas.
+    """
+    bpy.ops.mesh.primitive_cube_add(location=location)
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = half_extents
+    if rotation is not None:
+        obj.rotation_euler = rotation
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+    modifier = obj.modifiers.new("PCCL_Round", "BEVEL")
+    modifier.width = bevel
+    modifier.segments = bevel_segments
+    modifier.limit_method = "ANGLE"
+    modifier.angle_limit = math.radians(40.0)
+    bpy.ops.object.modifier_apply(modifier=modifier.name)
+
+    bpy.ops.object.shade_auto_smooth(angle=math.radians(35.0))
+    return obj
+
+
+def add_limb_box(name, head, tail, half_width, half_depth, gap=0.012, bevel=0.016):
+    """Bloque orientado a lo largo de un hueso, con hueco en la articulación.
+
+    El `gap` deja separación visible entre piezas contiguas: es lo que da la
+    lectura de figura articulada por partes en vez de un cuerpo continuo.
+    """
+    head_v, tail_v = Vector(head), Vector(tail)
+    direction = tail_v - head_v
+    length = direction.length
+    if length <= 1e-6:
+        raise ValueError(f"{name}: hueso de longitud cero")
+
+    half_length = max(0.01, (length - gap) / 2.0)
+    centre = head_v + direction.normalized() * (length / 2.0)
+    # El eje Z local del cubo se alinea con el hueso.
+    rotation = direction.to_track_quat("Z", "Y").to_euler()
+
+    return add_rounded_box(
+        name, tuple(centre), (half_width, half_depth, half_length),
+        bevel=bevel, rotation=rotation,
+    )
+
 
 def add_ellipsoid(location, radii, segments=16, rings=10):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=segments, ring_count=rings, radius=1.0, location=location)
@@ -293,76 +380,98 @@ def torso_slices(p, z_min: float, z_max: float, inflate: float = 1.0,
     return slices
 
 
-def build_body(p):
-    """Blockout completo del cuerpo (cuello abajo) fundido en una sola malla."""
-    parts = []
+def body_segments(p):
+    """Piezas del cuerpo, con el hueso al que pertenece cada una.
 
-    # Torso: lonchas elipsoidales con paso corto. La unión de lonchas produce un
-    # loft limpio; una sola primitiva estirada daría un tubo sin cintura.
-    #
-    # El torso termina por DEBAJO del cuello de la prenda (que llega a
-    # shoulder_z + 0.028). Si ambos acaban a la misma altura, la cima del hombro
-    # coincide con la de la tela y la piel asoma como un punto en el hombro. El
-    # hueco lo rellena la cadena del cuello, que arranca más abajo.
-    for location, radii in torso_slices(p, p.hip_z - 0.040, p.shoulder_z + 0.002):
-        parts.append(add_ellipsoid(location, radii, 26, 12))
+    Es la tabla de la que salen tanto el cuerpo como la ropa: una prenda es este
+    mismo bloque inflado, así que encaja por construcción y no puede haber
+    clipping.
 
-    # Cuello: entra dentro del cráneo para que no haya costura visible.
-    parts += blob_chain([
-        (Vector((0.0, 0.004, p.shoulder_z - 0.025)), (0.060, 0.060, 0.048)),
-        (Vector((0.0, 0.004, p.neck_top_z + 0.020)), (0.053, 0.055, 0.048)),
-    ], steps=7)
+    Cada entrada es `(nombre, hueso, tipo, parámetros)`:
+      - `box`  → (centro, semiejes)
+      - `limb` → (inicio, fin, semiancho, semiprofundidad)
+    """
+    d = p.torso_depth
 
-    for sign in (1.0, -1.0):
-        # Brazo: deltoides marcado, codo algo más fino, muñeca estrecha.
-        parts += blob_chain([
-            (Vector((sign * p.shoulder_half * 0.72, 0.0, p.arm_root_z + 0.030)),
-             (p.upper_arm_r * 1.34, p.upper_arm_r * 1.34, p.upper_arm_r * 1.20)),
-            (Vector((sign * p.shoulder_half * 1.02, 0.0, p.arm_root_z - 0.010)),
-             (p.upper_arm_r * 1.22, p.upper_arm_r * 1.22, p.upper_arm_r * 1.22)),
-            (Vector((sign * p.elbow_x, 0.0, p.elbow_z)),
-             (p.upper_arm_r * 0.86,) * 3),
-            (Vector((sign * p.wrist_x, 0.0, p.wrist_z)),
-             (p.fore_arm_r * 0.70,) * 3),
-        ], steps=12)
+    # Bandas de altura explícitas. Se declaran así, y no derivadas de las alturas
+    # del rig, porque los bloques deben apilarse sin invadirse: el pecho tiene
+    # que terminar POR DEBAJO del cuello (1.095 < 1.09 del bloque de cuello) o se
+    # lo traga y la cabeza queda apoyada en los hombros.
+    CHEST_Z, CHEST_H = 1.020, 0.075       # 0.945 → 1.095
+    WAIST_Z, WAIST_H = 0.905, 0.042       # 0.863 → 0.947
+    PELVIS_Z, PELVIS_H = 0.790, 0.075     # 0.715 → 0.865
+    NECK_Z, NECK_H = 1.135, 0.048         # 1.087 → 1.183, entra en el cráneo
 
-        # Mano: paleta redondeada con pulgar insinuado. Los dedos no se separan
-        # a propósito — a esta escala se leerían como ruido y multiplicarían los
-        # triángulos sin mejorar la silueta (README §5.1: manos simplificadas).
+    segments = [
+        ("Neck", "Neck", "box", ((0.0, 0.004, NECK_Z), (0.050, 0.050, NECK_H))),
+        # Pecho: la pieza que más distingue una complexión de otra.
+        ("Chest", "Spine1", "box", ((0.0, 0.0, CHEST_Z), (p.shoulder_half, d, CHEST_H))),
+        # Cintura: bloque estrecho que marca la separación torso/cadera.
+        ("Waist", "Spine", "box", ((0.0, 0.0, WAIST_Z), (p.waist_half, d * 0.88, WAIST_H))),
+        ("Pelvis", "Hips", "box", ((0.0, 0.0, PELVIS_Z), (p.hip_half, d * 0.94, PELVIS_H))),
+    ]
+
+    for sign, side in ((1.0, "Left"), (-1.0, "Right")):
+        arm_root = (sign * p.shoulder_half * 0.86, 0.0, p.arm_root_z + 0.020)
+        elbow = (sign * p.elbow_x, 0.0, p.elbow_z)
+        wrist = (sign * p.wrist_x, 0.0, p.wrist_z)
         hand_dir = Vector((p.hand_x - p.wrist_x, 0.0, p.hand_z - p.wrist_z)).normalized()
-        palm = Vector((sign * p.wrist_x, 0.0, p.wrist_z)) + Vector((sign * hand_dir.x, 0.0, hand_dir.z)) * 0.055
-        parts.append(add_ellipsoid(palm, (p.hand_r * 0.95, p.hand_r * 0.52, p.hand_r * 1.15), 20, 12))
-        finger_tip = palm + Vector((sign * hand_dir.x, 0.0, hand_dir.z)) * 0.052
-        parts.append(add_ellipsoid(finger_tip, (p.hand_r * 0.80, p.hand_r * 0.44, p.hand_r * 0.72), 18, 10))
-        thumb = palm + Vector((0.0, -p.hand_r * 0.80, 0.012))
-        parts.append(add_ellipsoid(thumb, (p.hand_r * 0.34, p.hand_r * 0.40, p.hand_r * 0.46), 14, 8))
+        palm = Vector(wrist) + Vector((sign * hand_dir.x, 0.0, hand_dir.z)) * 0.058
 
-        # Pierna: muslo, rodilla, pantorrilla y tobillo.
-        parts += blob_chain([
-            (Vector((sign * p.leg_x, 0.0, p.hip_z - 0.010)), (p.thigh_r * 1.05,) * 3),
-            (Vector((sign * (p.leg_x + p.knee_x) * 0.5, 0.0, (p.hip_z + p.knee_z) * 0.5)),
-             (p.thigh_r * 0.92,) * 3),
-            (Vector((sign * p.knee_x, 0.0, p.knee_z)), (p.calf_r * 1.06,) * 3),
-            (Vector((sign * p.knee_x, -0.004, p.knee_z - 0.080)), (p.calf_r * 1.02,) * 3),
-            (Vector((sign * p.ankle_x, 0.0, p.ankle_z + 0.030)), (p.calf_r * 0.60,) * 3),
-        ], steps=12)
+        segments += [
+            (f"{side}UpperArm", f"{side}Arm", "limb",
+             (arm_root, elbow, p.upper_arm_r * 1.05, p.upper_arm_r * 1.05)),
+            (f"{side}ForeArm", f"{side}ForeArm", "limb",
+             (elbow, wrist, p.fore_arm_r * 0.98, p.fore_arm_r * 0.98)),
+            # Mano de manopla: sin dedos, como la referencia.
+            (f"{side}Hand", f"{side}Hand", "box",
+             (tuple(palm), (p.hand_r * 0.92, p.hand_r * 0.60, p.hand_r * 1.15))),
+            (f"{side}Thigh", f"{side}UpLeg", "limb",
+             ((sign * p.leg_x, 0.0, p.hip_z - 0.030), (sign * p.knee_x, 0.0, p.knee_z),
+              p.thigh_r, p.thigh_r)),
+            (f"{side}Shin", f"{side}Leg", "limb",
+             ((sign * p.knee_x, 0.0, p.knee_z), (sign * p.ankle_x, 0.0, p.ankle_z + 0.020),
+              p.calf_r * 0.92, p.calf_r * 0.92)),
+            (f"{side}Foot", f"{side}Foot", "box",
+             ((sign * p.ankle_x, p.foot_len * 0.42, p.foot_height * 0.78),
+              (p.foot_width, abs(p.foot_len) * 0.62, p.foot_height * 0.86))),
+        ]
+    return segments
 
-        # Pie: cuña redondeada hacia -Y (el personaje mira a -Y).
-        parts.append(add_ellipsoid(
-            (sign * p.ankle_x, p.foot_len * 0.34, p.foot_height * 0.80),
-            (p.foot_width, abs(p.foot_len) * 0.55, p.foot_height), 20, 12))
-        parts.append(add_ellipsoid(
-            (sign * p.ankle_x, p.foot_len * 0.86, p.foot_height * 0.62),
-            (p.foot_width * 0.86, abs(p.foot_len) * 0.26, p.foot_height * 0.70), 18, 10))
+
+def build_body(p):
+    """Cuerpo articulado por bloques.
+
+    A diferencia de un cuerpo orgánico, aquí las piezas NO se funden: cada
+    segmento es un bloque redondeado independiente separado por un hueco en la
+    articulación. Esa separación es el estilo, no un defecto.
+
+    Como consecuencia, el pesado es rígido —cada pieza pertenece por completo a
+    un hueso— y eso es lo correcto para una figura articulada: no hay superficie
+    continua que estirar, las piezas rotan como piezas. El pesado automático por
+    calor, que sí hace falta en un cuerpo continuo, aquí produciría deformaciones
+    raras al repartir un bloque entre dos huesos.
+    """
+    parts = []
+    for name, bone, kind, spec in body_segments(p):
+        if kind == "box":
+            centre, half = spec
+            obj = add_rounded_box(f"Seg_{name}", centre, half)
+        else:
+            head, tail, half_w, half_d = spec
+            obj = add_limb_box(f"Seg_{name}", head, tail, half_w, half_d)
+        # El grupo se asigna ANTES de unir: al unir, Blender fusiona los grupos
+        # por nombre y conserva las asignaciones. Hacerlo después obligaría a
+        # confiar en el orden de los vértices tras el join, que no está definido.
+        group = obj.vertex_groups.new(name=bone)
+        group.add(range(len(obj.data.vertices)), 1.0, "REPLACE")
+        parts.append(obj)
 
     body = join_objects(parts, "Body_Skin")
-    # 0.0085 da ~70-90k triángulos antes de decimar: suficiente para que codos y
-    # tobillos no se acartonen, y el decimado posterior lo baja al presupuesto.
-    fuse(body, voxel_size=0.0085, smooth_iterations=7, smooth_factor=0.6)
-    decimate_to(body, BUDGET_BODY)
     clean_mesh(body)
+    decimate_to(body, BUDGET_BODY)
     activate(body)
-    bpy.ops.object.shade_smooth()
+    bpy.ops.object.shade_auto_smooth(angle=math.radians(35.0))
     return body
 
 
@@ -426,8 +535,8 @@ def build_head(p, materials):
 
         # Cuenca ocular: hundido suave donde se alojan los globos oculares.
         for side in (1.0, -1.0):
-            socket = falloff(Vector((co.x - side * p.eye_x, (co.y + ry) * 0.55, (co.z - eye_local_z) * 1.25)).length, p.eye_r * 1.55)
-            co.y += ry * 0.085 * socket
+            socket = falloff(Vector((co.x - side * p.eye_x, (co.y + ry) * 0.55, (co.z - eye_local_z) * 1.25)).length, p.eye_r * 1.40)
+            co.y += ry * 0.052 * socket
 
         # Surco de la boca.
         mouth = falloff(Vector((co.x * 1.5, (co.y + ry) * 0.6, (co.z - mouth_local_z) * 2.6)).length, rx * 0.34)
@@ -463,35 +572,72 @@ def build_eyes(p, materials):
     """
     created = []
     for side, label in ((1.0, "Left"), (-1.0, "Right")):
-        depth = -p.head_ry * 0.760
+        depth = -p.head_ry * 0.795
         centre = Vector((side * p.eye_x, depth, p.eye_z))
 
         bpy.ops.mesh.primitive_uv_sphere_add(segments=28, ring_count=18, radius=1.0, location=centre)
         white = bpy.context.object
-        white.scale = (p.eye_r * 1.02, p.eye_r * 0.34, p.eye_r * 0.94)
+        white.scale = (p.eye_r * 1.02, p.eye_r * 0.44, p.eye_r * 1.06)
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
         white.data.materials.append(materials["eye_white"])
 
-        # Iris y pupila se escalonan hacia -Y con separación suficiente para que
-        # no se entierren mutuamente al aplanar el ojo. Sin este escalonado la
-        # mirada se pierde y el rostro queda inexpresivo a tamaño de editor.
-        iris_centre = Vector((side * p.eye_x, depth - p.eye_r * 0.24, p.eye_z))
-        bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=14, radius=1.0, location=iris_centre)
+        # Iris grande y oscuro que ocupa casi todo el ojo, dejando solo un filo
+        # de esclerótica. Es lo que separa una mirada expresiva de los "ojos de
+        # muñeco" con un puntito de color en medio de mucho blanco.
+        iris_centre = Vector((side * p.eye_x, depth - p.eye_r * 0.30, p.eye_z))
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=28, ring_count=16, radius=1.0, location=iris_centre)
         iris = bpy.context.object
-        iris.scale = (p.eye_r * 0.64, p.eye_r * 0.18, p.eye_r * 0.64)
+        iris.scale = (p.eye_r * 0.62, p.eye_r * 0.24, p.eye_r * 0.66)
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
         iris.data.materials.append(materials["eye_iris"])
 
-        pupil_centre = Vector((side * p.eye_x, depth - p.eye_r * 0.34, p.eye_z))
-        bpy.ops.mesh.primitive_uv_sphere_add(segments=18, ring_count=12, radius=1.0, location=pupil_centre)
+        pupil_centre = Vector((side * p.eye_x, depth - p.eye_r * 0.40, p.eye_z))
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=12, radius=1.0, location=pupil_centre)
         pupil = bpy.context.object
-        pupil.scale = (p.eye_r * 0.35, p.eye_r * 0.14, p.eye_r * 0.35)
+        pupil.scale = (p.eye_r * 0.34, p.eye_r * 0.16, p.eye_r * 0.36)
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
         pupil.data.materials.append(materials["eye_pupil"])
 
-        eye = join_objects([white, iris, pupil], f"Eye_{label}")
+        # Reflejo: desplazado arriba y hacia la nariz, igual en ambos ojos, como
+        # si hubiera una única fuente de luz. Colocarlo simétrico (espejado)
+        # haría bizquear la mirada.
+        glint_centre = Vector((
+            side * p.eye_x + p.eye_r * 0.26,
+            depth - p.eye_r * 0.46,
+            p.eye_z + p.eye_r * 0.32,
+        ))
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=10, radius=1.0, location=glint_centre)
+        glint = bpy.context.object
+        glint.scale = (p.eye_r * 0.22, p.eye_r * 0.10, p.eye_r * 0.22)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        glint.data.materials.append(materials["eye_glint"])
+
+        eye = join_objects([white, iris, pupil, glint], f"Eye_{label}")
         bpy.ops.object.shade_smooth()
         created.append(eye)
+    return created
+
+
+def build_blush(p, materials):
+    """Rubor en las mejillas.
+
+    Un disco muy achatado apoyado sobre la mejilla. Sin él, la piel plana de un
+    material sin textura deja el rostro pálido y sin vida a tamaño pequeño.
+    """
+    created = []
+    for side, label in ((1.0, "Left"), (-1.0, "Right")):
+        bpy.ops.mesh.primitive_uv_sphere_add(
+            segments=24, ring_count=14, radius=1.0,
+            location=(side * p.head_rx * 0.62, -p.head_ry * 0.70, p.eye_z - p.eye_r * 1.55))
+        blush = bpy.context.object
+        blush.name = f"Blush_{label}"
+        # Discreto: sin degradado (no hay texturas) un rubor grande se lee como
+        # dos pegatinas. Pequeño y en un tono cercano a la piel funciona.
+        blush.scale = (p.head_rx * 0.145, p.head_ry * 0.065, p.head_rz * 0.075)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        blush.data.materials.append(materials["blush"])
+        bpy.ops.object.shade_smooth()
+        created.append(blush)
     return created
 
 
@@ -507,7 +653,7 @@ def build_mouth(p, materials):
         location=(0.0, -p.head_ry * 0.715, p.mouth_z))
     mouth = bpy.context.object
     mouth.name = "Mouth"
-    mouth.scale = (p.head_rx * 0.30, p.head_ry * 0.075, p.head_rz * 0.045)
+    mouth.scale = (p.head_rx * 0.26, p.head_ry * 0.070, p.head_rz * 0.050)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     mouth.data.materials.append(materials["mouth"])
     bpy.ops.object.shade_smooth()
@@ -521,15 +667,18 @@ def build_brows(p, materials):
         # La ceja se apoya sobre el arco superciliar, que ya sobresale: hay que
         # colocarla por delante de la piel o queda enterrada y el rostro pierde
         # toda su expresión.
+        # Cejas gruesas y bien marcadas: junto con el tamaño del ojo, es lo que
+        # da carácter al rostro. Finas se pierden por completo a tamaño de
+        # tarjeta y la cara queda inexpresiva.
         bpy.ops.mesh.primitive_uv_sphere_add(
-            segments=18, ring_count=10, radius=1.0,
-            location=(side * p.eye_x, -p.head_ry * 0.915, p.eye_z + p.eye_r * 1.42))
+            segments=20, ring_count=12, radius=1.0,
+            location=(side * p.eye_x, -p.head_ry * 0.905, p.eye_z + p.eye_r * 1.14))
         brow = bpy.context.object
         brow.name = f"Brow_{label}"
-        brow.scale = (p.eye_r * 0.98, p.eye_r * 0.15, p.eye_r * 0.21)
+        brow.scale = (p.eye_r * 0.92, p.eye_r * 0.17, p.eye_r * 0.26)
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-        brow.rotation_euler = (0.0, math.radians(-7.0 * side), 0.0)
-        brow.data.materials.append(materials["hair"])
+        brow.rotation_euler = (0.0, math.radians(-9.0 * side), 0.0)
+        brow.data.materials.append(materials["brow"])
         bpy.ops.object.shade_smooth()
         created.append(brow)
     return created
@@ -712,14 +861,16 @@ def build_hair(style: str, p, materials):
                 (rx * 0.27, ry * 0.30, rz * 0.24), 16, 10))
 
     hair = join_objects(parts, f"Hair_{style}")
-    # Vóxel más grueso que el cuerpo: el cabello debe leerse como masas, no como
-    # pelo fino, y así se mantiene barato.
-    fuse(hair, voxel_size=0.0105, smooth_iterations=5, smooth_factor=0.5)
-    decimate_to(hair, BUDGET_HAIR)
+    # NO se remalla por vóxeles. Fundir el casquete con los mechones producía un
+    # casco liso: se perdía justo lo que hace que el pelo se lea como pelo. Al
+    # unir sin fundir, cada mechón sigue siendo una masa distinta y el relieve
+    # se conserva — que es además coherente con el cuerpo por bloques.
     clean_mesh(hair)
+    decimate_to(hair, BUDGET_HAIR)
     hair.data.materials.clear()
     hair.data.materials.append(materials["hair"])
-    bpy.ops.object.shade_smooth()
+    activate(hair)
+    bpy.ops.object.shade_auto_smooth(angle=math.radians(48.0))
     return hair
 
 
@@ -741,138 +892,195 @@ def build_goatee(p, materials):
 
 # ── Ropa derivada del cuerpo ─────────────────────────────────────────────────
 
-def garment_volume(name: str, blobs, material, budget: int, voxel: float = 0.009):
-    """Construye una prenda como volumen cerrado inflado sobre el cuerpo.
+def garment_trims(name: str, p, coverage, pad: float,
+                  extra: float = 0.011, band: float = 0.026):
+    """Puños, dobladillo y cinturilla.
 
-    Cada prenda es una masa cerrada, no una cáscara recortada. Es la decisión de
-    diseño que más afecta al resultado visual: una cáscara necesita un borde, y
-    cualquier borde generado por umbral sobre malla decimada sale dentado. Un
-    volumen cerrado no tiene borde — el cuello, las muñecas y los tobillos
-    emergen atravesando la superficie, que es exactamente el lenguaje de masas
-    sólidas del dragón de referencia.
+    Es lo que convierte un bloque de color en una prenda cosida. A tamaño de
+    avatar estos remates se leen mucho mejor que cualquier arruga: son bordes
+    nítidos, y el ojo los reconoce como confección.
 
-    Como el volumen se genera inflando el mismo perfil que el cuerpo, envuelve
-    la piel por construcción y no puede haber clipping.
+    Se emiten como bandas ligeramente más anchas que la prenda en los extremos
+    de cada manga o pernera, y en el bajo de la pieza más baja del torso.
     """
-    parts = [add_ellipsoid(location, radii, segments, rings)
-             for location, radii, segments, rings in blobs]
+    catalogue = {segment[0]: segment for segment in body_segments(p)}
+    trims = []
+    lowest_box = None
+
+    for segment_name, span in coverage.items():
+        _, bone, kind, spec = catalogue[segment_name]
+        if kind == "limb":
+            head, tail, half_w, half_d = spec
+            head_v, tail_v = Vector(head), Vector(tail)
+            start, end = (0.0, span) if isinstance(span, (int, float)) else span
+            direction = tail_v - head_v
+            length = direction.length
+            if length <= 1e-6:
+                continue
+            # Banda corta pegada al extremo abierto de la manga o pernera.
+            band_start = max(start, end - band / length)
+            obj = add_limb_box(
+                f"{name}_Cuff_{segment_name}",
+                tuple(head_v + direction * band_start),
+                tuple(head_v + direction * end),
+                half_w + pad + extra, half_d + pad + extra,
+                gap=0.0, bevel=0.007,
+            )
+            trims.append((obj, bone))
+        else:
+            centre, half = spec
+            if lowest_box is None or centre[2] - half[2] < lowest_box[1][2] - lowest_box[2][2]:
+                lowest_box = (bone, centre, half)
+
+    # Bajo de la prenda: cinturilla en un pantalón, dobladillo en una camiseta.
+    if lowest_box is not None:
+        bone, centre, half = lowest_box
+        hem_z = centre[2] - half[2] + band / 2
+        obj = add_rounded_box(
+            f"{name}_Hem",
+            (centre[0], centre[1], hem_z),
+            (half[0] + pad + extra, half[1] + pad + extra, band / 2),
+            bevel=0.007,
+        )
+        trims.append((obj, bone))
+
+    return trims
+
+
+def build_garment(name: str, p, coverage: dict[str, float | tuple[float, float]],
+                  pad: float, material, budget: int):
+    """Prenda como copia inflada de las piezas del cuerpo que cubre.
+
+    `coverage` indica qué segmentos viste y qué tramo de cada extremidad. El
+    valor puede ser:
+
+      - un número  → tramo desde el nacimiento del miembro (0.45 = manga corta)
+      - una tupla  → tramo arbitrario (0.72, 1.0) = solo la parte baja, que es
+        lo que necesita una bota
+
+    Al derivarse de la misma tabla que el cuerpo, la prenda envuelve el bloque
+    por construcción: no hay forma de que la piel atraviese la tela.
+    """
+    catalogue = {segment[0]: segment for segment in body_segments(p)}
+    parts = []
+
+    for segment_name, span in coverage.items():
+        _, bone, kind, spec = catalogue[segment_name]
+        if kind == "box":
+            centre, half = spec
+            obj = add_rounded_box(
+                f"{name}_{segment_name}", centre, tuple(h + pad for h in half),
+                bevel=0.020,
+            )
+        else:
+            head, tail, half_w, half_d = spec
+            head_v, tail_v = Vector(head), Vector(tail)
+            start, end = (0.0, span) if isinstance(span, (int, float)) else span
+            direction = tail_v - head_v
+            obj = add_limb_box(
+                f"{name}_{segment_name}",
+                tuple(head_v + direction * start),
+                tuple(head_v + direction * end),
+                half_w + pad, half_d + pad, gap=0.008, bevel=0.018,
+            )
+        group = obj.vertex_groups.new(name=bone)
+        group.add(range(len(obj.data.vertices)), 1.0, "REPLACE")
+        parts.append(obj)
+
+    # Remates: puños, dobladillo y cinturilla.
+    for obj, bone in garment_trims(name, p, coverage, pad):
+        group = obj.vertex_groups.new(name=bone)
+        group.add(range(len(obj.data.vertices)), 1.0, "REPLACE")
+        parts.append(obj)
+
     garment = join_objects(parts, name)
-    # Suavizado más insistente que en el cuerpo: la unión de lonchas deja un
-    # rizado horizontal muy visible sobre una superficie de color plano como es
-    # una prenda, mientras que en la piel queda enmascarado por el sombreado.
-    fuse(garment, voxel_size=voxel, smooth_iterations=10, smooth_factor=0.62)
-    decimate_to(garment, budget)
     clean_mesh(garment)
+    # Las arrugas van ANTES de decimar: al revés, el decimado las aplanaría.
+    add_cloth_folds(garment)
+    decimate_to(garment, budget)
     garment.data.materials.clear()
     garment.data.materials.append(material)
     activate(garment)
-    bpy.ops.object.shade_smooth()
+    bpy.ops.object.shade_auto_smooth(angle=math.radians(35.0))
     return garment
 
 
-def _sleeve(p, sign: float, end_z: float, radius_scale: float, pad: float):
-    """Manga: cadena a lo largo del brazo hasta la altura pedida."""
-    start = Vector((sign * p.shoulder_half * 0.58, 0.0, p.arm_root_z + 0.038))
-    elbow = Vector((sign * p.elbow_x, 0.0, p.elbow_z))
-    wrist = Vector((sign * p.wrist_x, 0.0, p.wrist_z))
-    # La manga arranca más adentro y más gruesa que el deltoides del cuerpo. Es
-    # el punto donde antes asomaba la piel: al levantar el brazo el hombro gira
-    # bajo la tela y, si la manga solo iguala al deltoides, lo atraviesa.
-    path = [(start, p.upper_arm_r * 1.88 * radius_scale + pad),
-            (elbow, p.upper_arm_r * 0.90 * radius_scale + pad),
-            (wrist, p.fore_arm_r * 0.74 * radius_scale + pad)]
-    blobs = []
-    for index in range(len(path) - 1):
-        (p0, r0), (p1, r1) = path[index], path[index + 1]
-        for step in range(13):
-            t = step / 12.0
-            position = p0.lerp(p1, t)
-            if position.z < end_z:
-                continue
-            radius = r0 + (r1 - r0) * t
-            blobs.append((tuple(position), (radius, radius, radius), 16, 10))
-    return blobs
+# ── Guardarropa por variante ─────────────────────────────────────────────────
+#
+# Cada cuerpo tiene su propio vestuario. No es solo cuestión de etiqueta: en
+# este estilo la ropa ES la silueta, así que un corte distinto (hombro más
+# ancho, pernera más suelta, bota alta) es lo que hace que un cuerpo se lea
+# masculino o femenino más allá de sus proporciones.
+#
+# Cada entrada: (nombre de malla, etiqueta, cobertura, holgura).
+ARMS_FULL = {"LeftUpperArm": 1.0, "RightUpperArm": 1.0}
+ARMS_LONG = {"LeftUpperArm": 1.0, "RightUpperArm": 1.0,
+             "LeftForeArm": 1.0, "RightForeArm": 1.0}
+ARMS_SHORT = {"LeftUpperArm": 0.45, "RightUpperArm": 0.45}
+LEGS_FULL = {"LeftThigh": 1.0, "RightThigh": 1.0, "LeftShin": 1.0, "RightShin": 1.0}
+FEET = {"LeftFoot": 1.0, "RightFoot": 1.0}
+# Caña de bota: solo el tramo bajo de la espinilla, cortado desde el tobillo.
+BOOT_SHAFT = {"LeftShin": (0.70, 1.0), "RightShin": (0.70, 1.0)}
+
+WARDROBES: dict[str, dict[str, tuple[str, str, dict, float]]] = {
+    "masculine": {
+        # Bomber holgada de manga larga: hombro marcado y caída recta.
+        "top_a": ("Top_A", "Bomber holgada", {"Chest": 1.0, "Waist": 1.0, **ARMS_LONG}, 0.026),
+        # Camiseta sin mangas, ceñida: deja el brazo a la vista.
+        "top_b": ("Top_B", "Camiseta sin mangas", {"Chest": 1.0, "Waist": 1.0}, 0.012),
+        # Cargo ancho.
+        "bottom_a": ("Bottom_A", "Pantalón cargo", {"Pelvis": 1.0, **LEGS_FULL}, 0.028),
+        "bottom_b": ("Bottom_B", "Short deportivo",
+                     {"Pelvis": 1.0, "LeftThigh": 0.52, "RightThigh": 0.52}, 0.020),
+        # La caña debe ir MÁS holgada que el cargo (0.028) o queda dentro del
+        # pantalón y la bota se ve como un zapato normal.
+        "shoes_a": ("Shoes_A", "Botas", {**FEET, **BOOT_SHAFT}, 0.034),
+        "shoes_b": ("Shoes_B", "Tenis deportivos", FEET, 0.013),
+    },
+    "feminine": {
+        "top_a": ("Top_A", "Sudadera holgada", {"Chest": 1.0, "Waist": 1.0, **ARMS_FULL}, 0.020),
+        "top_b": ("Top_B", "Polo de manga corta", {"Chest": 1.0, "Waist": 1.0, **ARMS_SHORT}, 0.013),
+        "bottom_a": ("Bottom_A", "Pantalón recto", {"Pelvis": 1.0, **LEGS_FULL}, 0.017),
+        "bottom_b": ("Bottom_B", "Bermuda",
+                     {"Pelvis": 1.0, "LeftThigh": 0.62, "RightThigh": 0.62}, 0.015),
+        "shoes_a": ("Shoes_A", "Tenis redondeados", FEET, 0.016),
+        "shoes_b": ("Shoes_B", "Zapato bajo", FEET, 0.010),
+    },
+    "androgynous": {
+        "top_a": ("Top_A", "Sudadera básica", {"Chest": 1.0, "Waist": 1.0, **ARMS_FULL}, 0.021),
+        "top_b": ("Top_B", "Camiseta", {"Chest": 1.0, "Waist": 1.0, **ARMS_SHORT}, 0.014),
+        "bottom_a": ("Bottom_A", "Pantalón largo", {"Pelvis": 1.0, **LEGS_FULL}, 0.019),
+        "bottom_b": ("Bottom_B", "Bermuda",
+                     {"Pelvis": 1.0, "LeftThigh": 0.60, "RightThigh": 0.60}, 0.016),
+        "shoes_a": ("Shoes_A", "Tenis", FEET, 0.016),
+        "shoes_b": ("Shoes_B", "Zapato vinilo", FEET, 0.011),
+    },
+}
+
+MATERIAL_BY_SLOT = {
+    "top_a": "top_a", "top_b": "top_b",
+    "bottom_a": "bottom_a", "bottom_b": "bottom_b",
+    "shoes_a": "shoe_a", "shoes_b": "shoe_b",
+}
+BUDGET_BY_SLOT = {
+    "top_a": BUDGET_TOP, "top_b": BUDGET_TOP,
+    "bottom_a": BUDGET_BOTTOM, "bottom_b": BUDGET_BOTTOM,
+    "shoes_a": BUDGET_SHOES, "shoes_b": BUDGET_SHOES,
+}
 
 
-def _trouser_leg(p, sign: float, end_z: float, radius_scale: float, pad: float):
-    """Pernera: cadena de cadera a la altura de corte."""
-    path = [
-        (Vector((sign * p.leg_x, 0.0, p.hip_z + 0.010)), p.thigh_r * 1.10 * radius_scale + pad),
-        (Vector((sign * (p.leg_x + p.knee_x) * 0.5, 0.0, (p.hip_z + p.knee_z) * 0.5)),
-         p.thigh_r * 0.98 * radius_scale + pad),
-        (Vector((sign * p.knee_x, 0.0, p.knee_z)), p.calf_r * 1.12 * radius_scale + pad),
-        (Vector((sign * p.ankle_x, 0.0, p.ankle_z + 0.045)), p.calf_r * 0.80 * radius_scale + pad),
-    ]
-    blobs = []
-    for index in range(len(path) - 1):
-        (p0, r0), (p1, r1) = path[index], path[index + 1]
-        for step in range(15):
-            t = step / 14.0
-            position = p0.lerp(p1, t)
-            if position.z < end_z:
-                continue
-            radius = r0 + (r1 - r0) * t
-            blobs.append((tuple(position), (radius, radius, radius), 16, 10))
-    return blobs
-
-
-def _shoe(p, sign: float, collar_z: float, pad: float):
-    """Calzado: pie envuelto más caña hasta `collar_z`."""
-    blobs = [
-        ((sign * p.ankle_x, p.foot_len * 0.34, p.foot_height * 0.80),
-         (p.foot_width + pad, abs(p.foot_len) * 0.55 + pad, p.foot_height + pad * 0.7), 22, 12),
-        ((sign * p.ankle_x, p.foot_len * 0.88, p.foot_height * 0.62),
-         (p.foot_width * 0.88 + pad, abs(p.foot_len) * 0.27 + pad, p.foot_height * 0.72 + pad * 0.7), 20, 10),
-    ]
-    z = p.foot_height * 0.9
-    while z <= collar_z:
-        blobs.append(((sign * p.ankle_x, p.foot_len * 0.06, z),
-                      (p.calf_r * 0.74 + pad, p.calf_r * 0.80 + pad, 0.030), 18, 10))
-        z += 0.014
-    return blobs
-
-
-def build_wardrobe(p, materials):
-    """Dos prendas superiores, dos inferiores y dos calzados por cuerpo."""
-
-    def top(name, hem_z, collar_z, sleeve_end_z, pad, material):
-        blobs = [(location, radii, 26, 12)
-                 for location, radii in torso_slices(p, hem_z, collar_z, inflate=1.0, pad=pad)]
-        for sign in (1.0, -1.0):
-            blobs += _sleeve(p, sign, sleeve_end_z, radius_scale=1.0, pad=pad)
-        return garment_volume(name, blobs, material, BUDGET_TOP)
-
-    def bottom(name, waist_z, hem_z, pad, material):
-        blobs = [(location, radii, 26, 12)
-                 for location, radii in torso_slices(p, p.hip_z - 0.050, waist_z, inflate=1.0, pad=pad)]
-        for sign in (1.0, -1.0):
-            blobs += _trouser_leg(p, sign, hem_z, radius_scale=1.0, pad=pad)
-        return garment_volume(name, blobs, material, BUDGET_BOTTOM)
-
-    def shoes(name, collar_z, pad, material):
-        blobs = []
-        for sign in (1.0, -1.0):
-            blobs += _shoe(p, sign, collar_z, pad)
-        return garment_volume(name, blobs, material, BUDGET_SHOES, voxel=0.0065)
-
-    return {
-        # Sudadera holgada de manga hasta el codo. El `pad` es generoso a
-        # propósito: al animar o posar, el hombro gira bajo la tela y con
-        # márgenes justos el deltoides asoma como un punto de piel.
-        "top_a": top("Top_A", p.hip_z + 0.075, p.shoulder_z + 0.028,
-                     p.elbow_z - 0.010, pad=0.022, material=materials["top_a"]),
-        # Polo ceñido de manga corta.
-        "top_b": top("Top_B", p.hip_z + 0.120, p.shoulder_z + 0.020,
-                     p.arm_root_z - 0.085, pad=0.017, material=materials["top_b"]),
-        # Pantalón largo hasta el tobillo.
-        "bottom_a": bottom("Bottom_A", p.hip_z + 0.115, p.ankle_z + 0.050,
-                           pad=0.017, material=materials["bottom_a"]),
-        # Bermuda por encima de la rodilla.
-        "bottom_b": bottom("Bottom_B", p.hip_z + 0.100, p.knee_z + 0.060,
-                           pad=0.014, material=materials["bottom_b"]),
-        "shoes_a": shoes("Shoes_A", collar_z=0.135, pad=0.020, material=materials["shoe_a"]),
-        "shoes_b": shoes("Shoes_B", collar_z=0.095, pad=0.023, material=materials["shoe_b"]),
-    }
+def build_wardrobe(p, materials, variant: str):
+    """Dos prendas superiores, dos inferiores y dos calzados del cuerpo dado."""
+    spec = WARDROBES[variant]
+    pieces = {}
+    labels = {}
+    for slot, (mesh_name, label, coverage, pad) in spec.items():
+        pieces[slot] = build_garment(
+            mesh_name, p, coverage, pad=pad,
+            material=materials[MATERIAL_BY_SLOT[slot]], budget=BUDGET_BY_SLOT[slot],
+        )
+        labels[slot] = label
+    return pieces, labels
 
 
 # ── Animación ────────────────────────────────────────────────────────────────
@@ -988,11 +1196,12 @@ def assemble(variant: str, skin_tone: str, hair_tone: str):
     head = build_head(p, materials)
     eyes = build_eyes(p, materials)
     brows = build_brows(p, materials)
+    blush = build_blush(p, materials)
     mouth = build_mouth(p, materials)
     # Ojos, cejas y boca se funden en la malla facial para que los morph targets
     # puedan cerrar el párpado, mover la ceja y abrir la boca en el mismo
     # blendshape, sin sincronizar varias mallas en el cliente.
-    face = join_objects([head] + eyes + brows + [mouth], "Head_Face")
+    face = join_objects([head] + eyes + brows + blush + [mouth], "Head_Face")
     # Se limpia ANTES de crear las shape keys: soldar vértices después cambiaría
     # el recuento y dejaría los morph targets desalineados.
     clean_mesh(face)
@@ -1001,17 +1210,24 @@ def assemble(variant: str, skin_tone: str, hair_tone: str):
 
     unwrap(body)
 
-    wardrobe = build_wardrobe(p, materials)
+    wardrobe, garment_labels = build_wardrobe(p, materials, variant)
     for piece in wardrobe.values():
         unwrap(piece)
 
-    # Cuerpo y prendas comparten el pesado automático por calor. Las prendas son
-    # volúmenes cerrados que envuelven al cuerpo, así que el reparto por hueso
-    # les sale prácticamente igual y se deforman de forma solidaria con la piel.
-    bind_with_automatic_weights([body] + list(wardrobe.values()), armature)
-    rescued = fallback_weight_unassigned(body, armature, "Hips")
-    for piece in wardrobe.values():
+    # Cuerpo y prendas ya llevan sus pesos: cada bloque pertenece por entero al
+    # hueso de su articulación, asignado al construirlo. No se usa el pesado
+    # automático por calor porque aquí no hay superficie continua que repartir
+    # entre huesos — repartir un bloque rígido entre dos lo deformaría al
+    # animar, que es justo lo que una figura articulada no debe hacer.
+    #
+    # Solo queda enlazar la armadura.
+    rescued = 0
+    for piece in [body, *wardrobe.values()]:
+        activate(piece)
+        piece.modifiers.new("PCCL_Skeleton", "ARMATURE").object = armature
+        piece.parent = armature
         rescued += fallback_weight_unassigned(piece, armature, "Hips")
+        limit_influences(piece)
 
     # El rostro va rígido al hueso Head: es lo correcto para una cabeza
     # estilizada y evita que el pesado por calor reparta la nariz entre Neck y
@@ -1054,6 +1270,7 @@ def assemble(variant: str, skin_tone: str, hair_tone: str):
         "wardrobe": wardrobe,
         "hair": hair_pieces,
         "accessories": accessories,
+        "garment_labels": garment_labels,
         "rescued_vertices": rescued,
     }
 
@@ -1282,6 +1499,14 @@ def main() -> None:
             key.name for key in face.data.shape_keys.key_blocks if key.name != "Basis"),
         "animations": sorted(action.name for action in bpy.data.actions),
         "modular": modular,
+        # Etiquetas del vestuario de ESTE cuerpo. Cada variante viste distinto,
+        # así que el catálogo no puede compartir un nombre único por pieza.
+        # Se exponen por id de pieza (`top-a`) para que el manifest las use tal
+        # cual, sin traducir nombres de ranura.
+        "garmentLabels": {
+            slot.replace("_", "-"): label
+            for slot, label in built["garment_labels"].items()
+        },
         "thumbnail": f"/avatars/custom/thumbnails/{args.body_id}.png",
         "qaImages": qa_images,
         "rescuedVertices": built["rescued_vertices"],

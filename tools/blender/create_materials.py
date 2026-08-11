@@ -110,9 +110,21 @@ def build_material_library(skin_tone: str = "sand", hair_tone: str = "chestnut")
         # produce el aspecto de "piel mojada" que el README prohíbe.
         "skin": make_material("PCCL_Skin", SKIN_TONES[skin_tone], roughness=0.48, coat=0.06),
         "hair": make_material("PCCL_Hair", HAIR_TONES[hair_tone], roughness=0.38, coat=0.09),
-        "eye_white": make_material("PCCL_EyeWhite", "#F7F3EC", roughness=0.22, coat=0.30),
-        "eye_iris": make_material("PCCL_EyeIris", "#3A6B52", roughness=0.20, coat=0.35),
-        "eye_pupil": make_material("PCCL_EyePupil", DRAGON_REFERENCE["eye_ink"], roughness=0.18, coat=0.35),
+        # Las cejas tienen material propio y NO comparten el del cabello: con
+        # pelo rubio o pelirrojo, unas cejas del mismo tono se funden con la
+        # piel y el rostro pierde toda su expresión. Se tiñen aparte, siempre
+        # varios tonos por debajo del cabello.
+        "brow": make_material("PCCL_Brow", "#2A1C15", roughness=0.42, coat=0.06),
+        "eye_white": make_material("PCCL_EyeWhite", "#FBF8F3", roughness=0.20, coat=0.32),
+        "eye_iris": make_material("PCCL_EyeIris", "#2A2320", roughness=0.16, coat=0.40),
+        "eye_pupil": make_material("PCCL_EyePupil", DRAGON_REFERENCE["eye_ink"], roughness=0.14, coat=0.42),
+        # Reflejo especular del ojo. Es geometría y no un mapa porque a este
+        # tamaño un punto de luz fijo lee mejor que un brillo calculado, y
+        # además queda idéntico en todos los retratos de la galería.
+        "eye_glint": make_material("PCCL_EyeGlint", "#FFFFFF", roughness=0.05, coat=0.0),
+        # Rubor: rosa cálido y muy mate, para que se lea como piel y no como
+        # maquillaje brillante.
+        "blush": make_material("PCCL_Blush", "#E08A7A", roughness=0.62, coat=0.02),
         "mouth": make_material("PCCL_Mouth", "#8C4038", roughness=0.45, coat=0.05),
         # Ropa: algodón mate arriba, vinilo brillante en calzado y detalles, tal
         # y como se comporta la superficie del dragón.

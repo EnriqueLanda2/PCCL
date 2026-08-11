@@ -37,6 +37,15 @@ export class CertificationController {
     );
   }
 
+  @Get('certificates/eligibility/:inscriptionId')
+  eligibility(@Param('inscriptionId') inscriptionId: string) {
+    return firstValueFrom(
+      this.client.send(CERTIFICATION_PATTERNS.CERT_ELIGIBILITY, {
+        inscriptionId,
+      }),
+    );
+  }
+
   @Get('certificates')
   findAll(@CurrentUser() u: RequestUser) {
     return firstValueFrom(

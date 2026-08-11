@@ -12,9 +12,10 @@ import { Icon } from '@iconify/react';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import { api } from '@/lib/api';
-import type { Course, Lesson, LiveSession } from '@/lib/types';
+import type { CertificateEligibility, Course, CourseReview, Evaluation, Lesson, LiveSession } from '@/lib/types';
 import { Badge, statusToBadgeVariant } from '@/app/components/ui/Badge';
 import { Modal } from '@/app/components/ui/Modal';
+import { AppInput } from '@/app/components/ui/AppControls';
 import { contentTypeMeta, formatDuration, cloudinaryVideoThumbnail } from '@/lib/lessonContentTypes';
 import { CreateLessonModal } from '@/app/components/shared/CreateLessonModal';
 import { LiveClassRoom } from '@/app/components/shared/LiveClassRoom';
@@ -59,6 +60,11 @@ function instructorInitial(name: string) {
   return name.trim().charAt(0).toUpperCase() || 'P';
 }
 
+function ratingLabel(rating?: number | null, count?: number | null) {
+  if (!rating || !count) return 'Sin reseñas';
+  return `${rating.toFixed(1)} (${count} reseña${count === 1 ? '' : 's'})`;
+}
+
 interface CourseContentViewProps {
   course: Course;
   onBack: () => void;
@@ -75,7 +81,15 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
      que se cargan aparte y se fusionan como una pestaña más ── */
   const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
   const [activeLiveSession, setActiveLiveSession] = useState<LiveSession | null>(null);
-  const [progress, setProgress] = useState(0);
+	  const [progress, setProgress] = useState(0);
+	  const [inscriptionId, setInscriptionId] = useState<string | null>(null);
+	  const [certificateEligibility, setCertificateEligibility] = useState<CertificateEligibility | null>(null);
+	  const [certificateBusy, setCertificateBusy] = useState(false);
+	  const [reviews, setReviews] = useState<CourseReview[]>([]);
+	  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+	  const [reviewRating, setReviewRating] = useState(5);
+	  const [reviewComment, setReviewComment] = useState('');
+	  const [reviewBusy, setReviewBusy] = useState(false);
   const [favorite, setFavorite] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -87,8 +101,12 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const { user } = useUser();
   const displayName = user?.email?.split('@')[0] ?? 'Invitado';
-  const instructorName = course.instructorName ?? course.createdBy ?? 'Profesor del curso';
-  const completedLessons = lessons.length ? Math.round((progress / 100) * lessons.length) : 0;
+	  const instructorName = course.instructorName ?? course.createdBy ?? 'Profesor del curso';
+	  const completedLessons = lessons.length ? Math.round((progress / 100) * lessons.length) : 0;
+	  const averageRating = reviews.length
+	    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+	    : course.rating;
+	  const reviewCount = reviews.length || course.reviewCount || 0;
 
   const loadLiveSessions = () => {
     api.liveSessions()
@@ -101,12 +119,28 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
     api.access().then((access) => {
       if (alive) setCanManage(access.permissions.includes('lessons:create'));
     }).catch(() => {});
-    api.inscriptions().then((items) => {
-      if (!alive) return;
-      const current = items.find((item) => item.course?.id === course.id);
-      setProgress(current?.progressPercentage ?? 0);
-    }).catch(() => {});
-    loadLiveSessions();
+	    api.inscriptions().then((items) => {
+	      if (!alive) return;
+	      const current = items.find((item) => item.course?.id === course.id);
+	      setProgress(current?.progressPercentage ?? 0);
+	      setInscriptionId(current?.id ?? null);
+	    }).catch(() => {});
+	    api.courseCertificateEligibility(course.id).then((eligibility) => {
+	      if (alive) setCertificateEligibility(eligibility);
+	    }).catch(() => {});
+	    api.courseReviews(course.id).then((items) => {
+	      if (!alive) return;
+	      setReviews(items);
+	      const mine = items.find((review) => review.mine);
+	      if (mine) {
+	        setReviewRating(mine.rating);
+	        setReviewComment(mine.comment ?? '');
+	      }
+	    }).catch(() => {});
+	    api.evaluations(course.id).then((items) => {
+	      if (alive) setEvaluations(items);
+	    }).catch(() => {});
+	    loadLiveSessions();
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course.id]);
@@ -119,7 +153,7 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
     } catch {}
   };
 
-  const handleShare = async () => {
+	  const handleShare = async () => {
     const url = window.location.href;
     try {
       if (navigator.share) await navigator.share({ title: course.title, text: course.description, url });
@@ -129,7 +163,35 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
       setFeedback('No se pudo compartir el curso desde este navegador.');
     }
     window.setTimeout(() => setFeedback(null), 2400);
-  };
+	  };
+
+	  const handleGenerateCertificate = async () => {
+	    if (!inscriptionId) return;
+	    setCertificateBusy(true);
+	    try {
+	      await api.generateCertificate(inscriptionId);
+	      setFeedback('Certificado emitido. Ya aparece en tu sección de certificados.');
+	    } catch {
+	      setFeedback(certificateEligibility?.reason ?? 'Aún no cumples los requisitos para obtener el certificado.');
+	    } finally {
+	      setCertificateBusy(false);
+	      window.setTimeout(() => setFeedback(null), 2800);
+	    }
+	  };
+
+	  const handleSubmitReview = async () => {
+	    setReviewBusy(true);
+	    try {
+	      const items = await api.upsertCourseReview(course.id, reviewRating, reviewComment.trim() || null);
+	      setReviews(items);
+	      setFeedback('Reseña guardada.');
+	    } catch {
+	      setFeedback('No se pudo guardar la reseña. Verifica que estés inscrito en el curso.');
+	    } finally {
+	      setReviewBusy(false);
+	      window.setTimeout(() => setFeedback(null), 2400);
+	    }
+	  };
 
   const openCreate = () => { setEditingLesson(null); setModalOpen(true); };
   const openEdit = (lesson: Lesson) => { setEditingLesson(lesson); setModalOpen(true); };
@@ -153,11 +215,14 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
       ...contentTypeMeta(type),
       count: lessons.filter((l) => l.contentType === type).length,
     }));
-    const allTabs = liveSessions.length > 0
-      ? [...lessonTabs, { type: 'live', ...contentTypeMeta('live'), count: liveSessions.length }]
-      : lessonTabs;
-    return allTabs.sort((a, b) => b.count - a.count);
-  }, [lessons, liveSessions]);
+	    const allTabs = liveSessions.length > 0
+	      ? [...lessonTabs, { type: 'live', ...contentTypeMeta('live'), count: liveSessions.length }]
+	      : lessonTabs;
+	    if (evaluations.length > 0) {
+	      allTabs.push({ type: 'evaluation', icon: APP_ICONS.quiz, label: 'Exámenes Kahoot', count: evaluations.length });
+	    }
+	    return allTabs.sort((a, b) => b.count - a.count);
+	  }, [lessons, liveSessions, evaluations]);
 
   const [activeTab, setActiveTab] = useState<string>('all');
   const filteredLessons = activeTab === 'all' || activeTab === 'live'
@@ -223,8 +288,8 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
           <div className="flex flex-wrap gap-x-6 gap-y-3 border-b border-[var(--neutral-100)] pb-6 text-[0.9063rem] font-semibold text-[var(--blue-600)]">
             {duration && <span className="inline-flex items-center gap-2"><Icon icon={APP_ICONS.clock} width={17} height={17} />{duration}</span>}
             <span className="inline-flex items-center gap-2"><Icon icon={APP_ICONS.users} width={17} height={17} />{course.studentsCount?.toLocaleString('es-MX') ?? '0'} estudiantes</span>
-            <span className="inline-flex items-center gap-2"><Icon icon={APP_ICONS.star} width={17} height={17} />{course.rating?.toFixed(1) ?? '4.6'} reseñas</span>
-            <span className="inline-flex items-center gap-2"><Icon icon={APP_ICONS.diplomaVerified} width={17} height={17} />Certificado incluido</span>
+	            <span className="inline-flex items-center gap-2"><Icon icon={APP_ICONS.star} width={17} height={17} />{ratingLabel(averageRating, reviewCount)}</span>
+	            <span className="inline-flex items-center gap-2"><Icon icon={APP_ICONS.diplomaVerified} width={17} height={17} />{course.certificateIncluded ? 'Certificado incluido' : 'Sin certificado'}</span>
           </div>
 
           <section className="rounded-[1.5rem] bg-[#F3F8EE] p-5">
@@ -260,13 +325,14 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
             </div>
           </section>
 
-          <section>
-            <h2 className="mb-3 text-[1.15rem] font-extrabold text-[var(--ink)]">Requisitos</h2>
-            <ul className="flex flex-col gap-2 text-[0.9063rem] text-[var(--ink-soft)]">
-              <li>· No se requiere experiencia previa para comenzar.</li>
-              <li>· Reserva tiempo para completar las actividades del curso.</li>
-            </ul>
-          </section>
+	          <section>
+	            <h2 className="mb-3 text-[1.15rem] font-extrabold text-[var(--ink)]">Requisitos</h2>
+	            <ul className="flex flex-col gap-2 text-[0.9063rem] text-[var(--ink-soft)]">
+	              <li>· No se requiere experiencia previa para comenzar.</li>
+	              <li>· Reserva tiempo para completar las actividades del curso.</li>
+	              <li>· Para certificado: completa todas las lecciones y aprueba los exámenes tipo Kahoot por tema.</li>
+	            </ul>
+	          </section>
 
           <section>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -344,6 +410,22 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
 	                    ))}
 	                  </div>
 	                )
+	              ) : activeTab === 'evaluation' ? (
+	                <div className="grid gap-4">
+	                  {evaluations.map((evaluation) => (
+	                    <KahootEvaluationCard
+	                      key={evaluation.id}
+	                      evaluation={evaluation}
+	                      onSubmitted={() => {
+	                        api.courseCertificateEligibility(course.id).then(setCertificateEligibility).catch(() => {});
+	                        api.inscriptions().then((items) => {
+	                          const current = items.find((item) => item.course?.id === course.id);
+	                          setProgress(current?.progressPercentage ?? 0);
+	                        }).catch(() => {});
+	                      }}
+	                    />
+	                  ))}
+	                </div>
 	              ) : filteredLessons.length === 0 ? (
 	                <p style={{ color: 'var(--ink-muted)', fontSize: '0.875rem', padding: '24px 0' }}>
 	                  Este curso aún no tiene contenido de este tipo.
@@ -362,8 +444,60 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
 	                </div>
 	              )}
 	            </div>
+		          </section>
+
+	          <section className="rounded-[1.5rem] border border-[var(--neutral-100)] bg-white p-5">
+	            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+	              <div>
+	                <h2 className="text-[1.15rem] font-extrabold text-[var(--ink)]">Reseñas del curso</h2>
+	                <p className="text-[0.875rem] text-[var(--ink-muted)]">
+	                  {ratingLabel(averageRating, reviewCount)} · datos reales de alumnos inscritos.
+	                </p>
+	              </div>
+	              <div className="flex gap-1 text-[var(--yellow-600)]">
+	                {[1, 2, 3, 4, 5].map((star) => (
+	                  <button
+	                    key={star}
+	                    type="button"
+	                    onClick={() => setReviewRating(star)}
+	                    className="text-[1.2rem] leading-none"
+	                    aria-label={`${star} estrella${star === 1 ? '' : 's'}`}
+	                  >
+	                    {star <= reviewRating ? '★' : '☆'}
+	                  </button>
+	                ))}
+	              </div>
+	            </div>
+	            <div className="flex flex-col gap-3">
+	              <AppInput
+	                multiline
+	                minRows={3}
+	                value={reviewComment}
+	                onChange={(event) => setReviewComment(event.target.value)}
+	                placeholder="Escribe qué te pareció el curso…"
+	              />
+	              <Button
+	                type="button"
+	                variant="contained"
+	                disabled={reviewBusy}
+	                onClick={() => void handleSubmitReview()}
+	                sx={{ alignSelf: 'flex-end', borderRadius: '999px', bgcolor: 'var(--green-600)', fontFamily: 'var(--font-sans)', fontWeight: 800, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
+	              >
+	                {reviewBusy ? 'Guardando…' : 'Guardar reseña'}
+	              </Button>
+	            </div>
+	            {reviews.length > 0 && (
+	              <div className="mt-5 flex flex-col gap-3">
+	                {reviews.slice(0, 4).map((review) => (
+	                  <article key={review.id} className="rounded-2xl border border-[var(--neutral-100)] bg-[#F8FBF5] p-4">
+	                    <div className="mb-1 text-[var(--yellow-600)]">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</div>
+	                    <p className="text-[0.875rem] text-[var(--ink-soft)]">{review.comment || 'Sin comentario escrito.'}</p>
+	                  </article>
+	                ))}
+	              </div>
+	            )}
 	          </section>
-	        </main>
+		        </main>
 
         <aside className="flex flex-col gap-6 lg:border-l lg:border-[var(--neutral-100)] lg:pl-8">
           <div className="rounded-[1.5rem] bg-[#F3F8EE] p-6">
@@ -385,10 +519,35 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
             <ul className="flex flex-col gap-3 text-[0.9063rem] text-[var(--ink-soft)]">
               <li className="flex items-center gap-3"><Icon icon={APP_ICONS.video} width={17} height={17} />{duration ?? 'Contenido'} de contenido</li>
               <li className="flex items-center gap-3"><Icon icon={APP_ICONS.book} width={17} height={17} />{lessons.length} lecciones</li>
-              <li className="flex items-center gap-3"><Icon icon={APP_ICONS.diplomaVerified} width={17} height={17} />Certificado de finalización</li>
-              <li className="flex items-center gap-3"><Icon icon={APP_ICONS.shield} width={17} height={17} />Acceso {course.isFree ? 'gratuito' : 'según tu compra'}</li>
-            </ul>
-          </div>
+	              <li className="flex items-center gap-3"><Icon icon={APP_ICONS.diplomaVerified} width={17} height={17} />{course.certificateIncluded ? 'Certificado al completar todo' : 'Este curso no emite certificado'}</li>
+	              <li className="flex items-center gap-3"><Icon icon={APP_ICONS.shield} width={17} height={17} />Acceso {course.isFree ? 'gratuito' : 'según tu compra'}</li>
+	            </ul>
+	          </div>
+
+	          {course.certificateIncluded && (
+	            <div className="rounded-[1.5rem] border border-[var(--neutral-100)] bg-white p-5">
+	              <h3 className="mb-2 text-[1rem] font-extrabold text-[var(--ink)]">Certificado</h3>
+	              <p className="mb-4 text-[0.875rem] leading-6 text-[var(--ink-soft)]">
+	                {certificateEligibility?.eligible
+	                  ? 'Cumples los requisitos: curso completo y exámenes aprobados.'
+	                  : certificateEligibility?.reason ?? 'Completa el curso y aprueba los exámenes por tema para desbloquearlo.'}
+	              </p>
+	              <div className="mb-4 grid grid-cols-2 gap-2 text-[0.7813rem] font-semibold text-[var(--ink-soft)]">
+	                <span>{certificateEligibility?.lessonsCompleted ?? 0}/{certificateEligibility?.lessonsTotal ?? lessons.length} lecciones</span>
+	                <span>{certificateEligibility?.evaluationsPassed ?? 0}/{certificateEligibility?.evaluationsTotal ?? 0} exámenes</span>
+	              </div>
+	              <Button
+	                type="button"
+	                variant="contained"
+	                disabled={!certificateEligibility?.eligible || certificateBusy}
+	                onClick={() => void handleGenerateCertificate()}
+	                fullWidth
+	                sx={{ borderRadius: '1rem', bgcolor: 'var(--green-600)', py: 1.2, fontFamily: 'var(--font-sans)', fontWeight: 900, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
+	              >
+	                {certificateBusy ? 'Emitiendo…' : 'Obtener certificado'}
+	              </Button>
+	            </div>
+	          )}
 
           <div className="border-y border-[var(--neutral-100)] py-6">
             <h3 className="mb-4 text-[1rem] font-extrabold text-[var(--ink)]">Tu instructor</h3>
@@ -441,6 +600,114 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
         )}
       </Modal>
     </div>
+	  );
+	}
+
+function KahootEvaluationCard({ evaluation, onSubmitted }: Readonly<{ evaluation: Evaluation; onSubmitted: () => void }>) {
+  const questions = evaluation.questions ?? [];
+  const [current, setCurrent] = useState(0);
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [score, setScore] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const question = questions[current];
+
+  const choose = (index: number) => {
+    setAnswers((prev) => {
+      const next = [...prev];
+      next[current] = index;
+      return next;
+    });
+  };
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await api.submitEvaluationAttempt(evaluation.id, answers);
+      const correct = questions.reduce((sum, item, index) => sum + (answers[index] === item.correctIndex ? 1 : 0), 0);
+      setScore(questions.length ? Math.round((correct / questions.length) * 100) : 0);
+      onSubmitted();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <article className="rounded-[1.5rem] border border-[var(--neutral-100)] bg-white p-5 shadow-[0_8px_24px_rgba(23,50,77,0.05)]">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="mb-1 text-[0.75rem] font-extrabold uppercase tracking-[0.18em] text-[var(--green-600)]">Examen tipo Kahoot</p>
+          <h3 className="text-[1rem] font-extrabold text-[var(--ink)]">{evaluation.title}</h3>
+          <p className="text-[0.8125rem] text-[var(--ink-muted)]">
+            {evaluation.topic ?? 'Tema del curso'} · mínimo {evaluation.passingScore}% para aprobar
+          </p>
+        </div>
+        <Badge variant={score !== null && score >= evaluation.passingScore ? 'green' : 'blue'}>
+          {score === null ? `${questions.length} preguntas` : `${score}%`}
+        </Badge>
+      </div>
+
+      {questions.length === 0 || !question ? (
+        <p className="text-[0.875rem] text-[var(--ink-muted)]">Este examen aún no tiene preguntas configuradas.</p>
+      ) : score !== null ? (
+        <div className="rounded-2xl bg-[var(--green-50)] p-4 text-[0.9063rem] font-semibold text-[var(--green-700)]">
+          Resultado: {score}% · {score >= evaluation.passingScore ? 'Aprobado' : 'Necesitas intentarlo de nuevo'}
+        </div>
+      ) : (
+        <div>
+          <div className="mb-3 flex items-center justify-between text-[0.8125rem] font-semibold text-[var(--ink-muted)]">
+            <span>Pregunta {current + 1} de {questions.length}</span>
+            <span>{question.timeLimitSeconds ?? 30}s</span>
+          </div>
+          <h4 className="mb-4 text-[1rem] font-extrabold text-[var(--ink)]">{question.prompt}</h4>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {question.options.map((option, index) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => choose(index)}
+                className="rounded-2xl border px-4 py-3 text-left text-[0.9063rem] font-semibold transition"
+                style={{
+                  borderColor: answers[current] === index ? 'var(--green-500)' : 'var(--neutral-100)',
+                  background: answers[current] === index ? 'var(--green-50)' : '#fff',
+                  color: 'var(--ink)',
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <div className="mt-5 flex justify-between gap-3">
+            <Button
+              variant="outlined"
+              disabled={current === 0}
+              onClick={() => setCurrent((value) => Math.max(0, value - 1))}
+              sx={softButtonSx}
+            >
+              Anterior
+            </Button>
+            {current < questions.length - 1 ? (
+              <Button
+                variant="contained"
+                disabled={answers[current] === undefined}
+                onClick={() => setCurrent((value) => Math.min(questions.length - 1, value + 1))}
+                sx={{ borderRadius: '999px', bgcolor: 'var(--green-600)', fontFamily: 'var(--font-sans)', fontWeight: 800, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
+              >
+                Siguiente
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                disabled={busy || answers.length < questions.length || answers.some((answer) => answer === undefined)}
+                onClick={() => void submit()}
+                sx={{ borderRadius: '999px', bgcolor: 'var(--green-600)', fontFamily: 'var(--font-sans)', fontWeight: 800, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
+              >
+                {busy ? 'Enviando…' : 'Enviar examen'}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </article>
   );
 }
 

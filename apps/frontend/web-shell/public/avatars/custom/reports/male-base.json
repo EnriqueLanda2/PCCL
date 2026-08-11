@@ -4,14 +4,14 @@
   "rigId": "pccl-human-rig-v1",
   "blend": "C:\\Users\\fcere\\OneDrive\\Documentos\\ULISES\\PCCL\\PCCL\\assets\\avatar-source\\blender\\avatar-male.blend",
   "glb": "/avatars/custom/bodies/male-base.glb",
-  "bytes": 2423712,
-  "trianglesVisible": 56092,
+  "bytes": 2655408,
+  "trianglesVisible": 53768,
   "trianglesByObject": {
-    "Body_Skin": 23000,
-    "Head_Face": 12392,
-    "Top_A": 6500,
-    "Bottom_A": 6500,
-    "Shoes_A": 3200,
+    "Body_Skin": 4800,
+    "Head_Face": 14968,
+    "Top_A": 12000,
+    "Bottom_A": 12000,
+    "Shoes_A": 5500,
     "Hair_chunky-short": 4500
   },
   "bones": [
@@ -55,28 +55,36 @@
     "layered-bob": {
       "url": "/avatars/custom/hair/male-base__layered-bob.glb",
       "triangles": 4500,
-      "bytes": 216376
+      "bytes": 229584
     },
     "top-b": {
       "url": "/avatars/custom/clothing/male-base__top-b.glb",
-      "triangles": 6500,
-      "bytes": 243964
+      "triangles": 12000,
+      "bytes": 460056
     },
     "bottom-b": {
       "url": "/avatars/custom/clothing/male-base__bottom-b.glb",
-      "triangles": 6500,
-      "bytes": 241996
+      "triangles": 12000,
+      "bytes": 475720
     },
     "shoes-b": {
       "url": "/avatars/custom/clothing/male-base__shoes-b.glb",
-      "triangles": 3200,
-      "bytes": 130084
+      "triangles": 5500,
+      "bytes": 220176
     },
     "facial-hair-goatee": {
       "url": "/avatars/custom/accessories/male-base__facial-hair-goatee.glb",
-      "triangles": 2324,
-      "bytes": 96144
+      "triangles": 2424,
+      "bytes": 100072
     }
+  },
+  "garmentLabels": {
+    "top-a": "Bomber holgada",
+    "top-b": "Camiseta sin mangas",
+    "bottom-a": "Pantal\u00f3n cargo",
+    "bottom-b": "Short deportivo",
+    "shoes-a": "Botas",
+    "shoes-b": "Tenis deportivos"
   },
   "thumbnail": "/avatars/custom/thumbnails/male-base.png",
   "qaImages": [

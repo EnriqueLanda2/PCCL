@@ -101,29 +101,30 @@ export async function writeManifest() {
       dependencies: [],
     });
 
-    // Piezas empaquetadas dentro del cuerpo.
+    /* Piezas empaquetadas dentro del cuerpo.
+     *
+     * Se emite una entrada POR CUERPO, no una compartida entre los tres: cada
+     * variante viste distinto (el masculino lleva bomber y botas donde el
+     * femenino lleva sudadera y tenis), así que no pueden compartir etiqueta.
+     * El `pieceId` sí es común, que es lo que persiste la configuración. */
     for (const [category, pieces] of Object.entries(BUNDLED)) {
       for (const piece of pieces) {
-        let entry = categories[category].find((item) => item.id === piece.id);
-        if (!entry) {
-          entry = {
-            id: piece.id,
-            revision: 1,
-            label: LABELS[piece.id] ?? piece.id,
-            delivery: 'bundled',
-            meshName: piece.mesh,
-            thumbnail: `/avatars/custom/thumbnails/${variant.bodyId}.png`,
-            compatibleBodies: [],
-            compatibleRigs: [RIG_ID],
-            colorVariants: ['default'],
-            hiddenBodyMasks: [],
-            bytes: 0,
-            triangles: report.trianglesByObject?.[piece.mesh] ?? 0,
-            dependencies: [],
-          };
-          categories[category].push(entry);
-        }
-        entry.compatibleBodies.push(variant.bodyId);
+        categories[category].push({
+          id: `${piece.id}__${variant.bodyId}`,
+          pieceId: piece.id,
+          revision: 1,
+          label: report.garmentLabels?.[piece.id] ?? LABELS[piece.id] ?? piece.id,
+          delivery: 'bundled',
+          meshName: piece.mesh,
+          thumbnail: `/avatars/custom/thumbnails/${variant.bodyId}.png`,
+          compatibleBodies: [variant.bodyId],
+          compatibleRigs: [RIG_ID],
+          colorVariants: ['default'],
+          hiddenBodyMasks: [],
+          bytes: 0,
+          triangles: report.trianglesByObject?.[piece.mesh] ?? 0,
+          dependencies: [],
+        });
       }
     }
 
@@ -139,7 +140,7 @@ export async function writeManifest() {
           id: `${piece.id}__${variant.bodyId}`,
           pieceId: piece.id,
           revision: 1,
-          label: LABELS[piece.id] ?? piece.id,
+          label: report.garmentLabels?.[piece.id] ?? LABELS[piece.id] ?? piece.id,
           delivery: 'lazy',
           url: modular.url,
           hidesMesh: piece.hides,

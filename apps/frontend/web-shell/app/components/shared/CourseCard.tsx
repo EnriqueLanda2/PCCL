@@ -82,6 +82,7 @@ export function CourseCard({
   const primaryContentType = course.lessons?.[0]?.contentType;
   const contentMeta = primaryContentType ? contentTypeMeta(primaryContentType) : null;
   const clampedProgress = Math.min(100, Math.max(0, Math.round(progress)));
+  const hasReviews = Boolean(course.rating && course.reviewCount);
 
   return (
     <article
@@ -113,10 +114,22 @@ export function CourseCard({
           <span>{category}</span>
           {(duration || lessons > 0 || contentMeta) && <span className="text-[var(--neutral-300)]">•</span>}
           {duration ? <span>{duration}</span> : lessons > 0 ? <span>{lessons} lecciones</span> : null}
+          {hasReviews && (
+            <>
+              <span className="text-[var(--neutral-300)]">•</span>
+              <span>★ {course.rating?.toFixed(1)}</span>
+            </>
+          )}
           {contentMeta && (
             <>
               <span className="text-[var(--neutral-300)]">•</span>
               <span>{contentMeta.label}</span>
+            </>
+          )}
+          {course.certificateIncluded && (
+            <>
+              <span className="text-[var(--neutral-300)]">•</span>
+              <span>Certificado</span>
             </>
           )}
         </div>

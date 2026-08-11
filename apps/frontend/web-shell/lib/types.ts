@@ -48,7 +48,9 @@ export interface Course {
   totalLessons?: number;
   durationMinutes?: number;
   rating?: number;
+  reviewCount?: number;
   studentsCount?: number;
+  certificateIncluded?: boolean;
   coverVariant?: number;
   coverIcon?: string;
   /** Precio del curso — 0 o isFree=true significa acceso gratuito */
@@ -106,6 +108,30 @@ export interface CourseComment {
   mine: boolean;
 }
 
+export interface CourseReview {
+  id: string;
+  courseId: string;
+  userId: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  mine: boolean;
+}
+
+export interface CertificateEligibility {
+  inscriptionId: string;
+  courseId: string;
+  userId: string;
+  eligible: boolean;
+  lessonsCompleted: number;
+  lessonsTotal: number;
+  evaluationsPassed: number;
+  evaluationsTotal: number;
+  missingEvaluations: string[];
+  reason: string | null;
+}
+
 export interface Note {
   id: string;
   lessonId: string;
@@ -152,6 +178,14 @@ export interface Inscription {
   status: 'enrolled' | 'in-progress' | 'completed' | 'dropped';
   progressPercentage: number | null;
   completedAt: string | null;
+  /** Alta de la inscripción. Es la fecha de compra desde la que se cuentan los
+   *  días para el riesgo de abandono. */
+  createdAt?: string;
+  /** Inicio del periodo de acceso. Se reescribe al renovar una mensualidad. */
+  startDate?: string | null;
+  /** Fin del acceso. Solo se rellena en compras mensuales; en las de acceso
+   *  permanente queda null, y por eso sirve para distinguir unas de otras. */
+  endDate?: string | null;
   user?: User;
   course?: Course;
 }
@@ -163,6 +197,22 @@ export interface Calification {
   totalPoints: number;
   maxAttempts: number;
   lesson?: Lesson;
+}
+
+export interface Evaluation {
+  id: string;
+  title: string;
+  description?: string | null;
+  topic?: string | null;
+  kind: 'kahoot';
+  passingScore: number;
+  questions?: {
+    prompt: string;
+    options: string[];
+    correctIndex: number;
+    timeLimitSeconds?: number;
+  }[] | null;
+  courseId: string;
 }
 
 export interface Certificate {

@@ -4,14 +4,14 @@
   "rigId": "pccl-human-rig-v1",
   "blend": "C:\\Users\\fcere\\OneDrive\\Documentos\\ULISES\\PCCL\\PCCL\\assets\\avatar-source\\blender\\avatar-neutral.blend",
   "glb": "/avatars/custom/bodies/neutral-base.glb",
-  "bytes": 2431268,
-  "trianglesVisible": 56092,
+  "bytes": 2615772,
+  "trianglesVisible": 53768,
   "trianglesByObject": {
-    "Body_Skin": 23000,
-    "Head_Face": 12392,
-    "Top_A": 6500,
-    "Bottom_A": 6500,
-    "Shoes_A": 3200,
+    "Body_Skin": 4800,
+    "Head_Face": 14968,
+    "Top_A": 12000,
+    "Bottom_A": 12000,
+    "Shoes_A": 5500,
     "Hair_chunky-short": 4500
   },
   "bones": [
@@ -55,23 +55,31 @@
     "layered-bob": {
       "url": "/avatars/custom/hair/neutral-base__layered-bob.glb",
       "triangles": 4500,
-      "bytes": 213928
+      "bytes": 232596
     },
     "top-b": {
       "url": "/avatars/custom/clothing/neutral-base__top-b.glb",
-      "triangles": 6498,
-      "bytes": 243016
+      "triangles": 12000,
+      "bytes": 501444
     },
     "bottom-b": {
       "url": "/avatars/custom/clothing/neutral-base__bottom-b.glb",
-      "triangles": 6498,
-      "bytes": 245316
+      "triangles": 12000,
+      "bytes": 491836
     },
     "shoes-b": {
       "url": "/avatars/custom/clothing/neutral-base__shoes-b.glb",
-      "triangles": 3200,
-      "bytes": 131024
+      "triangles": 5500,
+      "bytes": 221732
     }
+  },
+  "garmentLabels": {
+    "top-a": "Sudadera b\u00e1sica",
+    "top-b": "Camiseta",
+    "bottom-a": "Pantal\u00f3n largo",
+    "bottom-b": "Bermuda",
+    "shoes-a": "Tenis",
+    "shoes-b": "Zapato vinilo"
   },
   "thumbnail": "/avatars/custom/thumbnails/neutral-base.png",
   "qaImages": [

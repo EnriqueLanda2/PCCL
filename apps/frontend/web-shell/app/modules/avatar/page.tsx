@@ -18,6 +18,7 @@ import { EmptyState } from '@/app/components/shared/EmptyState';
 import { AvatarErrorBoundary, webglStore } from '@/app/components/avatar/AvatarErrorBoundary';
 import { AvatarCreatorDialog } from '@/app/components/avatar/AvatarCreatorDialog';
 import { api } from '@/lib/api';
+import { isReadyPlayerMeEnabled } from '@/lib/avatar/provider';
 import { listEntries } from '@/lib/avatar/catalog';
 import {
   listColorOptions,
@@ -345,9 +346,14 @@ export default function AvatarPage() {
         subtitle="Personaliza tu personaje 3D y úsalo como imagen de perfil."
         action={
           <div className="flex flex-wrap gap-2">
-            <AppButton onClick={() => setCreatorOpen(true)} variant="contained">
-              {config.source.provider === 'readyplayerme' ? 'Rediseñar avatar' : 'Crear con Ready Player Me'}
-            </AppButton>
+            {/* Solo si hay subdominio de Ready Player Me configurado: el `demo`
+                que se usaba por defecto ya no existe, y el botón abría un
+                iframe a un dominio inexistente. */}
+            {isReadyPlayerMeEnabled && (
+              <AppButton onClick={() => setCreatorOpen(true)} variant="contained">
+                {config.source.provider === 'readyplayerme' ? 'Rediseñar avatar' : 'Crear con Ready Player Me'}
+              </AppButton>
+            )}
             {config.source.provider !== 'custom' && (
               <AppButton onClick={() => store.setCustomBody(activeCustomBody ?? 'neutral-base')}>
                 Usar modelo PCCL
@@ -464,7 +470,7 @@ export default function AvatarPage() {
       </div>
 
       <AvatarCreatorDialog
-        open={creatorOpen}
+        open={creatorOpen && isReadyPlayerMeEnabled}
         onClose={() => setCreatorOpen(false)}
         onExported={store.setRemoteAvatar}
       />

@@ -24,7 +24,9 @@ export const REPORTS_DIR = path.join(PUBLIC_DIR, 'reports');
 export const RAW_DIR = path.join(REPO_ROOT, 'assets/avatar-source/glb-raw');
 
 /** Subcarpetas de assets, en el orden en que se generan. */
-export const ASSET_DIRS = ['bodies', 'hair', 'clothing', 'accessories', 'thumbnails', 'portraits'];
+export const ASSET_DIRS = [
+  'bodies', 'hair', 'clothing', 'accessories', 'thumbnails', 'portraits', 'figures',
+];
 
 /**
  * Retratos por cuerpo de la galería compartida.

@@ -105,27 +105,45 @@ for (const variant of VARIANTS) {
 
   /* Retratos de la galería. Se renderizan desde el .blend recién guardado, sin
      reconstruir geometría, así que cuestan poco más de un segundo cada uno. */
-  const portraits = spawnSync(
-    blender,
-    [
-      '--background',
-      path.join(REPO_ROOT, 'assets/avatar-source/blender', variant.blend),
-      '--python', path.join(REPO_ROOT, 'tools/blender/render_portraits.py'),
-      '--',
-      '--out-dir', path.join(RAW_DIR, 'portraits'),
-      '--body-id', variant.bodyId,
-      '--variants', String(PORTRAITS_PER_BODY),
-      '--start-index', String(VARIANTS.indexOf(variant) * PORTRAITS_PER_BODY),
-    ],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-  );
-  if (portraits.status !== 0) {
+  /* Dos encuadres del mismo personaje y la misma pose: `portraits` (rostro y
+     hombros) para los avatares pequeños, y `figures` (cuerpo entero) para el
+     panel de detalle, donde se aprecian postura y ropa. */
+  let framingFailed = false;
+  for (const [folder, framing, resolution] of [
+    ['portraits', 'portrait', 384],
+    ['figures', 'figure', 420],
+  ]) {
+    const render = spawnSync(
+      blender,
+      [
+        '--background',
+        path.join(REPO_ROOT, 'assets/avatar-source/blender', variant.blend),
+        '--python', path.join(REPO_ROOT, 'tools/blender/render_portraits.py'),
+        '--',
+        '--out-dir', path.join(RAW_DIR, folder),
+        '--body-id', variant.bodyId,
+        '--variants', String(PORTRAITS_PER_BODY),
+        '--start-index', String(VARIANTS.indexOf(variant) * PORTRAITS_PER_BODY),
+        '--framing', framing,
+        '--resolution', String(resolution),
+        // Los alumnos aparecen saludando en todo el apartado de estudiantes:
+        // tanto en la tarjeta como en el panel de detalle.
+        '--greeting',
+      ],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    if (render.status !== 0) {
+      framingFailed = true;
+      console.error(render.stdout?.split('\n').slice(-15).join('\n'));
+      console.error(render.stderr?.split('\n').slice(-15).join('\n'));
+      break;
+    }
+  }
+  if (framingFailed) {
     failed += 1;
-    console.error(portraits.stdout?.split('\n').slice(-15).join('\n'));
-    console.error(portraits.stderr?.split('\n').slice(-15).join('\n'));
     continue;
   }
-  console.log(`  retratos — ${PORTRAITS_PER_BODY} renderizados`);
+  console.log(`  retratos — ${PORTRAITS_PER_BODY} de rostro + ${PORTRAITS_PER_BODY} de cuerpo entero`);
 }
 
 if (failed > 0) {

@@ -1,7 +1,7 @@
 /* ───────────────────────────────────────────
    Inscriptions Page — Inscripciones
    Grilla de tarjetas por alumno (avatar 3D
-   NOVA Folks procedural) agrupando
+   galería compartida) agrupando
    sus inscripciones reales · paginado de 12 ·
    panel lateral con el detalle por curso.
    ─────────────────────────────────────────── */

@@ -12,6 +12,11 @@ export class CertificatesController {
     return this.service.generate(p.inscriptionId, p.actor);
   }
 
+  @MessagePattern(CERTIFICATION_PATTERNS.CERT_ELIGIBILITY)
+  eligibility(@Payload() p: { inscriptionId: string }) {
+    return this.service.eligibility(p.inscriptionId);
+  }
+
   @MessagePattern(CERTIFICATION_PATTERNS.CERT_FIND_ALL)
   findAll(@Payload() p: { scope?: DataScope }) { return this.service.findAll(p?.scope); }
 

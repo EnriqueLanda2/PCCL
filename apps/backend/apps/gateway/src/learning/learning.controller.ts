@@ -99,14 +99,51 @@ export class LearningController {
     );
   }
 
-  @Delete('courses/:id')
-  removeCourse(@Param('id') id: string) {
+	  @Delete('courses/:id')
+	  removeCourse(@Param('id') id: string) {
     return firstValueFrom(
       this.client.send(LEARNING_PATTERNS.COURSE_DELETE, { id }),
     );
-  }
+	  }
 
-  /* ─── LESSONS ─── */
+	  @Get('courses/:id/reviews')
+	  findCourseReviews(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+	    return firstValueFrom(
+	      this.client.send(LEARNING_PATTERNS.COURSE_REVIEW_FIND_BY_COURSE, {
+	        courseId: id,
+	        viewerId: u.sub,
+	      }),
+	    );
+	  }
+
+	  @Post('courses/:id/reviews')
+	  upsertCourseReview(
+	    @Param('id') id: string,
+	    @Body() dto: { rating?: number; comment?: string | null },
+	    @CurrentUser() u: RequestUser,
+	  ) {
+	    return firstValueFrom(
+	      this.client.send(LEARNING_PATTERNS.COURSE_REVIEW_UPSERT, {
+	        courseId: id,
+	        userId: u.sub,
+	        rating: Number(dto?.rating),
+	        comment: dto?.comment ?? null,
+	        actor: this.actor(u),
+	      }),
+	    );
+	  }
+
+	  @Get('courses/:id/certificate-eligibility')
+	  courseCertificateEligibility(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+	    return firstValueFrom(
+	      this.client.send(LEARNING_PATTERNS.COURSE_CERTIFICATE_ELIGIBILITY, {
+	        courseId: id,
+	        userId: u.sub,
+	      }),
+	    );
+	  }
+
+	  /* ─── LESSONS ─── */
   @Post('lessons')
   createLesson(@Body() dto: unknown, @CurrentUser() u: RequestUser) {
     return firstValueFrom(
@@ -328,11 +365,12 @@ export class LearningController {
   }
 
   @Post('evaluations/:id/attempts')
-  submitAttempt(@Param('id') id: string, @Body() dto: object) {
+  submitAttempt(@Param('id') id: string, @Body() dto: { answers?: unknown[] }, @CurrentUser() u: RequestUser) {
     return firstValueFrom(
       this.client.send(LEARNING_PATTERNS.EVALUATION_SUBMIT_ATTEMPT, {
         ...dto,
         evaluationId: id,
+        studentId: u.sub,
       }),
     );
   }

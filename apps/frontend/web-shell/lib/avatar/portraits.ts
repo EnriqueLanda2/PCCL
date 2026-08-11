@@ -24,14 +24,24 @@ const PER_BODY = 8;
 /**
  * Rutas de la galería, en el mismo orden que las genera el pipeline: cada
  * cuerpo ocupa un bloque consecutivo de índices.
+ *
+ * Hay dos encuadres del MISMO personaje y la MISMA pose: `portraits` (rostro y
+ * hombros) para avatares pequeños, y `figures` (cuerpo entero) para el panel de
+ * detalle. Comparten índice, así que un alumno es reconociblemente la misma
+ * persona en los dos.
  */
-export const PORTRAITS: string[] = BODIES.flatMap((bodyId, bodyIndex) =>
-  Array.from(
-    { length: PER_BODY },
-    (_, offset) =>
-      `/avatars/custom/portraits/${bodyId}-${String(bodyIndex * PER_BODY + offset).padStart(2, '0')}.png`,
-  ),
-);
+function gallery(folder: string): string[] {
+  return BODIES.flatMap((bodyId, bodyIndex) =>
+    Array.from(
+      { length: PER_BODY },
+      (_, offset) =>
+        `/avatars/custom/${folder}/${bodyId}-${String(bodyIndex * PER_BODY + offset).padStart(2, '0')}.png`,
+    ),
+  );
+}
+
+export const PORTRAITS: string[] = gallery('portraits');
+export const FIGURES: string[] = gallery('figures');
 
 /**
  * Hash estable de una cadena (FNV-1a de 32 bits).
@@ -55,15 +65,29 @@ export function portraitForUser(userId: string): string {
   return PORTRAITS[hash(userId) % PORTRAITS.length];
 }
 
+/** Figura de cuerpo entero del mismo usuario, en el mismo índice. */
+export function figureForUser(userId: string): string {
+  if (FIGURES.length === 0) return '';
+  return FIGURES[hash(userId) % FIGURES.length];
+}
+
 /**
  * Resuelve qué imagen mostrar para un alumno.
  *
  * Prioridad deliberada: si el alumno ya publicó su avatar, se respeta y no se
  * sustituye nunca por uno de la galería. La galería solo cubre el hueco.
+ *
+ * Con `shape: 'figure'` se devuelve el cuerpo entero, salvo que el alumno tenga
+ * avatar propio: ese es un retrato cuadrado y no existe en versión de cuerpo
+ * entero, así que se respeta tal cual.
  */
-export function avatarImageFor(userId: string, avatarUrl?: string | null): string | null {
+export function avatarImageFor(
+  userId: string,
+  avatarUrl?: string | null,
+  shape: 'portrait' | 'figure' = 'portrait',
+): string | null {
   if (avatarUrl) return avatarUrl;
   if (!userId) return null;
-  const portrait = portraitForUser(userId);
-  return validateCustomPath(portrait, '.png') ? portrait : null;
+  const image = shape === 'figure' ? figureForUser(userId) : portraitForUser(userId);
+  return validateCustomPath(image, '.png') ? image : null;
 }

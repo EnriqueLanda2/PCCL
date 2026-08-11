@@ -14,6 +14,27 @@ const IMG = {
   criticalThink: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=900&h=600&fit=crop',
 };
 
+const KAHOOT_QUESTIONS = [
+  {
+    prompt: '¿Cuál es la mejor evidencia de que entendiste el tema?',
+    options: ['Completar actividades reales', 'Solo abrir la lección', 'Saltar la práctica', 'Ignorar ejemplos'],
+    correctIndex: 0,
+    timeLimitSeconds: 30,
+  },
+  {
+    prompt: '¿Qué necesitas para desbloquear el certificado?',
+    options: ['Solo comprar el curso', 'Completar lecciones y aprobar exámenes', 'Cambiar de usuario', 'Publicar un comentario'],
+    correctIndex: 1,
+    timeLimitSeconds: 30,
+  },
+  {
+    prompt: '¿Qué formato tienen los exámenes por tema?',
+    options: ['Libre sin calificación', 'Tipo Kahoot con opciones', 'Solo descarga de PDF', 'Foro abierto'],
+    correctIndex: 1,
+    timeLimitSeconds: 30,
+  },
+];
+
 /* ── Catálogo de cursos — título + descripción + nivel + lecciones (con duración y tipo real) ── */
 const COURSES = [
   {
@@ -212,7 +233,7 @@ async function main() {
           updatedBy: 'seed',
         },
       });
-      lessonIds.push({ id: created.id, contentType: created.contentType });
+      lessonIds.push({ id: created.id, title: created.title, contentType: created.contentType });
       createdLessons += 1;
     }
     lessonIdsByCourseKey[c.key] = lessonIds;
@@ -233,18 +254,66 @@ async function main() {
         },
       });
       createdCalifications += 1;
+
+      const existingTopicEvaluation = await prisma.evaluation.findFirst({
+        where: { courseId, topic: lesson.title },
+      });
+      if (existingTopicEvaluation) {
+        await prisma.evaluation.update({
+          where: { id: existingTopicEvaluation.id },
+          data: {
+            title: lesson.title,
+            description: `Examen tipo Kahoot del tema: ${lesson.title}.`,
+            kind: 'kahoot',
+            passingScore: 70,
+            questions: existingTopicEvaluation.questions ?? KAHOOT_QUESTIONS,
+            updatedBy: 'seed',
+          },
+        });
+        evaluationIdByCourseKey[c.key] = existingTopicEvaluation.id;
+      } else {
+        const evaluation = await prisma.evaluation.create({
+          data: {
+            title: lesson.title,
+            description: `Examen tipo Kahoot del tema: ${lesson.title}.`,
+            topic: lesson.title,
+            kind: 'kahoot',
+            passingScore: 70,
+            questions: KAHOOT_QUESTIONS,
+            courseId,
+            createdBy: 'seed',
+            updatedBy: 'seed',
+          },
+        });
+        evaluationIdByCourseKey[c.key] = evaluation.id;
+        createdEvaluations += 1;
+      }
     }
 
     /* Evaluación final — solo para cursos publicados; reutiliza la existente si ya había una */
     if (c.status === 'published') {
       const existingEvaluation = await prisma.evaluation.findFirst({ where: { courseId } });
       if (existingEvaluation) {
+        await prisma.evaluation.update({
+          where: { id: existingEvaluation.id },
+          data: {
+            topic: existingEvaluation.topic ?? 'Examen integrador',
+            kind: 'kahoot',
+            passingScore: existingEvaluation.passingScore ?? 70,
+            questions: existingEvaluation.questions ?? KAHOOT_QUESTIONS,
+            updatedBy: 'seed',
+          },
+        });
         evaluationIdByCourseKey[c.key] = existingEvaluation.id;
       } else {
         const evaluation = await prisma.evaluation.create({
           data: {
             title: `Examen final: ${c.title}`,
             description: 'Evaluación integradora del curso completo.',
+            topic: 'Examen integrador',
+            kind: 'kahoot',
+            passingScore: 70,
+            questions: KAHOOT_QUESTIONS,
             courseId,
             createdBy: 'seed',
             updatedBy: 'seed',

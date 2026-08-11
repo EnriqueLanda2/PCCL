@@ -40,4 +40,19 @@ export class CoursesController {
   publish(@Payload() p: { id: string; actor: string }) {
     return this.service.publish(p.id, p.actor);
   }
+
+  @MessagePattern(LEARNING_PATTERNS.COURSE_REVIEW_FIND_BY_COURSE)
+  findReviews(@Payload() p: { courseId: string; viewerId?: string }) {
+    return this.service.findReviews(p.courseId, p.viewerId);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.COURSE_REVIEW_UPSERT)
+  upsertReview(@Payload() p: { courseId: string; userId: string; rating: number; comment?: string | null; actor: string }) {
+    return this.service.upsertReview(p.courseId, p.userId, p.rating, p.comment ?? null, p.actor);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.COURSE_CERTIFICATE_ELIGIBILITY)
+  certificateEligibility(@Payload() p: { courseId: string; userId: string }) {
+    return this.service.certificateEligibility(p.courseId, p.userId);
+  }
 }
