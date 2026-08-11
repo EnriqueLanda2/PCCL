@@ -1554,19 +1554,15 @@
   background: #ffffff;
 }
 
-/* Azul en vez del verde de marca: sobre blanco rinde bastante más a baja
-   opacidad, y así el fondo no compite con los acentos verdes del formulario.
-   Ojo al bajar la opacidad: los íconos son `bold-duotone`, o sea que una de
-   sus dos capas ya viene translúcida de fábrica, y esa translucidez se
-   MULTIPLICA con esta — por eso valores que en un ícono sólido se verían
-   bien, acá salen casi blancos. */
+/* Solo el flotado. La posición, el tinte (azul en vez del verde de marca:
+   sobre blanco rinde bastante más a baja opacidad, y así el fondo no compite
+   con los acentos verdes del formulario) y la inclinación estática viven en
+   el `style` de modules/auth/page.tsx a propósito — ahí está el porqué. Si se
+   devuelven acá, un globals.css desactualizado vuelve a tirar los íconos
+   encima del formulario en vez de solo quitarles el movimiento. */
 .auth-book {
-  position: absolute;
-  color: var(--blue-700);
-  opacity: 0.38;
   animation: auth-book-drift var(--dur, 10s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
-  transform: rotate(var(--tilt, 0deg));
 }
 
 @media (prefers-reduced-motion: reduce) {

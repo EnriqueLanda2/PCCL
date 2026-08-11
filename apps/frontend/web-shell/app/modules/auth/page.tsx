@@ -175,8 +175,29 @@ export default function AuthPage({
               icon={b.icon}
               width={b.size}
               height={b.size}
-              className="auth-book"
-              style={{ ...b.pos, '--tilt': b.tilt, '--dur': b.dur, '--delay': b.delay } as StyleWithVars}
+              /* Lo que COLOCA el ícono (posición, tinte, inclinación) va acá y
+                 no en `.auth-book`: si globals.css se queda atrás — pasa al
+                 mergear ramas, la regla es de este mismo commit — la clase
+                 desaparece y los SVG caen al flujo normal, apilados en columna
+                 sobre el formulario (preflight de Tailwind les da
+                 `display:block`). Con el posicionamiento acá, lo peor que se
+                 pierde es el flotado. `.auth-book` solo aporta la animación, y
+                 sus keyframes ganan sobre este `transform` mientras corren:
+                 las declaraciones de animación pesan más que el atributo
+                 `style` en la cascada. */
+              className="auth-book absolute"
+              style={{
+                ...b.pos,
+                color: 'var(--blue-700)',
+                /* Ojo al bajar la opacidad: los íconos son `bold-duotone`, o
+                   sea que una de sus dos capas ya viene translúcida de fábrica
+                   y esa translucidez se MULTIPLICA con esta. */
+                opacity: 0.38,
+                transform: `rotate(${b.tilt})`,
+                '--tilt': b.tilt,
+                '--dur': b.dur,
+                '--delay': b.delay,
+              } as StyleWithVars}
             />
           ))}
         </div>
