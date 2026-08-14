@@ -533,4 +533,45 @@ export class LearningController {
       this.client.send(LEARNING_PATTERNS.LIVE_SESSION_DELETE, { id }),
     );
   }
+
+  /* ─── CHAT (Rumbo IA) ───
+     userId sale siempre del JWT, nunca del cliente. */
+  @Post('chat')
+  sendChatMessage(@Body() dto: unknown, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.CHAT_SEND, {
+        dto,
+        userId: u.sub,
+        roles: u.roles ?? [],
+      }),
+    );
+  }
+
+  @Get('chat/history')
+  findChatHistory(@Query('conversationId') conversationId: string, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.CHAT_FIND_HISTORY, { userId: u.sub, conversationId }),
+    );
+  }
+
+  @Delete('chat/history')
+  clearChatHistory(@Query('conversationId') conversationId: string, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.CHAT_CLEAR_HISTORY, { userId: u.sub, conversationId }),
+    );
+  }
+
+  @Get('chat/conversations')
+  listChatConversations(@CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.CHAT_LIST_CONVERSATIONS, { userId: u.sub }),
+    );
+  }
+
+  @Delete('chat/messages/:id')
+  deleteChatMessagesFrom(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.CHAT_DELETE_FROM, { userId: u.sub, messageId: id }),
+    );
+  }
 }

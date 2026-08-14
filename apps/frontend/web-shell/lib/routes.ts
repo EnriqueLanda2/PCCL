@@ -12,6 +12,7 @@ export const appRoutes = {
   earnings:      '/learning/earnings',
   lessons:       '/learning/lessons',
   inscriptions:  '/learning/inscriptions',
+  aiRumbo:       '/learning/ai-rumbo',
   califications: '/learning/califications',
   certificates:  '/certification/certificates',
   progress:      '/learning/progress',

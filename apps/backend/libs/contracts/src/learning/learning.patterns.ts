@@ -62,4 +62,10 @@ export const LEARNING_PATTERNS = {
   LIVE_SESSION_UPDATE: 'learning.live_session.update',
   LIVE_SESSION_DELETE: 'learning.live_session.delete',
   LIVE_SESSION_FIND_NEXT_PUBLIC: 'learning.live_session.find_next_public',
+
+  CHAT_SEND: 'learning.chat.send',
+  CHAT_FIND_HISTORY: 'learning.chat.find_history',
+  CHAT_CLEAR_HISTORY: 'learning.chat.clear_history',
+  CHAT_LIST_CONVERSATIONS: 'learning.chat.list_conversations',
+  CHAT_DELETE_FROM: 'learning.chat.delete_from',
 } as const;

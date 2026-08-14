@@ -31,6 +31,7 @@ import Button from '@mui/material/Button';
 import type { Lesson } from '@/lib/types';
 import { contentTypeMeta } from '@/lib/lessonContentTypes';
 import { NotesPanel } from './NotesPanel';
+import { ChatWidget } from './ChatWidget';
 
 const linkSx = {
   minWidth: 0,
@@ -264,6 +265,7 @@ export function useLessonFileViewer(lesson: Lesson): {
     >
       {media}
       <NotesPanel lessonId={lesson.id} scopeLabel={contentTypeMeta(lesson.contentType).label} />
+      <ChatWidget lessonId={lesson.id} variant="inline" />
     </div>
   );
 

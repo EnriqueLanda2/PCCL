@@ -1,15 +1,23 @@
 'use client';
 
 import type React from 'react';
+import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { DashboardTopbar } from './DashboardTopbar';
 import { RouteGuard } from '@/app/components/shared/RouteGuard';
+import { ChatWidget } from '@/app/components/shared/ChatWidget';
+import { appRoutes } from '@/lib/routes';
 
 type PortalShellProps = Readonly<{
   children: React.ReactNode;
 }>;
 
 export function PortalShell({ children }: PortalShellProps) {
+  const pathname = usePathname();
+  /* En la vista de página completa de AIRumbo el widget flotante estorba —
+     ya estás en el chat, no tiene caso otro flotando encima. */
+  const hideChatWidget = pathname === appRoutes.aiRumbo;
+
   return (
     <div className="flex min-h-screen surface-page text-[var(--ink)]">
       <Sidebar />
@@ -24,6 +32,8 @@ export function PortalShell({ children }: PortalShellProps) {
           </div>
         </main>
       </div>
+
+      {!hideChatWidget && <ChatWidget />}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { LiveSessionsModule } from './modules/live-sessions/live-sessions.module
 import { NotesModule } from './modules/notes/notes.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { MessagingModule } from '@app/messaging';
 
 @Module({
@@ -28,6 +29,7 @@ import { MessagingModule } from '@app/messaging';
     NotesModule,
     TasksModule,
     CommentsModule,
+    ChatModule,
   ],
 })
 export class AppModule {}

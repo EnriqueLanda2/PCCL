@@ -99,8 +99,28 @@ model Lesson {
   califications   Calification[]
   notes           Note[]
   completions     LessonCompletion[]
+  chatMessages    ChatMessage[]
 
   @@map("lessons")
+}
+
+/// Mensaje del chatbot "AIRumbo" (IA local vía Ollama). userId apunta a
+/// identity-service, por eso se guarda sin relación SQL, igual que en
+/// Inscription. conversationId agrupa el hilo (varias conversaciones pueden
+/// compartir el mismo lessonId, o ninguno — chat general). lessonId nulo =
+/// conversación sin contexto de curso.
+model ChatMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  lessonId       String?  @map("lesson_id") @db.Uuid
+  lesson         Lesson?  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  role           String   @db.VarChar(20)
+  content        String   @db.Text
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@index([userId, conversationId])
+  @@map("chat_messages")
 }
 
 /// Marca de "lección vista" por alumno. Sin esta tabla no existía forma de

@@ -325,3 +325,23 @@ export interface RbacCatalogs {
   modules: RbacModule[];
   privileges: RbacPrivilege[];
 }
+
+export interface ChatMessage {
+  id: string;
+  lessonId: string | null;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+}
+
+/** Una fila en la lista de conversaciones con AIRumbo (estilo WhatsApp):
+ *  el hilo general, o uno por cada lección sobre la que se ha preguntado. */
+export interface ChatConversationSummary {
+  /** conversationId real — identifica la conversación, no la lección. */
+  id: string;
+  lessonId: string | null;
+  title: string;
+  courseTitle: string | null;
+  lastMessage: string;
+  lastMessageAt: string;
+}

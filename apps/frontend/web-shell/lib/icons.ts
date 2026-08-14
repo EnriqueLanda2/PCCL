@@ -53,6 +53,14 @@ export const APP_ICONS = {
   file:        'solar:file-text-bold-duotone',
   task:        'solar:pen-2-bold-duotone',
   exam:        'solar:diploma-bold-duotone',
+
+  /* Chatbot Rumbo */
+  chat:        'solar:chat-round-dots-bold-duotone',
+  send:        'solar:plain-2-bold',
+  newChat:     'solar:add-square-bold',
+  robot:       'solar:magic-stick-3-bold-duotone',
+  expand:      'solar:full-screen-square-linear',
+  pin:         'solar:pin-bold',
 } as const;
 
 export type AppIconName = keyof typeof APP_ICONS;

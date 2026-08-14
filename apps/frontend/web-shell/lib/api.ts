@@ -9,6 +9,8 @@ import type {
   AccessProfile,
   AuditLog,
   Calification,
+  ChatConversationSummary,
+  ChatMessage,
   Certificate,
   CertificateEligibility,
   CertificateVerification,
@@ -107,6 +109,29 @@ export const api = {
   createNote:  (lessonId: string, content: string) => post<Note>(`/lessons/${lessonId}/notes`, { content }),
   updateNote:  (id: string, content: string) => patch<Note>(`/notes/${id}`, { content }),
   deleteNote:  (id: string) => del(`/notes/${id}`),
+
+  /* ── AIRumbo (chatbot IA) ─────────────────────────────────── */
+  chatHistory: (conversationId: string) =>
+    get<ChatMessage[]>(`/chat/history?conversationId=${encodeURIComponent(conversationId)}`),
+  /* Timeout largo: un LLM local puede tardar más de los 15s por default,
+     sobre todo si Ollama descargó el modelo de memoria por inactividad.
+     Sin conversationId = crea una conversación nueva; el backend regresa
+     la que generó. */
+  sendChatMessage: (message: string, conversationId?: string, lessonId?: string) =>
+    post<{ reply: string; conversationId: string }>(
+      '/chat',
+      { message, conversationId, lessonId },
+      { timeout: 120_000 },
+    ),
+  /* Borra la conversación completa (todos sus mensajes) — al no quedar
+     mensajes, deja de aparecer en chatConversations(). */
+  clearChatHistory: (conversationId: string) =>
+    del(`/chat/history?conversationId=${encodeURIComponent(conversationId)}`),
+  chatConversations: () => get<ChatConversationSummary[]>('/chat/conversations'),
+  /* Borra ese mensaje y todo lo posterior del hilo — usado al editar un
+     mensaje ya enviado, para que la respuesta se regenere de verdad en vez
+     de apilarse como un mensaje nuevo. */
+  deleteChatMessagesFrom: (messageId: string) => del(`/chat/messages/${messageId}`),
 
   progress:      () => get<Progress[]>('/progress'),
 

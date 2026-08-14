@@ -32,12 +32,14 @@ const icons: Record<string, React.ReactNode> = {
   chevronRight:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   menu:          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18"><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round"/></svg>,
   close:         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="16" height="16"><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round"/></svg>,
+  aiRumbo:       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M12 3a4 4 0 0 0-4 4v1a5 5 0 0 0-3 4.58V17a2 2 0 0 0 2 2h1l2 3 2-3h4l2 3 2-3h1a2 2 0 0 0 2-2v-4.42A5 5 0 0 0 16 8V7a4 4 0 0 0-4-4Z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9.5" cy="12.5" r="0.75" fill="currentColor" stroke="none"/><circle cx="14.5" cy="12.5" r="0.75" fill="currentColor" stroke="none"/></svg>,
 };
 
 type MenuItem = { key: string; path: string; label: string; icon: string };
 
 const menuCatalog: MenuItem[] = [
   { key: 'dashboard',     path: appRoutes.dashboard,     label: 'Resumen',             icon: 'home'       },
+  { key: 'aiRumbo',       path: appRoutes.aiRumbo,       label: 'AIRumbo',             icon: 'aiRumbo'    },
   { key: 'courses',       path: appRoutes.courses,       label: 'Mis cursos',          icon: 'courses'    },
   { key: 'catalog',       path: appRoutes.catalog,       label: 'Catálogo',            icon: 'catalog'    },
   { key: 'liveClasses',   path: appRoutes.liveClasses,   label: 'Clases en vivo',      icon: 'live'       },
@@ -53,14 +55,17 @@ const menuCatalog: MenuItem[] = [
   { key: 'rbac',          path: appRoutes.rbac,          label: 'RBAC',                icon: 'rbac'       },
 ];
 
-const learningGroup = new Set(['dashboard', 'courses', 'catalog', 'liveClasses', 'earnings', 'lessons', 'progress']);
+const learningGroup = new Set(['dashboard', 'aiRumbo', 'courses', 'catalog', 'liveClasses', 'earnings', 'lessons', 'progress']);
 const identityGroup = new Set<string>();
 const certificationGroup = new Set(['certificates']);
 const extraGroup = new Set(['inscriptions', 'reports', 'users', 'rbac']);
 /* Visibles para cualquier usuario autenticado — no están atados a un privilegio
    RBAC. El catálogo entra aquí porque inscribirse no requiere permisos de
    gestión: es la vía por la que un alumno consigue sus cursos. */
-const ALWAYS_VISIBLE_KEYS = ['catalog', 'earnings'];
+/* 'aiRumbo' entra aquí también: es una vista nueva de puro frontend que el
+   backend de RBAC no conoce, así que nunca vendría en su menú — sin esto
+   quedaría oculta para todos aunque el módulo exista. */
+const ALWAYS_VISIBLE_KEYS = ['catalog', 'earnings', 'aiRumbo'];
 
 /* Vistas de gestión docente: listan datos de OTROS alumnos, así que se
    restringen por rol y no por privilegio. Un alumno conserva
@@ -204,7 +209,31 @@ export function Sidebar() {
       }
     };
 
+    const hydrateMissingUserName = async () => {
+      try {
+        const raw = sessionStorage.getItem('pccl_user');
+        const cached = raw ? JSON.parse(raw) as {
+          id?: string; fullName?: string; email?: string; avatarUrl?: string | null;
+        } : null;
+
+        if (cached?.fullName?.trim()) return;
+
+        const me = await api.me();
+        const nextUser = {
+          id: cached?.id ?? me.id,
+          email: cached?.email ?? me.email,
+          fullName: me.fullName ?? cached?.email ?? me.email ?? 'Usuario',
+          avatarUrl: cached?.avatarUrl ?? me.avatarUrl ?? null,
+        };
+        sessionStorage.setItem('pccl_user', JSON.stringify(nextUser));
+        syncUser();
+      } catch {
+        // si /me falla, conserva el cache actual
+      }
+    };
+
     queueMicrotask(syncUser);
+    queueMicrotask(() => { void hydrateMissingUserName(); });
     window.addEventListener('pccl_user_updated', syncUser);
     return () => window.removeEventListener('pccl_user_updated', syncUser);
   }, []);
