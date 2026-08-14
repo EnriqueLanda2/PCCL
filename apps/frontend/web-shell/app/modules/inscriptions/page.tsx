@@ -11,10 +11,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import MenuItem from '@mui/material/MenuItem';
-import { api } from '@/lib/api';
-import type { Inscription } from '@/lib/types';
+import { api, getErrorMessage } from '@/lib/api';
+import type { Course, Inscription, User } from '@/lib/types';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
+import { Modal } from '@/app/components/ui/Modal';
 import { AppButton, AppInput, AppSelect } from '@/app/components/ui/AppControls';
 import { DEFAULT_PAGE_SIZE, Pagination } from '@/app/components/ui/Pagination';
 import { StatCard } from '@/app/components/shared/StatCard';
@@ -106,20 +107,55 @@ export default function InscriptionsPage() {
   const [page,         setPage]         = useState(1);
   const [selected,     setSelected]     = useState<StudentEnrollments | null>(null);
 
+  const [users,    setUsers]    = useState<User[]>([]);
+  const [courses,  setCourses]  = useState<Course[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ userId: '', courseId: '' });
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
   useEffect(() => {
     let alive = true;
-    Promise.all([api.inscriptions(), api.access()])
-      .then(([list, access]) => {
+    Promise.all([api.inscriptions(), api.access(), api.users(), api.courses()])
+      .then(([list, access, userList, courseList]) => {
         if (!alive) return;
         setInscriptions(list);
         setPermissions(access.permissions);
+        setUsers(userList);
+        setCourses(courseList);
       })
-      .catch(() => { if (alive) { setInscriptions([]); setPermissions([]); } })
+      .catch(() => { if (alive) { setInscriptions([]); setPermissions([]); setUsers([]); setCourses([]); } })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
 
   const canCreate = useMemo(() => permissions.includes('inscriptions:create'), [permissions]);
+
+  const closeCreateModal = () => {
+    if (creating) return;
+    setCreateOpen(false);
+    setCreateForm({ userId: '', courseId: '' });
+    setCreateError(null);
+  };
+
+  const handleCreateInscription = async () => {
+    if (!createForm.userId || !createForm.courseId) {
+      setCreateError('Selecciona un alumno y un curso.');
+      return;
+    }
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await api.createInscription(createForm.userId, createForm.courseId);
+      const list = await api.inscriptions();
+      setInscriptions(list);
+      closeCreateModal();
+    } catch (err) {
+      setCreateError(getErrorMessage(err));
+    } finally {
+      setCreating(false);
+    }
+  };
 
   /* ── Stats ── */
   const total      = inscriptions.length;
@@ -168,7 +204,7 @@ export default function InscriptionsPage() {
       <PageHeader
         title={<>Inscripciones de alumnos</>}
         subtitle={loading ? 'Cargando…' : `${total} inscripci${total !== 1 ? 'ones' : 'ón'} registrada${total !== 1 ? 's' : ''}`}
-        action={canCreate ? <Button variant="primary" size="md">+ Nueva inscripción</Button> : undefined}
+        action={canCreate ? <Button variant="primary" size="md" onClick={() => setCreateOpen(true)}>+ Nueva inscripción</Button> : undefined}
       />
 
       {/* ── Stats ── */}
@@ -290,6 +326,59 @@ export default function InscriptionsPage() {
       {selected && (
         <StudentSummaryDetailPanel student={toCardSummary(selected)} entriesLabel="Sus inscripciones" onClose={() => setSelected(null)} />
       )}
+
+      <Modal
+        open={createOpen}
+        onClose={closeCreateModal}
+        title="Nueva inscripción"
+        description="Inscribe a un alumno en un curso."
+      >
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          <AppSelect
+            value={createForm.userId}
+            onChange={(e) => setCreateForm((current) => ({ ...current, userId: e.target.value as string }))}
+            displayEmpty
+            renderValue={(value) => {
+              const user = users.find((u) => u.id === value);
+              return user ? user.fullName : 'Selecciona un alumno';
+            }}
+          >
+            {users.map((user) => (
+              <MenuItem key={user.id} value={user.id}>
+                {user.fullName} ({user.email})
+              </MenuItem>
+            ))}
+          </AppSelect>
+          <AppSelect
+            value={createForm.courseId}
+            onChange={(e) => setCreateForm((current) => ({ ...current, courseId: e.target.value as string }))}
+            displayEmpty
+            renderValue={(value) => {
+              const course = courses.find((c) => c.id === value);
+              return course ? course.title : 'Selecciona un curso';
+            }}
+          >
+            {courses.map((course) => (
+              <MenuItem key={course.id} value={course.id}>
+                {course.title}
+              </MenuItem>
+            ))}
+          </AppSelect>
+          {createError && (
+            <p style={{ borderRadius: '0.75rem', background: '#FFF1ED', padding: '0.625rem 0.875rem', fontSize: '0.8125rem', color: '#BF2600' }}>
+              {createError}
+            </p>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.625rem', marginTop: '0.5rem' }}>
+            <Button variant="ghost" type="button" onClick={closeCreateModal} disabled={creating}>
+              Cancelar
+            </Button>
+            <Button variant="primary" type="button" onClick={() => { void handleCreateInscription(); }} loading={creating}>
+              Crear inscripción
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
