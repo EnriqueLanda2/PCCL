@@ -12,7 +12,7 @@ import { Icon } from '@iconify/react';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import { api } from '@/lib/api';
-import type { CertificateEligibility, Course, CourseReview, Evaluation, Lesson, LiveSession } from '@/lib/types';
+import type { CertificateEligibility, CertificateRequest, Course, CourseReview, Evaluation, Lesson, LiveSession } from '@/lib/types';
 import { Badge, statusToBadgeVariant } from '@/app/components/ui/Badge';
 import { Modal } from '@/app/components/ui/Modal';
 import { AppInput } from '@/app/components/ui/AppControls';
@@ -21,10 +21,12 @@ import { CreateLessonModal } from '@/app/components/shared/CreateLessonModal';
 import { LiveClassRoom } from '@/app/components/shared/LiveClassRoom';
 import { useLessonFileViewer } from '@/app/components/shared/LessonFileViewer';
 import { PendingTasks } from '@/app/components/shared/PendingTasks';
-import { CourseComments } from '@/app/components/shared/CourseComments';
+import { KahootEvaluationCard } from '@/app/components/shared/KahootEvaluationCard';
+import { CoursePathView } from '@/app/components/shared/CoursePathView';
 import { ProgressBar } from '@/app/components/ui/ProgressBar';
 import { useUser } from '@/hooks/useUser';
 import { APP_ICONS } from '@/lib/icons';
+import { downloadFile } from '@/lib/downloadFile';
 
 const LIVE_STATUS_LABEL: Record<string, string> = {
   scheduled: 'Programada', live: 'En vivo', ended: 'Finalizada', canceled: 'Cancelada',
@@ -81,28 +83,39 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
      que se cargan aparte y se fusionan como una pestaña más ── */
   const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
   const [activeLiveSession, setActiveLiveSession] = useState<LiveSession | null>(null);
+  const [pathViewOpen, setPathViewOpen] = useState(false);
 	  const [progress, setProgress] = useState(0);
 	  const [inscriptionId, setInscriptionId] = useState<string | null>(null);
 	  const [certificateEligibility, setCertificateEligibility] = useState<CertificateEligibility | null>(null);
+	  const [certificateRequest, setCertificateRequest] = useState<CertificateRequest | null>(null);
 	  const [certificateBusy, setCertificateBusy] = useState(false);
+	  const [certificateDownloading, setCertificateDownloading] = useState(false);
 	  const [reviews, setReviews] = useState<CourseReview[]>([]);
 	  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
 	  const [reviewRating, setReviewRating] = useState(5);
 	  const [reviewComment, setReviewComment] = useState('');
 	  const [reviewBusy, setReviewBusy] = useState(false);
-  const [favorite, setFavorite] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      return localStorage.getItem(`pccl_course_favorite_${course.id}`) === '1';
-    } catch {
-      return false;
-    }
-  });
+  /* Antes era solo localStorage (no viajaba entre dispositivos ni lo veía un
+     admin). Ahora vive en `course_favorites`, enlazando userId + courseId —
+     se pide junto con el resto de los datos de la ficha al montar. */
+  const [favorite, setFavorite] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  /* Lecciones ya completadas. Se derivan de las tareas pendientes, que es el
+     endpoint que cruza lesson_completions con el alumno de la sesión; la
+     lección en sí no trae ese dato porque es el mismo objeto para todos. */
+  const [completedLessonIds, setCompletedLessonIds] = useState<ReadonlySet<string>>(new Set());
+  /** Igual que completedLessonIds pero para exámenes — de la misma
+      respuesta de pendingTasks, filtrando por kind === 'evaluation'. */
+  const [completedEvaluationIds, setCompletedEvaluationIds] = useState<ReadonlySet<string>>(new Set());
   const { user } = useUser();
-  const displayName = user?.email?.split('@')[0] ?? 'Invitado';
+  const displayName = user?.fullName ?? user?.email?.split('@')[0] ?? 'Invitado';
 	  const instructorName = course.instructorName ?? course.createdBy ?? 'Profesor del curso';
-	  const completedLessons = lessons.length ? Math.round((progress / 100) * lessons.length) : 0;
+	  /* Antes se derivaba de `progress` (round((progress/100) * lessons.length)),
+	     pero ese % mezcla lecciones Y exámenes — solo da el conteo real de
+	     lecciones cuando ambas proporciones coinciden por casualidad. Usar el
+	     Set de completadas evita ese redondeo matemáticamente inconsistente. */
+	  const completedLessons = completedLessonIds.size;
 	  const averageRating = reviews.length
 	    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
 	    : course.rating;
@@ -112,6 +125,22 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
     api.liveSessions()
       .then((all) => setLiveSessions(all.filter((s) => s.courseId === course.id)))
       .catch(() => {});
+  };
+
+  /* Completar una lección o aprobar un examen cambia el % real en el backend
+     (recalculateCourseProgress), pero acá solo se actualizaba el Set local de
+     completados — el número de progreso se quedaba con el valor cargado al
+     abrir la ficha. Se llama tras cada avance dentro de CoursePathView para
+     que "X de N completados · Y%" no se desincronice.
+     También refresca la elegibilidad de certificado por el mismo motivo: si
+     no, la tarjeta "Certificado" se queda mostrando "0/6 lecciones" aunque el
+     curso ya esté al 100%. */
+  const refreshProgress = () => {
+    api.inscriptions().then((items) => {
+      const current = items.find((item) => item.course?.id === course.id);
+      setProgress(current?.progressPercentage ?? 0);
+    }).catch(() => {});
+    api.courseCertificateEligibility(course.id).then(setCertificateEligibility).catch(() => {});
   };
 
   useEffect(() => {
@@ -124,9 +153,24 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
 	      const current = items.find((item) => item.course?.id === course.id);
 	      setProgress(current?.progressPercentage ?? 0);
 	      setInscriptionId(current?.id ?? null);
+	      if (current?.id) {
+	        api.myCertificateRequest(current.id).then((req) => { if (alive) setCertificateRequest(req); }).catch(() => {});
+	      }
+	    }).catch(() => {});
+	    api.pendingTasks(course.id).then((result) => {
+	      if (!alive) return;
+	      setCompletedLessonIds(
+	        new Set(result.tasks.filter((task) => task.kind === 'lesson' && task.done).map((task) => task.id)),
+	      );
+	      setCompletedEvaluationIds(
+	        new Set(result.tasks.filter((task) => task.kind === 'evaluation' && task.done).map((task) => task.id)),
+	      );
 	    }).catch(() => {});
 	    api.courseCertificateEligibility(course.id).then((eligibility) => {
 	      if (alive) setCertificateEligibility(eligibility);
+	    }).catch(() => {});
+	    api.myFavoriteCourseIds().then((ids) => {
+	      if (alive) setFavorite(ids.includes(course.id));
 	    }).catch(() => {});
 	    api.courseReviews(course.id).then((items) => {
 	      if (!alive) return;
@@ -145,12 +189,22 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course.id]);
 
-  const handleFavorite = () => {
+  const handleFavorite = async () => {
+    if (favoriteBusy) return;
     const next = !favorite;
+    /* Optimista: se ve al toque, y si el pedido falla se revierte —
+       coherente con cómo se maneja el resto de las acciones de esta ficha. */
     setFavorite(next);
+    setFavoriteBusy(true);
     try {
-      localStorage.setItem(`pccl_course_favorite_${course.id}`, next ? '1' : '0');
-    } catch {}
+      await api.setCourseFavorite(course.id, next);
+    } catch {
+      setFavorite(!next);
+      setFeedback('No se pudo guardar el curso. Intenta de nuevo.');
+      window.setTimeout(() => setFeedback(null), 2400);
+    } finally {
+      setFavoriteBusy(false);
+    }
   };
 
 	  const handleShare = async () => {
@@ -165,17 +219,35 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
     window.setTimeout(() => setFeedback(null), 2400);
 	  };
 
-	  const handleGenerateCertificate = async () => {
+	  /** Se aprueba en el momento: llegar hasta el backend ya implica que
+	      `certificateEligibility.eligible` es true (todas las lecciones y
+	      exámenes al día), así que no hace falta que un admin lo revise. */
+	  const handleRequestCertificate = async () => {
 	    if (!inscriptionId) return;
 	    setCertificateBusy(true);
 	    try {
-	      await api.generateCertificate(inscriptionId);
-	      setFeedback('Certificado emitido. Ya aparece en tu sección de certificados.');
+	      const request = await api.requestCertificate(inscriptionId);
+	      setCertificateRequest(request);
+	      setFeedback('¡Certificado emitido! Ya podés descargarlo.');
 	    } catch {
 	      setFeedback(certificateEligibility?.reason ?? 'Aún no cumples los requisitos para obtener el certificado.');
 	    } finally {
 	      setCertificateBusy(false);
 	      window.setTimeout(() => setFeedback(null), 2800);
+	    }
+	  };
+
+	  const handleDownloadCertificate = async () => {
+	    if (!certificateRequest?.certificateId || certificateDownloading) return;
+	    setCertificateDownloading(true);
+	    try {
+	      const { url } = await api.downloadCertificate(certificateRequest.certificateId);
+	      await downloadFile(url, `${course.title}.pdf`);
+	    } catch {
+	      setFeedback('No se pudo descargar el certificado. Intenta de nuevo.');
+	      window.setTimeout(() => setFeedback(null), 2800);
+	    } finally {
+	      setCertificateDownloading(false);
 	    }
 	  };
 
@@ -209,7 +281,10 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
   };
 
   const tabs = useMemo(() => {
-    const present = Array.from(new Set(lessons.map((l) => l.contentType)));
+    /* 'live' se arma aparte a partir de `liveSessions` (más abajo) — si
+       alguna lección vieja quedó con ese contentType, no debe generar una
+       segunda pestaña con la misma key. */
+    const present = Array.from(new Set(lessons.map((l) => l.contentType))).filter((type) => type !== 'live');
     const lessonTabs = present.map((type) => ({
       type,
       ...contentTypeMeta(type),
@@ -232,6 +307,36 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
     () => [...liveSessions].sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()),
     [liveSessions],
   );
+
+  /* Layout única: mientras el camino está abierto, la ficha del curso (hero,
+     descripción, pestañas, reseñas...) ni se monta — no solo queda tapada
+     visualmente. Antes seguía renderizada por detrás de CoursePathView,
+     duplicando trabajo y a veces filtrándose por encima si el overlay no
+     alcanzaba a cubrir todo. */
+  if (pathViewOpen) {
+    return (
+      <CoursePathView
+        course={course}
+        lessons={lessons}
+        completedIds={completedLessonIds}
+        evaluations={evaluations}
+        completedEvaluationIds={completedEvaluationIds}
+        onLessonCompleted={(lessonId) => { setCompletedLessonIds((prev) => new Set(prev).add(lessonId)); refreshProgress(); }}
+        onEvaluationCompleted={(evaluationId) => { setCompletedEvaluationIds((prev) => new Set(prev).add(evaluationId)); refreshProgress(); }}
+        liveSessions={liveSessions}
+        progress={progress}
+        displayName={displayName}
+        onClose={() => setPathViewOpen(false)}
+        certificateIncluded={Boolean(course.certificateIncluded)}
+        certificateEligibility={certificateEligibility}
+        certificateRequest={certificateRequest}
+        certificateBusy={certificateBusy}
+        onRequestCertificate={() => void handleRequestCertificate()}
+        certificateDownloading={certificateDownloading}
+        onDownloadCertificate={() => void handleDownloadCertificate()}
+      />
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -330,7 +435,7 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
 	            <ul className="flex flex-col gap-2 text-[0.9063rem] text-[var(--ink-soft)]">
 	              <li>· No se requiere experiencia previa para comenzar.</li>
 	              <li>· Reserva tiempo para completar las actividades del curso.</li>
-	              <li>· Para certificado: completa todas las lecciones y aprueba los exámenes tipo Kahoot por tema.</li>
+	              <li>· Para certificado: completa todas las lecciones y aprueba los exámenes  por tema.</li>
 	            </ul>
 	          </section>
 
@@ -445,58 +550,6 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
 	              )}
 	            </div>
 		          </section>
-
-	          <section className="rounded-[1.5rem] border border-[var(--neutral-100)] bg-white p-5">
-	            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-	              <div>
-	                <h2 className="text-[1.15rem] font-extrabold text-[var(--ink)]">Reseñas del curso</h2>
-	                <p className="text-[0.875rem] text-[var(--ink-muted)]">
-	                  {ratingLabel(averageRating, reviewCount)} · datos reales de alumnos inscritos.
-	                </p>
-	              </div>
-	              <div className="flex gap-1 text-[var(--yellow-600)]">
-	                {[1, 2, 3, 4, 5].map((star) => (
-	                  <button
-	                    key={star}
-	                    type="button"
-	                    onClick={() => setReviewRating(star)}
-	                    className="text-[1.2rem] leading-none"
-	                    aria-label={`${star} estrella${star === 1 ? '' : 's'}`}
-	                  >
-	                    {star <= reviewRating ? '★' : '☆'}
-	                  </button>
-	                ))}
-	              </div>
-	            </div>
-	            <div className="flex flex-col gap-3">
-	              <AppInput
-	                multiline
-	                minRows={3}
-	                value={reviewComment}
-	                onChange={(event) => setReviewComment(event.target.value)}
-	                placeholder="Escribe qué te pareció el curso…"
-	              />
-	              <Button
-	                type="button"
-	                variant="contained"
-	                disabled={reviewBusy}
-	                onClick={() => void handleSubmitReview()}
-	                sx={{ alignSelf: 'flex-end', borderRadius: '999px', bgcolor: 'var(--green-600)', fontFamily: 'var(--font-sans)', fontWeight: 800, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
-	              >
-	                {reviewBusy ? 'Guardando…' : 'Guardar reseña'}
-	              </Button>
-	            </div>
-	            {reviews.length > 0 && (
-	              <div className="mt-5 flex flex-col gap-3">
-	                {reviews.slice(0, 4).map((review) => (
-	                  <article key={review.id} className="rounded-2xl border border-[var(--neutral-100)] bg-[#F8FBF5] p-4">
-	                    <div className="mb-1 text-[var(--yellow-600)]">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</div>
-	                    <p className="text-[0.875rem] text-[var(--ink-soft)]">{review.comment || 'Sin comentario escrito.'}</p>
-	                  </article>
-	                ))}
-	              </div>
-	            )}
-	          </section>
 		        </main>
 
         <aside className="flex flex-col gap-6 lg:border-l lg:border-[var(--neutral-100)] lg:pl-8">
@@ -506,7 +559,7 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
             <Button
               type="button"
               variant="contained"
-              onClick={() => document.getElementById('course-content-list')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => setPathViewOpen(true)}
               fullWidth
               sx={{ borderRadius: '1rem', bgcolor: 'var(--green-600)', py: 1.45, fontFamily: 'var(--font-sans)', fontWeight: 900, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
             >
@@ -528,24 +581,48 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
 	            <div className="rounded-[1.5rem] border border-[var(--neutral-100)] bg-white p-5">
 	              <h3 className="mb-2 text-[1rem] font-extrabold text-[var(--ink)]">Certificado</h3>
 	              <p className="mb-4 text-[0.875rem] leading-6 text-[var(--ink-soft)]">
-	                {certificateEligibility?.eligible
-	                  ? 'Cumples los requisitos: curso completo y exámenes aprobados.'
-	                  : certificateEligibility?.reason ?? 'Completa el curso y aprueba los exámenes por tema para desbloquearlo.'}
+	                {certificateRequest?.status === 'approved'
+	                  ? 'Tu certificado ya fue aprobado y emitido — lo encontrás en Certificaciones.'
+	                  : certificateRequest?.status === 'pending'
+	                    ? 'Solicitud enviada — un admin o el instructor la tiene que aprobar.'
+	                    : certificateEligibility?.eligible
+	                      ? 'Cumples los requisitos: curso completo y exámenes aprobados.'
+	                      : certificateEligibility?.reason ?? 'Completa el curso y aprueba los exámenes por tema para desbloquearlo.'}
 	              </p>
 	              <div className="mb-4 grid grid-cols-2 gap-2 text-[0.7813rem] font-semibold text-[var(--ink-soft)]">
 	                <span>{certificateEligibility?.lessonsCompleted ?? 0}/{certificateEligibility?.lessonsTotal ?? lessons.length} lecciones</span>
 	                <span>{certificateEligibility?.evaluationsPassed ?? 0}/{certificateEligibility?.evaluationsTotal ?? 0} exámenes</span>
 	              </div>
+	              {certificateRequest?.status === 'approved' && (
+	                <Button
+	                  type="button"
+	                  variant="contained"
+	                  disabled={certificateDownloading}
+	                  onClick={() => void handleDownloadCertificate()}
+	                  fullWidth
+	                  sx={{ borderRadius: '1rem', mb: 1.25, bgcolor: 'var(--green-600)', py: 1.2, fontFamily: 'var(--font-sans)', fontWeight: 900, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
+	                >
+	                  {certificateDownloading ? 'Descargando…' : 'Descargar certificado'}
+	                </Button>
+	              )}
+	              {certificateRequest?.status !== 'approved' && (
 	              <Button
 	                type="button"
 	                variant="contained"
-	                disabled={!certificateEligibility?.eligible || certificateBusy}
-	                onClick={() => void handleGenerateCertificate()}
+	                disabled={!certificateEligibility?.eligible || certificateBusy || certificateRequest?.status === 'pending'}
+	                onClick={() => void handleRequestCertificate()}
 	                fullWidth
 	                sx={{ borderRadius: '1rem', bgcolor: 'var(--green-600)', py: 1.2, fontFamily: 'var(--font-sans)', fontWeight: 900, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
 	              >
-	                {certificateBusy ? 'Emitiendo…' : 'Obtener certificado'}
+	                {certificateBusy
+	                  ? 'Enviando…'
+	                  : certificateRequest?.status === 'pending'
+	                    ? 'Solicitud pendiente…'
+	                    : certificateRequest?.status === 'rejected'
+	                      ? 'Volver a solicitar certificado'
+	                      : 'Solicitar certificado'}
 	              </Button>
+	              )}
 	            </div>
 	          )}
 
@@ -564,14 +641,63 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <Button variant="outlined" onClick={() => void handleShare()} sx={softButtonSx}><Icon icon={APP_ICONS.upload} width={16} height={16} /> Compartir</Button>
-            <Button variant="outlined" onClick={handleFavorite} sx={softButtonSx}><Icon icon={APP_ICONS.star} width={16} height={16} /> {favorite ? 'Guardado' : 'Guardar'}</Button>
+            <Button variant="outlined" disabled={favoriteBusy} onClick={() => void handleFavorite()} sx={softButtonSx}><Icon icon={APP_ICONS.star} width={16} height={16} /> {favorite ? 'Guardado' : 'Guardar'}</Button>
           </div>
           {feedback && <p className="rounded-2xl bg-[var(--green-50)] px-4 py-3 text-[0.8125rem] font-semibold text-[var(--green-700)]">{feedback}</p>}
         </aside>
       </div>
 
-      {/* ── Comentarios de la clase ── */}
-      <CourseComments courseId={course.id} className="border-t border-[var(--neutral-100)] pt-6" />
+      <section className="rounded-[1.5rem] border border-[var(--neutral-100)] bg-white p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-[1.15rem] font-extrabold text-[var(--ink)]">Reseñas del curso</h2>
+            <p className="text-[0.875rem] text-[var(--ink-muted)]">
+              {ratingLabel(averageRating, reviewCount)} · datos reales de alumnos inscritos.
+            </p>
+          </div>
+          <div className="flex gap-1 text-[var(--yellow-600)]">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setReviewRating(star)}
+                className="text-[1.2rem] leading-none"
+                aria-label={`${star} estrella${star === 1 ? '' : 's'}`}
+              >
+                {star <= reviewRating ? '★' : '☆'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-3">
+          <AppInput
+            multiline
+            minRows={3}
+            value={reviewComment}
+            onChange={(event) => setReviewComment(event.target.value)}
+            placeholder="Escribe qué te pareció el curso…"
+          />
+          <Button
+            type="button"
+            variant="contained"
+            disabled={reviewBusy}
+            onClick={() => void handleSubmitReview()}
+            sx={{ alignSelf: 'flex-end', borderRadius: '999px', bgcolor: 'var(--green-600)', fontFamily: 'var(--font-sans)', fontWeight: 800, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
+          >
+            {reviewBusy ? 'Guardando…' : 'Guardar reseña'}
+          </Button>
+        </div>
+        {reviews.length > 0 && (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {reviews.slice(0, 4).map((review) => (
+              <article key={review.id} className="rounded-2xl border border-[var(--neutral-100)] bg-[#F8FBF5] p-4">
+                <div className="mb-1 text-[var(--yellow-600)]">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</div>
+                <p className="text-[0.875rem] text-[var(--ink-soft)]">{review.comment || 'Sin comentario escrito.'}</p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <CreateLessonModal
         open={modalOpen}
@@ -592,9 +718,8 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
       >
         {activeLiveSession && (
           <LiveClassRoom
-            roomName={`Rumbo-${activeLiveSession.id}`}
+            sessionId={activeLiveSession.id}
             userName={displayName}
-            isHost={canManage}
             onLeave={() => setActiveLiveSession(null)}
           />
         )}
@@ -602,114 +727,6 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
     </div>
 	  );
 	}
-
-function KahootEvaluationCard({ evaluation, onSubmitted }: Readonly<{ evaluation: Evaluation; onSubmitted: () => void }>) {
-  const questions = evaluation.questions ?? [];
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
-  const [score, setScore] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
-  const question = questions[current];
-
-  const choose = (index: number) => {
-    setAnswers((prev) => {
-      const next = [...prev];
-      next[current] = index;
-      return next;
-    });
-  };
-
-  const submit = async () => {
-    setBusy(true);
-    try {
-      await api.submitEvaluationAttempt(evaluation.id, answers);
-      const correct = questions.reduce((sum, item, index) => sum + (answers[index] === item.correctIndex ? 1 : 0), 0);
-      setScore(questions.length ? Math.round((correct / questions.length) * 100) : 0);
-      onSubmitted();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <article className="rounded-[1.5rem] border border-[var(--neutral-100)] bg-white p-5 shadow-[0_8px_24px_rgba(23,50,77,0.05)]">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="mb-1 text-[0.75rem] font-extrabold uppercase tracking-[0.18em] text-[var(--green-600)]">Examen tipo Kahoot</p>
-          <h3 className="text-[1rem] font-extrabold text-[var(--ink)]">{evaluation.title}</h3>
-          <p className="text-[0.8125rem] text-[var(--ink-muted)]">
-            {evaluation.topic ?? 'Tema del curso'} · mínimo {evaluation.passingScore}% para aprobar
-          </p>
-        </div>
-        <Badge variant={score !== null && score >= evaluation.passingScore ? 'green' : 'blue'}>
-          {score === null ? `${questions.length} preguntas` : `${score}%`}
-        </Badge>
-      </div>
-
-      {questions.length === 0 || !question ? (
-        <p className="text-[0.875rem] text-[var(--ink-muted)]">Este examen aún no tiene preguntas configuradas.</p>
-      ) : score !== null ? (
-        <div className="rounded-2xl bg-[var(--green-50)] p-4 text-[0.9063rem] font-semibold text-[var(--green-700)]">
-          Resultado: {score}% · {score >= evaluation.passingScore ? 'Aprobado' : 'Necesitas intentarlo de nuevo'}
-        </div>
-      ) : (
-        <div>
-          <div className="mb-3 flex items-center justify-between text-[0.8125rem] font-semibold text-[var(--ink-muted)]">
-            <span>Pregunta {current + 1} de {questions.length}</span>
-            <span>{question.timeLimitSeconds ?? 30}s</span>
-          </div>
-          <h4 className="mb-4 text-[1rem] font-extrabold text-[var(--ink)]">{question.prompt}</h4>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {question.options.map((option, index) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => choose(index)}
-                className="rounded-2xl border px-4 py-3 text-left text-[0.9063rem] font-semibold transition"
-                style={{
-                  borderColor: answers[current] === index ? 'var(--green-500)' : 'var(--neutral-100)',
-                  background: answers[current] === index ? 'var(--green-50)' : '#fff',
-                  color: 'var(--ink)',
-                }}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-          <div className="mt-5 flex justify-between gap-3">
-            <Button
-              variant="outlined"
-              disabled={current === 0}
-              onClick={() => setCurrent((value) => Math.max(0, value - 1))}
-              sx={softButtonSx}
-            >
-              Anterior
-            </Button>
-            {current < questions.length - 1 ? (
-              <Button
-                variant="contained"
-                disabled={answers[current] === undefined}
-                onClick={() => setCurrent((value) => Math.min(questions.length - 1, value + 1))}
-                sx={{ borderRadius: '999px', bgcolor: 'var(--green-600)', fontFamily: 'var(--font-sans)', fontWeight: 800, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
-              >
-                Siguiente
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                disabled={busy || answers.length < questions.length || answers.some((answer) => answer === undefined)}
-                onClick={() => void submit()}
-                sx={{ borderRadius: '999px', bgcolor: 'var(--green-600)', fontFamily: 'var(--font-sans)', fontWeight: 800, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
-              >
-                {busy ? 'Enviando…' : 'Enviar examen'}
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
-    </article>
-  );
-}
 
 function LessonRow({ lesson, index, canManage, onEdit }: Readonly<{
   lesson: Lesson;
@@ -722,7 +739,13 @@ function LessonRow({ lesson, index, canManage, onEdit }: Readonly<{
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+    /* `scroll-mt` reserva el espacio de la cabecera fija: sin él, al saltar
+       desde la ruta de temas la fila queda tapada por la barra superior. */
+    <div
+      id={`lesson-${lesson.id}`}
+      className="scroll-mt-24"
+      style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}
+    >
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}

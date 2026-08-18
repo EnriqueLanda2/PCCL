@@ -22,4 +22,9 @@ export class EvaluationsController {
 
   @MessagePattern(LEARNING_PATTERNS.EVALUATION_SUBMIT_ATTEMPT)
   submit(@Payload() dto: SubmitAttemptDto) { return this.service.submitAttempt(dto); }
+
+  @MessagePattern(LEARNING_PATTERNS.EVALUATION_FIND_MY_ATTEMPT)
+  findMyAttempt(@Payload() p: { evaluationId: string; studentId: string }) {
+    return this.service.findMyAttempt(p.evaluationId, p.studentId);
+  }
 }

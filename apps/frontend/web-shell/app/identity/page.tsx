@@ -16,6 +16,7 @@ import { PageHeader } from '@/app/components/shared/PageHeader';
 import { getLabel, courseLevel, coursePublishStatus, inscriptionStatus } from '@/types/status';
 import { APP_ICONS } from '@/lib/icons';
 import { appRoutes } from '@/lib/routes';
+import { saveUserName } from '@/lib/sessionUser';
 
 function tally<T>(items: T[], keyFn: (item: T) => string | undefined): PieChartDatum[] {
   const counts = new Map<string, number>();
@@ -79,6 +80,9 @@ export default function IdentityProfilePage() {
             email: meR.value.email,
             avatarUrl: meR.value.avatarUrl ?? null,
           });
+          /* `me()` es la fuente autoritativa del nombre: refresca lo que dejó
+             cifrado el login por si cambió del lado del backend. */
+          saveUserName(meR.value.fullName ?? meR.value.email);
         }
         if (accessR.status  === 'fulfilled') setAccess(accessR.value);
         if (coursesR.status === 'fulfilled') setCourses(coursesR.value);

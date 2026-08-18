@@ -15,6 +15,7 @@ import {
   StripeWebhookPayload,
   PAYMENT_PATTERNS,
   CourseAccessType,
+  OrderSource,
 } from '@app/contracts';
 import { LEARNING_CLIENT, PAYMENT_CLIENT } from '@app/messaging';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -30,9 +31,25 @@ interface CourseSnapshot {
 }
 
 const ACCESS_TYPES = new Set<CourseAccessType>(['monthly', 'permanent']);
+const ORDER_SOURCES = new Set<OrderSource>(['organic', 'instructor_referral', 'site_promo']);
 
 function normalizeAccessType(value: string | undefined): CourseAccessType {
   return ACCESS_TYPES.has(value as CourseAccessType) ? (value as CourseAccessType) : 'permanent';
+}
+
+function normalizeSource(value: string | undefined): OrderSource {
+  return ORDER_SOURCES.has(value as OrderSource) ? (value as OrderSource) : 'organic';
+}
+
+/** Plataforma se queda 25% en ventas orgánicas, 50% cuando vienen de un
+    enlace de referido del instructor o de una promoción del sitio. El resto
+    es para el instructor. Redondeo a centavos con el mismo criterio en
+    ambos montos para que siempre sumen exactamente `amount`. */
+function splitCommission(amount: number, source: OrderSource): { platformAmount: number; instructorAmount: number } {
+  const platformShare = source === 'organic' ? 0.25 : 0.5;
+  const platformAmount = Math.round(amount * platformShare * 100) / 100;
+  const instructorAmount = Math.round((amount - platformAmount) * 100) / 100;
+  return { platformAmount, instructorAmount };
 }
 
 function addOneMonth(date: Date) {
@@ -71,6 +88,8 @@ export class OrdersService {
     }
     const accessType = normalizeAccessType(payload.accessType);
     const amount = accessType === 'monthly' ? Math.round((baseAmount / 3) * 100) / 100 : baseAmount;
+    const source = normalizeSource(payload.source);
+    const { platformAmount, instructorAmount } = splitCommission(amount, source);
     const now = new Date();
     const accessEndsAt = accessType === 'monthly' ? addOneMonth(now) : null;
 
@@ -107,18 +126,39 @@ export class OrdersService {
       where: { userId: payload.userId, courseId: payload.courseId, accessType, status: 'pending' },
     });
     if (pending?.providerPaymentIntentId) {
-      const intent = await this.stripe.client.paymentIntents.retrieve(
-        pending.providerPaymentIntentId,
-      );
-      return {
-        orderId: pending.id,
-        clientSecret: intent.client_secret,
-        amount: pending.amount,
-        currency: pending.currency,
-        status: pending.status,
-        accessType: pending.accessType,
-        accessEndsAt: pending.accessEndsAt?.toISOString() ?? null,
-      };
+      /* Reconciliar ANTES de reutilizar: si el intent de esta orden ya había
+         quedado `succeeded` en Stripe (webhook caído, o un intento previo que
+         el usuario no vio confirmarse), reutilizar su `client_secret` monta
+         el Payment Element sobre un PaymentIntent muerto y Stripe rechaza
+         cualquier confirm con un error genérico de procesamiento. */
+      const reconciled = await this.reconcilePendingOrder(pending.id, pending.providerPaymentIntentId);
+      if (reconciled.status === 'paid') {
+        return {
+          orderId: reconciled.id,
+          clientSecret: null,
+          amount: reconciled.amount,
+          currency: reconciled.currency,
+          status: 'paid',
+          accessType: reconciled.accessType,
+          accessEndsAt: reconciled.accessEndsAt?.toISOString() ?? null,
+        };
+      }
+      if (reconciled.status === 'pending' && reconciled.providerPaymentIntentId) {
+        const intent = await this.stripe.client.paymentIntents.retrieve(
+          reconciled.providerPaymentIntentId,
+        );
+        return {
+          orderId: reconciled.id,
+          clientSecret: intent.client_secret,
+          amount: reconciled.amount,
+          currency: reconciled.currency,
+          status: reconciled.status,
+          accessType: reconciled.accessType,
+          accessEndsAt: reconciled.accessEndsAt?.toISOString() ?? null,
+        };
+      }
+      /* status === 'failed': se descarta el intent muerto y se cae al bloque
+         de abajo, que crea uno nuevo. */
     }
 
     const intent = await this.stripe.client.paymentIntents.create({
@@ -139,6 +179,9 @@ export class OrdersService {
         endDate: accessEndsAt,
         provider: 'stripe',
         providerPaymentIntentId: intent.id,
+        source,
+        platformAmount,
+        instructorAmount,
         createdBy: payload.userId,
         updatedBy: payload.userId,
       },
@@ -160,7 +203,33 @@ export class OrdersService {
     if (!order || order.userId !== userId) {
       throw new NotFoundException('Orden no encontrada');
     }
-    return order;
+    if (order.status !== 'pending' || !order.providerPaymentIntentId) return order;
+    return this.reconcilePendingOrder(order.id, order.providerPaymentIntentId);
+  }
+
+  /**
+   * Red de seguridad para cuando el webhook de Stripe no llega (dev sin
+   * `stripe listen`, caída puntual del webhook en prod, o un reintento de
+   * confirm sobre un PaymentIntent que en Stripe ya había quedado
+   * `succeeded`). El polling del frontend llama a `findOne` mientras la
+   * orden sigue `pending`; acá se consulta el estado real en Stripe y se
+   * reconcilia con la misma lógica idempotente del webhook.
+   */
+  private async reconcilePendingOrder(orderId: string, paymentIntentId: string) {
+    if (this.stripe.isConfigured) {
+      try {
+        const intent = await this.stripe.client.paymentIntents.retrieve(paymentIntentId);
+        if (intent.status === 'succeeded') {
+          await this.onPaymentIntentSucceeded(intent);
+        } else if (intent.status === 'canceled' || intent.last_payment_error) {
+          await this.onPaymentIntentFailed(intent);
+        }
+      } catch {
+        // Stripe no disponible en este instante: se devuelve el estado
+        // actual y el próximo poll del frontend lo vuelve a intentar.
+      }
+    }
+    return this.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
   }
 
   async earningsByCourse(payload: EarningsByCoursePayload) {
@@ -169,7 +238,7 @@ export class OrdersService {
       by: ['courseId', 'currency'],
       where: { status: 'paid' },
       _count: { _all: true },
-      _sum: { amount: true },
+      _sum: { amount: true, platformAmount: true, instructorAmount: true },
       orderBy: { _sum: { amount: 'desc' } },
     });
 
@@ -190,6 +259,8 @@ export class OrdersService {
           instructorEmail: course.createdBy ?? null,
           salesCount: order._count._all,
           grossRevenue: Number(order._sum.amount ?? 0),
+          platformRevenue: Number(order._sum.platformAmount ?? 0),
+          instructorRevenue: Number(order._sum.instructorAmount ?? 0),
           currency: order.currency,
         };
       }),

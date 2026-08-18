@@ -15,8 +15,8 @@ export class NotesController {
   }
 
   @MessagePattern(LEARNING_PATTERNS.NOTE_FIND_BY_LESSON)
-  findByLesson(@Payload() p: { lessonId: string }) {
-    return this.service.findByLesson(p.lessonId);
+  findByLesson(@Payload() p: { lessonId: string; actor: string }) {
+    return this.service.findByLesson(p.lessonId, p.actor);
   }
 
   @MessagePattern(LEARNING_PATTERNS.NOTE_UPDATE)

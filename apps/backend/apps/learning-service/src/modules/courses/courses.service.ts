@@ -55,7 +55,7 @@ export class CoursesService {
   async findAll(scope?: DataScope) {
     const courses = await this.prisma.course.findMany({
       where: courseWhereFor(scope),
-      include: { lessons: true },
+      include: { lessons: true, phases: { orderBy: { order: 'asc' } } },
       orderBy: { createdAt: 'desc' },
     });
     return this.withCourseStats(courses);
@@ -134,7 +134,10 @@ export class CoursesService {
   }
 
   async findOne(id: string) {
-    const course = await this.prisma.course.findUnique({ where: { id }, include: { lessons: true } });
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      include: { lessons: true, phases: { orderBy: { order: 'asc' } } },
+    });
     if (!course) throw new NotFoundException('Curso no encontrado');
     const [decorated] = await this.withCourseStats([course]);
     return decorated;
@@ -230,7 +233,9 @@ export class CoursesService {
       .filter((evaluation) => (bestScore.get(evaluation.id) ?? 0) < evaluation.passingScore)
       .map((evaluation) => evaluation.title);
     const lessonsDone = lessonCount === 0 || completedLessons >= lessonCount;
-    const evaluationsDone = evaluations.length > 0 && evaluationsPassed >= evaluations.length;
+    /* Mismo criterio que `lessonsDone`: un curso sin exámenes no debe quedar
+       eternamente inelegible por "faltan exámenes" que no existen. */
+    const evaluationsDone = evaluations.length === 0 || evaluationsPassed >= evaluations.length;
     const eligible = lessonsDone && evaluationsDone;
 
     return {
@@ -245,7 +250,67 @@ export class CoursesService {
       missingEvaluations,
       reason: eligible
         ? null
-        : 'Completa todas las lecciones y aprueba todos los exámenes tipo Kahoot del curso.',
+        : 'Completa todas las lecciones y aprueba todos los exámenes  del curso.',
     };
+  }
+
+  /** "Guardado" en la ficha de curso — un bookmark, no una inscripción.
+      Upsert/delete igual que `setLessonCompleted`: el toggle vive del lado
+      del cliente, acá solo se persiste el estado final. */
+  async setFavorite(userId: string, courseId: string, saved: boolean, actor: string) {
+    const course = await this.prisma.course.findUnique({ where: { id: courseId }, select: { id: true } });
+    if (!course) throw new NotFoundException('Curso no encontrado');
+
+    if (saved) {
+      await this.prisma.courseFavorite.upsert({
+        where: { userId_courseId: { userId, courseId } },
+        update: { updatedBy: actor },
+        create: { userId, courseId, createdBy: actor, updatedBy: actor },
+      });
+    } else {
+      await this.prisma.courseFavorite.deleteMany({ where: { userId, courseId } });
+    }
+
+    return { courseId, saved };
+  }
+
+  /** IDs de los cursos que el usuario tiene guardados — para pintar el
+      estado del botón "Guardar" en cada ficha sin pedir curso por curso. */
+  async findMyFavoriteCourseIds(userId: string): Promise<string[]> {
+    const favorites = await this.prisma.courseFavorite.findMany({
+      where: { userId },
+      select: { courseId: true },
+    });
+    return favorites.map((f) => f.courseId);
+  }
+
+  /** Alta de una fase del curso — el `order` se asigna solo, correlativo a
+      las fases que ya existen (nunca lo elige quien la crea). */
+  async createPhase(courseId: string, title: string, actor: string) {
+    const course = await this.prisma.course.findUnique({ where: { id: courseId }, select: { id: true } });
+    if (!course) throw new NotFoundException('Curso no encontrado');
+    const trimmed = title.trim();
+    /* Idempotente por título: un doble clic en "Crear" (o reintentar con el
+       mismo nombre) reusa la fase existente en vez de crear un duplicado con
+       el mismo "Fase N: título" en el desplegable. */
+    const existing = await this.prisma.phase.findFirst({
+      where: { courseId, title: { equals: trimmed, mode: 'insensitive' } },
+    });
+    if (existing) return existing;
+    const count = await this.prisma.phase.count({ where: { courseId } });
+    return this.prisma.phase.create({
+      data: { courseId, title: trimmed, order: count + 1, createdBy: actor, updatedBy: actor },
+    });
+  }
+
+  findPhases(courseId: string) {
+    return this.prisma.phase.findMany({ where: { courseId }, orderBy: { order: 'asc' } });
+  }
+
+  async removePhase(id: string) {
+    const phase = await this.prisma.phase.findUnique({ where: { id } });
+    if (!phase) throw new NotFoundException('Fase no encontrada');
+    await this.prisma.phase.delete({ where: { id } });
+    return { id, deleted: true };
   }
 }

@@ -13,19 +13,24 @@ import type {
   ChatMessage,
   Certificate,
   CertificateEligibility,
+  CertificateRequest,
   CertificateVerification,
   Course,
   CourseEarnings,
   CourseComment,
   CourseReview,
   Evaluation,
+  EvaluationAttempt,
   Inscription,
   Lesson,
   LiveSession,
   Note,
+  NotificationItem,
   OrderCreateResponse,
   OrderRecord,
+  OrderSource,
   PendingTasksResult,
+  Phase,
   Progress,
   PublicCourse,
   PublicCourseDetail,
@@ -63,6 +68,7 @@ export const api = {
 
   /* ── Learning ─────────────────────────────────────────── */
   courses:       () => get<Course[]>('/courses'),
+  course:        (id: string) => get<Course>(`/courses/${id}`),
 
   /** Catálogo de cursos publicados, sin acotar al usuario — para inscribirse. */
   publicCourses: () => get<PublicCourse[]>('/courses/public'),
@@ -75,6 +81,12 @@ export const api = {
   courseCertificateEligibility: (courseId: string) =>
     get<CertificateEligibility>(`/courses/${courseId}/certificate-eligibility`),
 
+  /** IDs de los cursos que el usuario tiene guardados — para pintar el botón
+      "Guardar" de cada ficha sin pedir curso por curso. */
+  myFavoriteCourseIds: () => get<string[]>('/courses/favorites'),
+  setCourseFavorite: (courseId: string, saved: boolean) =>
+    post<{ courseId: string; saved: boolean }>(`/courses/${courseId}/favorite`, { saved }),
+
   /* ── Uploads (Cloudinary) ─────────────────────────────── */
   uploadImage:    (file: File) => uploadFile<{ url: string }>('/uploads/image', file),
   uploadDocument: (file: File) => uploadFile<{ url: string }>('/uploads/document', file),
@@ -84,26 +96,50 @@ export const api = {
   createLesson:  (dto: Partial<Lesson> & { courseId: string }) => post<Lesson>('/lessons', dto),
   updateLesson:  (id: string, dto: Partial<Lesson>) => patch<Lesson>(`/lessons/${id}`, dto),
 
+  /** Fases/módulos del curso — el camino secuencial al que se atan lecciones
+      y clases en vivo. */
+  coursePhases: (courseId: string) => get<Phase[]>(`/courses/${courseId}/phases`),
+  createPhase:  (courseId: string, title: string) => post<Phase>(`/courses/${courseId}/phases`, { title }),
+  deletePhase:  (id: string) => del(`/phases/${id}`),
+
   liveSessions:      () => get<LiveSession[]>('/live-sessions'),
   nextLiveSession:   () => get<LiveSession | null>('/live-sessions/public'),
   createLiveSession: (dto: Partial<LiveSession>) => post<LiveSession>('/live-sessions', dto),
   updateLiveSession: (id: string, dto: Partial<LiveSession>) => patch<LiveSession>(`/live-sessions/${id}`, dto),
   deleteLiveSession: (id: string) => del(`/live-sessions/${id}`),
+  /** El backend decide quién es moderador (quien creó la clase) y lo firma
+      en el JWT — el cliente nunca elige. */
+  liveSessionJitsiToken: (id: string) =>
+    get<{ token: string | null; domain: string; room: string; isModerator: boolean }>(`/live-sessions/${id}/jitsi-token`),
+  /** Recién acá la clase pasa a "en vivo" de verdad — llamarlo solo cuando
+      el anfitrión efectivamente se conecta a la sala. */
+  startLiveSession: (id: string) => post<LiveSession>(`/live-sessions/${id}/start`, {}),
+  registerPushToken: (token: string) => post<{ ok: boolean }>('/push-tokens', { token }),
+
+  notifications: () => get<NotificationItem[]>('/notifications'),
+  unreadNotificationCount: () => get<number>('/notifications/unread-count'),
+  markNotificationRead: (id: string) => post<{ ok: boolean }>(`/notifications/${id}/read`, {}),
+  markAllNotificationsRead: () => post<{ ok: boolean }>('/notifications/read-all', {}),
 
   inscriptions:  () => get<Inscription[]>('/inscriptions'),
   createInscription: (userId: string, courseId: string) =>
     post<Inscription>('/inscriptions', { userId, courseId }),
 
   /* ── Payments ─────────────────────────────────────────── */
-  createOrder: (courseId: string, accessType: 'monthly' | 'permanent' = 'permanent') =>
-    post<OrderCreateResponse>('/payments/orders', { courseId, accessType }),
+  createOrder: (courseId: string, accessType: 'monthly' | 'permanent' = 'permanent', source?: OrderSource) =>
+    post<OrderCreateResponse>('/payments/orders', { courseId, accessType, source }),
   getOrder:    (orderId: string) => get<OrderRecord>(`/payments/orders/${orderId}`),
   courseEarnings: () => get<CourseEarnings[]>('/payments/earnings/courses'),
 
   califications: () => get<Calification[]>('/califications'),
   evaluations: (courseId: string) => get<Evaluation[]>(`/evaluations?courseId=${encodeURIComponent(courseId)}`),
+  createEvaluation: (dto: Partial<Evaluation> & { courseId: string }) => post<Evaluation>('/evaluations', dto),
   submitEvaluationAttempt: (evaluationId: string, answers: unknown[]) =>
     post(`/evaluations/${evaluationId}/attempts`, { answers }),
+  /** Para el repaso de solo lectura: la última vez que el usuario respondió
+      este examen, o null si nunca lo hizo. */
+  myEvaluationAttempt: (evaluationId: string) =>
+    get<EvaluationAttempt | null>(`/evaluations/${evaluationId}/my-attempt`),
 
   notes:       (lessonId: string) => get<Note[]>(`/lessons/${lessonId}/notes`),
   createNote:  (lessonId: string, content: string) => post<Note>(`/lessons/${lessonId}/notes`, { content }),
@@ -163,8 +199,18 @@ export const api = {
   certificates:  () => get<Certificate[]>('/certificates'),
   certificateEligibility: (inscriptionId: string) =>
     get<CertificateEligibility>(`/certificates/eligibility/${inscriptionId}`),
-  generateCertificate: (inscriptionId: string) =>
-    post<Certificate>(`/certificates/${inscriptionId}`, {}),
+  /** El alumno ya no emite directo — pide, y un admin/instructor lo aprueba. */
+  requestCertificate: (inscriptionId: string) =>
+    post<CertificateRequest>(`/certificates/requests/${inscriptionId}`, {}),
+  myCertificateRequest: (inscriptionId: string) =>
+    get<CertificateRequest | null>(`/certificates/requests/mine/${inscriptionId}`),
+  pendingCertificateRequests: () => get<CertificateRequest[]>('/certificates/requests/pending'),
+  /** Devuelve la URL del PDF en Cloudinary, no el archivo — quien llama lo
+      baja aparte (ver `lib/downloadFile.ts`) para forzar la descarga real en
+      vez de que el navegador lo abra inline. */
+  downloadCertificate: (certificateId: string) => get<{ url: string }>(`/certificates/${certificateId}/download`),
+  approveCertificateRequest: (id: string) => post<Certificate>(`/certificates/requests/${id}/approve`, {}),
+  rejectCertificateRequest: (id: string) => post<CertificateRequest>(`/certificates/requests/${id}/reject`, {}),
 
   /** Verificación pública por folio — no requiere sesión (destino del QR). */
   verifyCertificate: (folio: string) =>
@@ -174,6 +220,7 @@ export const api = {
 
   /* ── Users ────────────────────────────────────────────── */
   users:      () => get<User[]>('/users'),
+  user:       (id: string) => get<User>(`/users/${id}`),
   createUser: (dto: { fullName: string; email: string; password: string; roleIds: string[] }) =>
     post<User>('/users', dto),
   updateUser: (id: string, dto: { fullName?: string; email?: string; active?: boolean; roleIds?: string[] }) =>

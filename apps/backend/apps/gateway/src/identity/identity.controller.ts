@@ -163,6 +163,44 @@ export class IdentityController {
     );
   }
 
+  /** Registra el token FCM del dispositivo/navegador actual del usuario, para
+      poder mandarle notificaciones push (ej. cancelación de una clase en vivo). */
+  @Post('push-tokens')
+  registerPushToken(@Body() dto: { token: string }, @CurrentUser() user: RequestUser) {
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.PUSH_TOKEN_REGISTER, { userId: user.sub, token: dto.token }),
+    );
+  }
+
+  /* ─── Campanita de notificaciones ─── */
+  @Get('notifications')
+  getNotifications(@CurrentUser() user: RequestUser) {
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.NOTIFICATION_FIND_ALL, { userId: user.sub }),
+    );
+  }
+
+  @Get('notifications/unread-count')
+  getUnreadNotificationCount(@CurrentUser() user: RequestUser) {
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.NOTIFICATION_UNREAD_COUNT, { userId: user.sub }),
+    );
+  }
+
+  @Post('notifications/:id/read')
+  markNotificationRead(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.NOTIFICATION_MARK_READ, { userId: user.sub, id }),
+    );
+  }
+
+  @Post('notifications/read-all')
+  markAllNotificationsRead(@CurrentUser() user: RequestUser) {
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.NOTIFICATION_MARK_ALL_READ, { userId: user.sub }),
+    );
+  }
+
   private setCookie(res: Response, token: string) {
     const cookieDomain = this.config.get<string>('COOKIE_DOMAIN', 'localhost');
     res.cookie('pccl_session', token, {

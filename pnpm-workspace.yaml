@@ -7,11 +7,13 @@ packages:
   # propia ubicación (Node resuelve por la ruta del archivo, no por el cwd).
   - 'tools/avatar-pipeline'
 allowBuilds:
+  '@firebase/util': true
   '@prisma/client': true
   '@prisma/engines': true
   bcrypt: true
   esbuild: true
   prisma: true
+  protobufjs: true
   sharp: true
   unrs-resolver: true
 minimumReleaseAgeExclude:

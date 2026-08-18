@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '../../prisma/generated';
 import { CreateEvaluationDto } from './dtos/create-evaluation.dto';
@@ -15,7 +15,13 @@ interface KahootQuestion {
 export class EvaluationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreateEvaluationDto, actor: string) {
+  async create(dto: CreateEvaluationDto, actor: string) {
+    if (dto.phaseId) {
+      const phase = await this.prisma.phase.findUnique({ where: { id: dto.phaseId }, select: { courseId: true } });
+      if (!phase || phase.courseId !== dto.courseId) {
+        throw new BadRequestException('La fase seleccionada no pertenece a este curso');
+      }
+    }
     return this.prisma.evaluation.create({
       data: {
         title: dto.title,
@@ -25,21 +31,25 @@ export class EvaluationsService {
         passingScore: dto.passingScore ?? 70,
         questions: (dto.questions ?? []) as unknown as Prisma.InputJsonValue,
         courseId: dto.courseId,
+        phaseId: dto.phaseId,
+        phasePosition: dto.phasePosition ?? 'end',
         createdBy: actor,
         updatedBy: actor,
       },
+      include: { phase: true },
     });
   }
 
   findByCourse(courseId: string) {
     return this.prisma.evaluation.findMany({
       where: { courseId },
+      include: { phase: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string) {
-    const ev = await this.prisma.evaluation.findUnique({ where: { id } });
+    const ev = await this.prisma.evaluation.findUnique({ where: { id }, include: { phase: true } });
     if (!ev) throw new NotFoundException('Evaluacion no encontrada');
     return ev;
   }
@@ -76,6 +86,16 @@ export class EvaluationsService {
     });
     await this.recalculateCourseProgress(dto.studentId, evaluation.courseId);
     return attempt;
+  }
+
+  /** Último intento del usuario en esta evaluación — para el repaso de solo
+      lectura: qué contestó, qué era lo correcto, sin permitirle volver a
+      responder. */
+  async findMyAttempt(evaluationId: string, studentId: string) {
+    return this.prisma.evaluationAttempt.findFirst({
+      where: { evaluationId, studentId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   private async recalculateCourseProgress(userId: string, courseId: string) {

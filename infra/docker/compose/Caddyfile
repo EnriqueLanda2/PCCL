@@ -1,0 +1,11 @@
+# Un solo dominio, todo por HTTPS automático (Let's Encrypt) — sin esto,
+# habría que exponer el frontend y el gateway en dos hosts/puertos distintos
+# y lidiar con CORS entre ellos. Con esto, el navegador ve todo como un único
+# origen: / sirve el frontend y /api/* el gateway (con el prefijo recortado
+# antes de reenviarlo, porque las rutas del gateway no lo esperan).
+{$DOMAIN} {
+	handle_path /api/* {
+		reverse_proxy gateway:3010
+	}
+	reverse_proxy frontend:3002
+}

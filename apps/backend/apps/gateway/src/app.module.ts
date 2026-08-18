@@ -6,6 +6,7 @@ import { MessagingModule } from '@app/messaging';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { IdentityController } from './identity/identity.controller';
 import { LearningController } from './learning/learning.controller';
+import { JaasService } from './learning/jaas.service';
 import { CertificationController } from './certification/certification.controller';
 import { PaymentController } from './payment/payment.controller';
 import { StatsController } from './stats/stats.controller';
@@ -30,7 +31,7 @@ import { UploadsModule } from './uploads/uploads.module';
     MessagingModule.forGateway(),
     UploadsModule,
   ],
-  providers: [JwtStrategy],
+  providers: [JwtStrategy, JaasService],
   controllers: [
     IdentityController,
     LearningController,

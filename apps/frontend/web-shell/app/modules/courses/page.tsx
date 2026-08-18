@@ -579,7 +579,7 @@ export default function CoursesPage() {
 
           {loading ? (
             /* Skeleton grid */
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-5">
               {Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filtered.length === 0 ? (
@@ -604,7 +604,7 @@ export default function CoursesPage() {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-5">
               {paginatedCourses.map((course, i) => {
                 const enrolled = enrolledCourseIds.has(course.id);
                 const canManageThisCourse = isAdmin || (isInstructor && course.createdBy === myEmail);

@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import { Logo } from './Logo';
 import { StudentAvatar } from '@/app/components/shared/StudentAvatar';
 import { api } from '@/lib/api';
 import { appRoutes } from '@/lib/routes';
 import { cn } from '@/lib/cn';
+import { clearUserName } from '@/lib/sessionUser';
 
 /* ── Icons ── */
 const icons: Record<string, React.ReactNode> = {
@@ -47,6 +47,9 @@ const menuCatalog: MenuItem[] = [
   { key: 'lessons',       path: appRoutes.lessons,       label: 'Temas y lecciones',   icon: 'catalog'    },
   { key: 'progress',      path: appRoutes.progress,      label: 'Estudiantes',         icon: 'progress'   },
   { key: 'certificates',  path: appRoutes.certificates,  label: 'Certificaciones',     icon: 'certificates' },
+  /* Perfil propio. No es una vista de gestión: cualquier usuario autenticado
+     debe poder llegar a su cuenta, y es además desde donde se cambia el avatar. */
+  { key: 'profile',       path: appRoutes.identity,      label: 'Perfil e impartición', icon: 'profile'   },
   { key: 'inscriptions',  path: appRoutes.inscriptions,  label: 'Inscripciones',       icon: 'inscriptions' },
   /* 'califications' se retiró del menú: la vista no aporta nada al usuario.
      La ruta y el módulo RBAC siguen existiendo, solo dejó de navegarse. */
@@ -56,16 +59,28 @@ const menuCatalog: MenuItem[] = [
 ];
 
 const learningGroup = new Set(['dashboard', 'aiRumbo', 'courses', 'catalog', 'liveClasses', 'earnings', 'lessons', 'progress']);
-const identityGroup = new Set<string>();
+/* El perfil propio vive aquí. Sin esta clave el grupo "Cuenta" no se renderiza
+   y la entrada queda huérfana en `menuCatalog`: existe en el catálogo pero
+   ningún grupo la pinta, así que no hay manera de llegar al perfil desde el
+   menú. */
+const identityGroup = new Set(['profile']);
 const certificationGroup = new Set(['certificates']);
 const extraGroup = new Set(['inscriptions', 'reports', 'users', 'rbac']);
+
+/* Red de seguridad: una entrada de `menuCatalog` que no esté en ningún grupo no
+   se renderiza en ninguna parte y desaparece del menú sin dar ningún error —
+   justo lo que pasó con "Perfil e impartición". Las claves sin grupo caen en
+   "Más" en lugar de volverse invisibles. */
+const GROUPED_KEYS = new Set<string>([
+  ...learningGroup, ...identityGroup, ...certificationGroup, ...extraGroup,
+]);
 /* Visibles para cualquier usuario autenticado — no están atados a un privilegio
    RBAC. El catálogo entra aquí porque inscribirse no requiere permisos de
    gestión: es la vía por la que un alumno consigue sus cursos. */
 /* 'aiRumbo' entra aquí también: es una vista nueva de puro frontend que el
    backend de RBAC no conoce, así que nunca vendría en su menú — sin esto
    quedaría oculta para todos aunque el módulo exista. */
-const ALWAYS_VISIBLE_KEYS = ['catalog', 'earnings', 'aiRumbo'];
+const ALWAYS_VISIBLE_KEYS = ['profile', 'catalog', 'earnings', 'aiRumbo'];
 
 /* Vistas de gestión docente: listan datos de OTROS alumnos, así que se
    restringen por rol y no por privilegio. Un alumno conserva
@@ -310,13 +325,16 @@ export function Sidebar() {
   const learningItems   = menu.filter((m) => learningGroup.has(m.key));
   const identityItems   = menu.filter((m) => identityGroup.has(m.key));
   const certificationItems = menu.filter((m) => certificationGroup.has(m.key));
-  const extraItems      = menu.filter((m) => extraGroup.has(m.key));
+  const extraItems      = menu.filter((m) => extraGroup.has(m.key) || !GROUPED_KEYS.has(m.key));
 
   const handleLogout = async () => {
     setLoggingOut(true);
     await api.logout().catch(() => {});
     sessionStorage.removeItem('pccl_user');
     sessionStorage.removeItem('pccl_access');
+    /* Va aparte porque vive en localStorage: sin esto el siguiente login vería
+       el nombre del usuario anterior hasta que terminara de hidratarse. */
+    clearUserName();
     router.replace(appRoutes.login);
   };
 
@@ -352,6 +370,7 @@ export function Sidebar() {
       )}
 
       <aside
+        data-app-sidebar
         className={cn(
           /* Sin overflow propio a propósito: con overflow-y:auto el navegador
              fuerza overflow-x a auto también (visible no es combinable), y eso

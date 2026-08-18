@@ -1,4 +1,4 @@
-export type LessonContentType = 'text' | 'video' | 'link' | 'file' | 'quiz' | 'practice' | 'reading' | 'live';
+export type LessonContentType = 'text' | 'video' | 'link' | 'file' | 'quiz' | 'practice' | 'reading' | 'live' | 'exam';
 
 export const CONTENT_TYPE_META: Record<LessonContentType, { label: string; icon: string }> = {
   video:    { label: 'Clases en video',     icon: 'solar:play-circle-bold-duotone' },
@@ -9,6 +9,9 @@ export const CONTENT_TYPE_META: Record<LessonContentType, { label: string; icon:
   practice: { label: 'Prácticas',           icon: 'solar:pen-new-square-bold-duotone' },
   quiz:     { label: 'Evaluaciones',        icon: 'solar:check-circle-bold-duotone' },
   live:     { label: 'Clases en vivo',      icon: 'solar:videocamera-record-bold-duotone' },
+  /** No es un tipo de Lesson real — igual que 'live', crea otra entidad
+      (Evaluation) en vez de una lección. */
+  exam:     { label: 'Asignar examen',      icon: 'solar:document-add-bold-duotone' },
 };
 
 export function contentTypeMeta(type: string) {

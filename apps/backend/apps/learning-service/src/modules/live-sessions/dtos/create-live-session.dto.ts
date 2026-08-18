@@ -2,9 +2,10 @@ import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUr
 
 export class CreateLiveSessionDto {
   @IsString() @IsNotEmpty() title!: string;
-  @IsString() @IsNotEmpty() hostName!: string;
+  @IsString() @IsOptional() hostName?: string;
   @IsDateString() scheduledAt!: string;
   @IsInt() @IsPositive() @IsOptional() durationMinutes?: number;
   @IsUrl() @IsOptional() joinUrl?: string;
   @IsUUID() @IsOptional() courseId?: string;
+  @IsUUID() @IsOptional() phaseId?: string;
 }

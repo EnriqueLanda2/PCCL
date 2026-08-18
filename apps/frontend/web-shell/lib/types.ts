@@ -76,6 +76,18 @@ export interface Course {
   isFree?: boolean;
   /** Lecciones anidadas — el endpoint GET /courses las incluye */
   lessons?: Lesson[];
+  /** Fases/módulos del curso, ordenadas — el endpoint GET /courses las incluye */
+  phases?: Phase[];
+}
+
+/** Fase/módulo del curso — agrupa lecciones y clases en vivo en un paso
+ *  secuencial del camino (ej. "Fase 1: Fundamentos"). `order` determina la
+ *  secuencia entre fases de un mismo curso. */
+export interface Phase {
+  id: string;
+  courseId: string;
+  title: string;
+  order: number;
 }
 
 export interface Lesson {
@@ -92,6 +104,10 @@ export interface Lesson {
   locked?: boolean;
   durationMinutes?: number;
   order?: number;
+  createdAt?: string;
+  /** Fase del curso a la que pertenece, si se asignó una */
+  phaseId?: string | null;
+  phase?: Phase | null;
 }
 
 /** Tarea pendiente del alumno: lección por ver o evaluación por responder. */
@@ -110,6 +126,15 @@ export interface PendingTasksResult {
   tasks: PendingTask[];
   total: number;
   done: number;
+}
+
+/** Notificación de la campanita — clase que arrancó, se canceló, etc. */
+export interface NotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt: string;
 }
 
 /** Comentario de un alumno en un curso. */
@@ -149,6 +174,28 @@ export interface CertificateEligibility {
   reason: string | null;
 }
 
+export interface CertificateRequest {
+  id: string;
+  inscriptionId: string;
+  userId: string;
+  courseId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  certificateId?: string | null;
+  createdAt: string;
+}
+
+export interface EvaluationAttempt {
+  id: string;
+  evaluationId: string;
+  studentId: string;
+  /** Índice elegido por pregunta, en el mismo orden que Evaluation.questions. */
+  answers: number[];
+  score: number | null;
+  createdAt: string;
+}
+
 export interface Note {
   id: string;
   lessonId: string;
@@ -181,12 +228,17 @@ export interface OrderRecord {
   accessEndsAt?: string | null;
 }
 
+export type OrderSource = 'organic' | 'instructor_referral' | 'site_promo';
+
 export interface CourseEarnings {
   courseId: string;
   courseTitle: string;
   instructorEmail: string | null;
   salesCount: number;
   grossRevenue: number;
+  /** Comisión de la plataforma (25% ventas orgánicas, 50% por referido o promo). */
+  platformRevenue: number;
+  instructorRevenue: number;
   currency: string;
 }
 
@@ -230,6 +282,12 @@ export interface Evaluation {
     timeLimitSeconds?: number;
   }[] | null;
   courseId: string;
+  createdAt?: string;
+  /** Fase del curso a la que pertenece este examen, si se asignó una */
+  phaseId?: string | null;
+  phase?: Phase | null;
+  /** Dónde cae dentro de la fase: antes de sus lecciones o al final, como examen de cierre */
+  phasePosition?: 'start' | 'end';
 }
 
 export interface Certificate {
@@ -271,6 +329,7 @@ export interface LiveSession {
   id: string;
   title: string;
   hostName: string;
+  createdBy?: string | null;
   scheduledAt: string;
   durationMinutes: number;
   status: 'scheduled' | 'live' | 'ended' | 'canceled';
@@ -279,6 +338,9 @@ export interface LiveSession {
   /** Curso asociado, si aplica */
   courseId?: string | null;
   course?: { title: string } | null;
+  /** Fase del curso a la que pertenece esta clase — obligatoria cuando hay curso */
+  phaseId?: string | null;
+  phase?: Phase | null;
 }
 
 export interface AuditLog {

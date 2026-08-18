@@ -16,8 +16,11 @@ export interface User {
 
 export interface SessionUser {
   id: string;
+  fullName?: string | null;
   email: string;
+  avatarUrl?: string | null;
   roleIds: string[];
+  roles?: string[];
   permissions: string[];
   scope: string;
 }

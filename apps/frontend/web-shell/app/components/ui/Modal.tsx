@@ -29,7 +29,12 @@ export function Modal({ open, onClose, title, description, children, className }
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-[rgba(17,41,26,0.45)] p-4 backdrop-blur-[2px] animate-fade-in"
+      /* z-[400]: por encima de TODO lo demás que usa posicionamiento fixed —
+         el topbar (z-[300], para que su dropdown de notificaciones no quede
+         atrapado detrás del overlay del camino del curso) y los overlays
+         fixed de CoursePathView (z-[250]/z-[260]). Un modal siempre tiene
+         que ganarle a cualquier otra cosa fixed en pantalla, sin excepción. */
+      className="fixed inset-0 z-[400] flex items-center justify-center bg-[rgba(17,41,26,0.45)] p-4 backdrop-blur-[2px] animate-fade-in"
       onClick={onClose}
       role="presentation"
     >

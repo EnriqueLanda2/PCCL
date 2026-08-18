@@ -23,6 +23,8 @@ model User {
   active          Boolean    @default(true)
   avatarUrl       String?    @map("avatar_url") @db.VarChar(500)
   userRoles       UserRole[]
+  pushTokens      PushToken[]
+  notifications   Notification[]
 
   @@map("users")
 }
@@ -94,6 +96,37 @@ model UserRole {
 
   @@unique([userId, roleId])
   @@map("user_roles")
+}
+
+/** Token FCM de un dispositivo/navegador — un usuario puede tener varios
+    (varias pestañas, celular + laptop). Se usa para mandarle notificaciones
+    push, ej. cuando se cancela una clase en vivo por falta de anfitrión. */
+model PushToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.VarChar(400)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("push_tokens")
+}
+
+/** Notificación en la campanita del header — se crea siempre que se manda un
+    push (clase que arranca, clase cancelada, etc.), tenga o no el usuario un
+    dispositivo con permiso de push. Así la campanita funciona igual aunque
+    el navegador nunca haya dado permiso. */
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  userId    String    @map("user_id") @db.Uuid
+  title     String    @db.VarChar(160)
+  body      String    @db.VarChar(500)
+  readAt    DateTime? @map("read_at") @db.Timestamp(6)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+  @@map("notifications")
 }
 
 model RolePrivilege {

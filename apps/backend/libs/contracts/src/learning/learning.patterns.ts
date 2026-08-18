@@ -11,6 +11,12 @@ export const LEARNING_PATTERNS = {
   COURSE_REVIEW_FIND_BY_COURSE: 'learning.course.review.find_by_course',
   COURSE_REVIEW_UPSERT: 'learning.course.review.upsert',
   COURSE_CERTIFICATE_ELIGIBILITY: 'learning.course.certificate_eligibility',
+  COURSE_FAVORITE_TOGGLE: 'learning.course.favorite.toggle',
+  COURSE_FAVORITE_FIND_MINE: 'learning.course.favorite.find_mine',
+
+  PHASE_CREATE: 'learning.phase.create',
+  PHASE_FIND_BY_COURSE: 'learning.phase.find_by_course',
+  PHASE_DELETE: 'learning.phase.delete',
 
   LESSON_CREATE: 'learning.lesson.create',
   LESSON_FIND_ALL: 'learning.lesson.find_all',
@@ -45,6 +51,7 @@ export const LEARNING_PATTERNS = {
   EVALUATION_FIND_ALL: 'learning.evaluation.find_all',
   EVALUATION_FIND_ONE: 'learning.evaluation.find_one',
   EVALUATION_SUBMIT_ATTEMPT: 'learning.evaluation.submit_attempt',
+  EVALUATION_FIND_MY_ATTEMPT: 'learning.evaluation.find_my_attempt',
 
   COMMENT_FIND_BY_COURSE: 'learning.comment.find_by_course',
   COMMENT_CREATE: 'learning.comment.create',
@@ -62,6 +69,7 @@ export const LEARNING_PATTERNS = {
   LIVE_SESSION_UPDATE: 'learning.live_session.update',
   LIVE_SESSION_DELETE: 'learning.live_session.delete',
   LIVE_SESSION_FIND_NEXT_PUBLIC: 'learning.live_session.find_next_public',
+  LIVE_SESSION_START: 'learning.live_session.start',
 
   CHAT_SEND: 'learning.chat.send',
   CHAT_FIND_HISTORY: 'learning.chat.find_history',

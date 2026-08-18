@@ -172,16 +172,24 @@ function DocumentPreview({ url, title }: Readonly<{ url: string; title: string }
   );
 }
 
-export function useLessonFileViewer(lesson: Lesson): {
+export function useLessonFileViewer(lesson: Lesson, options?: {
+  /** Para vistas dedicadas a UNA sola actividad (ej. el camino/serpiente):
+      no tiene sentido poder "ocultar" el contenido si es lo único que hay
+      en pantalla, así que se fuerza siempre abierto y no se ofrece el botón
+      de ocultar — solo el de descargar, si aplica. */
+  alwaysOpen?: boolean;
+}): {
   controls: React.ReactNode;
   content: React.ReactNode;
   /** Estado de "abierto" — expuesto para armar disparadores propios (p. ej. una miniatura clicable). */
   open: boolean;
   toggle: () => void;
 } {
-  const [open, setOpen] = useState(false);
+  const alwaysOpen = options?.alwaysOpen ?? false;
+  const [openState, setOpenState] = useState(false);
+  const open = alwaysOpen || openState;
   const [downloading, setDownloading] = useState(false);
-  const toggle = () => setOpen((v) => !v);
+  const toggle = () => setOpenState((v) => !v);
 
   const isVideo = lesson.contentType === 'video';
   const isFile = lesson.contentType === 'file';
@@ -219,9 +227,11 @@ export function useLessonFileViewer(lesson: Lesson): {
 
   const controls = (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexShrink: 0 }}>
-      <Button type="button" onClick={toggle} variant="text" disableRipple sx={linkSx}>
-        {toggleLabel}
-      </Button>
+      {!alwaysOpen && (
+        <Button type="button" onClick={toggle} variant="text" disableRipple sx={linkSx}>
+          {toggleLabel}
+        </Button>
+      )}
       {isFile && (
         <Button
           type="button"

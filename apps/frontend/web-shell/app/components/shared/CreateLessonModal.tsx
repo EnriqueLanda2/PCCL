@@ -15,18 +15,19 @@ import Popper from '@mui/material/Popper';
 import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import { api, getErrorMessage } from '@/lib/api';
-import type { Lesson, SessionUser, User } from '@/lib/types';
+import type { Lesson, Phase, SessionUser } from '@/lib/types';
 import { Modal } from '@/app/components/ui/Modal';
 import { Field } from '@/app/components/ui/Input';
 import { WaveSpinner } from '@/app/components/ui/WaveSpinner';
 import { CONTENT_TYPE_META, type LessonContentType } from '@/lib/lessonContentTypes';
+import { fieldSx, softButtonSx } from '@/lib/muiFieldStyles';
 import { APP_ICONS } from '@/lib/icons';
+import { PhaseSelect } from '@/app/components/shared/PhaseSelect';
+import { QuestionsEditor, emptyQuestion, type QuestionDraft } from '@/app/components/shared/QuestionsEditor';
 
-const CONTENT_TYPES: LessonContentType[] = ['video', 'file', 'reading', 'live'];
+const CONTENT_TYPES: LessonContentType[] = ['video', 'file', 'reading', 'live', 'exam'];
 const WEEKDAYS = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const HOUR_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
-const MINUTE_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
 
 interface CreateLessonModalProps {
   open: boolean;
@@ -35,12 +36,6 @@ interface CreateLessonModalProps {
   lesson?: Lesson | null;
   onSaved: (lesson: Lesson) => void;
   onLiveSaved?: () => void;
-}
-
-interface InstructorOption {
-  id: string;
-  fullName: string;
-  email: string;
 }
 
 function dateToLocalValue(date: Date) {
@@ -71,34 +66,49 @@ function formatDateTime(value: string) {
   });
 }
 
-function hasRole(user: User, roleName: string) {
-  return user.userRoles?.some((userRole) => userRole.role?.name === roleName) ?? false;
+/** Campo numérico de hora/minuto que se escribe dígito por dígito (ej. "1"
+    luego "5" → 15) — sin lista fija de opciones. Mientras el campo tiene foco
+    nunca se reformatea desde afuera (eso fue lo que rompía escribir un
+    número de 2 dígitos con el picker viejo: el valor formateado "0X" se
+    volvía a pintar sobre lo que ibas tecleando). Solo al perder el foco se
+    recorta al rango válido y se rellena con cero a la izquierda. */
+function TimeNumberField({
+  value,
+  min = 0,
+  max,
+  onCommit,
+}: Readonly<{ value: string; min?: number; max: number; onCommit: (n: number) => void }>) {
+  const [local, setLocal] = useState(value);
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!focused) setLocal(value);
+  }, [value, focused]);
+
+  const clamp = (raw: string) => Math.min(max, Math.max(min, Number(raw || min)));
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={local}
+      onFocus={() => setFocused(true)}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, '').slice(0, 2);
+        setLocal(digits);
+        if (digits !== '') onCommit(clamp(digits));
+      }}
+      onBlur={() => {
+        setFocused(false);
+        const n = clamp(local);
+        onCommit(n);
+        setLocal(String(n).padStart(2, '0'));
+      }}
+      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+      className="h-10 w-full rounded-xl border border-[#DDE7D7] bg-white px-3 text-center text-[0.9375rem] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--green-300)] focus:border-[var(--green-500)] focus:outline-none"
+    />
+  );
 }
-
-const fieldSx = {
-  '& .MuiOutlinedInput-root': {
-    borderRadius: '1.125rem',
-    bgcolor: '#F8FBF5',
-    fontFamily: 'var(--font-sans)',
-    color: 'var(--ink)',
-    '& fieldset': { borderColor: '#DDE7D7' },
-    '&:hover fieldset': { borderColor: 'var(--green-300)' },
-    '&.Mui-focused fieldset': { borderColor: 'var(--green-500)', boxShadow: '0 0 0 2px var(--green-100)' },
-    '&.Mui-disabled': { bgcolor: '#F1F6EB' },
-  },
-  '& input::placeholder, & textarea::placeholder': { color: '#A2AE9D', opacity: 1 },
-};
-
-const softButtonSx = {
-  borderRadius: '999px',
-  borderColor: 'var(--neutral-200)',
-  bgcolor: 'var(--panel)',
-  color: 'var(--ink-soft)',
-  fontFamily: 'var(--font-sans)',
-  fontWeight: 700,
-  textTransform: 'none',
-  '&:hover': { bgcolor: 'var(--green-50)', borderColor: 'var(--green-300)' },
-};
 
 function DateTimePickerField({
   value,
@@ -172,7 +182,7 @@ function DateTimePickerField({
       <Popper open={open} anchorEl={anchorEl} placement="top-start" sx={{ zIndex: 1400 }}>
         <Paper
           sx={{
-            width: 520,
+            width: 600,
             maxWidth: 'calc(100vw - 32px)',
             borderRadius: '1.375rem',
             border: '1px solid #DDE7D7',
@@ -181,7 +191,7 @@ function DateTimePickerField({
             boxShadow: '0 26px 70px rgba(23,50,77,0.22)',
           }}
         >
-          <div className="grid gap-4 sm:grid-cols-[1fr_190px]">
+          <div className="grid gap-5 sm:grid-cols-[1fr_15rem]">
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <strong className="text-sm text-[var(--ink)]">{MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}</strong>
@@ -198,6 +208,7 @@ function DateTimePickerField({
                 {WEEKDAYS.map((day) => <span key={day} className="text-xs font-semibold text-[var(--ink-soft)]">{day}</span>)}
                 {days.map((day) => {
                   const selectedDay = day.toDateString() === selectedDayKey;
+                  const isToday = day.toDateString() === new Date().toDateString();
                   const sameMonth = day.getMonth() === viewDate.getMonth();
                   return (
                     <Button
@@ -205,10 +216,11 @@ function DateTimePickerField({
                       onClick={() => pickDay(day)}
                       sx={{
                         minWidth: 0,
-                        height: 34,
+                        height: 36,
                         borderRadius: '0.625rem',
                         color: selectedDay ? '#fff' : sameMonth ? 'var(--ink)' : 'var(--ink-muted)',
                         bgcolor: selectedDay ? 'var(--blue-600)' : 'transparent',
+                        border: !selectedDay && isToday ? '1.5px solid var(--blue-300)' : '1.5px solid transparent',
                         fontFamily: 'var(--font-sans)',
                         fontWeight: selectedDay ? 800 : 500,
                         '&:hover': { bgcolor: selectedDay ? 'var(--blue-700)' : 'var(--blue-50)' },
@@ -220,19 +232,52 @@ function DateTimePickerField({
                 })}
               </div>
             </div>
-            <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-3 gap-2">
-                <Select size="small" value={String((selected.getHours() % 12) || 12).padStart(2, '0')} onChange={(e) => setHour(e.target.value)} sx={fieldSx}>
-                  {HOUR_OPTIONS.map((hour) => <MenuItem key={hour} value={hour}>{hour}</MenuItem>)}
-                </Select>
-                <Select size="small" value={String(Math.floor(selected.getMinutes() / 5) * 5).padStart(2, '0')} onChange={(e) => setMinute(e.target.value)} sx={fieldSx}>
-                  {MINUTE_OPTIONS.map((minute) => <MenuItem key={minute} value={minute}>{minute}</MenuItem>)}
-                </Select>
-                <Select size="small" value={selected.getHours() >= 12 ? 'PM' : 'AM'} onChange={(e) => setAmPm(e.target.value as 'AM' | 'PM')} sx={fieldSx}>
-                  <MenuItem value="AM">AM</MenuItem>
-                  <MenuItem value="PM">PM</MenuItem>
-                </Select>
+
+            <div className="flex flex-col gap-4">
+              {/* Resumen legible de lo elegido — confirma de un vistazo antes de tocar "Listo". */}
+              <div className="rounded-2xl border border-[#DDE7D7] bg-white px-3 py-2.5 text-center">
+                <p className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Seleccionado</p>
+                <p className="mt-0.5 text-[0.9375rem] font-bold text-[var(--ink)]">{formatDateTime(value)}</p>
               </div>
+
+              <div>
+                <p className="mb-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Hora</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <TimeNumberField
+                    value={String((selected.getHours() % 12) || 12).padStart(2, '0')}
+                    min={1}
+                    max={12}
+                    onCommit={(n) => setHour(String(n))}
+                  />
+                  <TimeNumberField
+                    value={String(selected.getMinutes()).padStart(2, '0')}
+                    min={0}
+                    max={59}
+                    onCommit={(n) => setMinute(String(n))}
+                  />
+                </div>
+              </div>
+
+              {/* AM/PM como toggle, no un tercer select angosto: dos botones grandes,
+                  más fácil de tocar y no compite por espacio con hora/minuto. */}
+              <div className="flex rounded-full border border-[#DDE7D7] bg-white p-1">
+                {(['AM', 'PM'] as const).map((ampm) => {
+                  const active = (selected.getHours() >= 12 ? 'PM' : 'AM') === ampm;
+                  return (
+                    <button
+                      key={ampm}
+                      type="button"
+                      onClick={() => setAmPm(ampm)}
+                      className={`flex-1 rounded-full py-1.5 text-[0.8125rem] font-bold transition-colors ${
+                        active ? 'bg-[var(--green-600)] text-white' : 'text-[var(--ink-soft)] hover:bg-[var(--green-50)]'
+                      }`}
+                    >
+                      {ampm}
+                    </button>
+                  );
+                })}
+              </div>
+
               <div className="mt-auto flex justify-between gap-2">
                 <Button size="small" sx={{ ...softButtonSx, boxShadow: 'none' }} onClick={() => onChange('')}>Limpiar</Button>
                 <Button size="small" sx={{ ...softButtonSx, boxShadow: 'none' }} onClick={() => { const now = new Date(); onChange(dateToLocalValue(now)); setViewDate(now); }}>Hoy</Button>
@@ -249,6 +294,13 @@ function DateTimePickerField({
 export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, onLiveSaved }: Readonly<CreateLessonModalProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = Boolean(lesson);
+  /* Guardia sincrónica contra doble envío — Enter en cualquier input de
+     texto del formulario (ej. una opción del examen) dispara el submit
+     nativo del <form>, y si eso pasa justo antes de un clic en "Asignar
+     examen", el estado `submitting` (que se actualiza async) todavía no
+     alcanzó a re-renderizar el botón como disabled. Un ref se lee/escribe al
+     toque, sin esperar un re-render, así que sí corta la segunda llamada. */
+  const submittingRef = useRef(false);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -261,7 +313,11 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
   const [liveHostName, setLiveHostName] = useState('');
   const [liveScheduledAt, setLiveScheduledAt] = useState('');
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
-  const [instructors, setInstructors] = useState<InstructorOption[]>([]);
+  const [phases, setPhases] = useState<Phase[]>([]);
+  const [phaseId, setPhaseId] = useState('');
+  const [examPassingScore, setExamPassingScore] = useState('70');
+  const [examPosition, setExamPosition] = useState<'start' | 'end'>('end');
+  const [examQuestions, setExamQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
 
   useEffect(() => {
     if (!open) return;
@@ -277,30 +333,28 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
       setFileUrl(lesson?.fileUrl ?? null);
       setLiveHostName('');
       setLiveScheduledAt('');
+      setPhaseId(lesson?.phaseId ?? '');
+      setExamPassingScore('70');
+      setExamPosition('end');
+      setExamQuestions([emptyQuestion()]);
       setError(null);
       api.me()
         .then((me) => {
           setCurrentUser(me);
-          if (me.roles.includes('instructor')) setLiveHostName(me.fullName ?? me.email);
+          setLiveHostName(me.fullName ?? me.email);
         })
         .catch(() => setCurrentUser(null));
-      api.users()
-        .then((users) => setInstructors(
-          users
-            .filter((user) => user.active && hasRole(user, 'instructor'))
-            .map((user) => ({ id: user.id, fullName: user.fullName, email: user.email })),
-        ))
-        .catch(() => setInstructors([]));
+      api.coursePhases(courseId).then(setPhases).catch(() => setPhases([]));
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [open, lesson]);
+  }, [open, lesson, courseId]);
 
   const busy = uploading || submitting;
   const needsDocument = contentType === 'file';
   const needsVideo = contentType === 'video';
   const needsLive = contentType === 'live';
-  const currentUserIsInstructor = currentUser?.roles.includes('instructor') ?? false;
-  const selectedInstructor = instructors.find((instructor) => instructor.fullName === liveHostName || instructor.email === liveHostName);
+  const needsExam = contentType === 'exam';
+  const currentHostName = liveHostName || currentUser?.email || '';
 
   const handleClose = () => { if (!busy) onClose(); };
 
@@ -322,24 +376,76 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || (!needsLive && !content.trim())) {
-      setError(needsLive ? 'Título es obligatorio.' : 'Título y contenido son obligatorios.');
+    if (submittingRef.current) return;
+    if (!title.trim() || (!needsLive && !needsExam && !content.trim())) {
+      setError(needsLive || needsExam ? 'Título es obligatorio.' : 'Título y contenido son obligatorios.');
       return;
     }
-    if (needsLive && !isEditing && (!liveHostName.trim() || !liveScheduledAt)) {
-      setError('Anfitrión y fecha/hora son obligatorios para una clase en vivo.');
+    if (needsLive && !isEditing && !liveScheduledAt) {
+      setError('Fecha y hora son obligatorias para una clase en vivo.');
       return;
     }
+    if ((needsLive || needsExam) && !isEditing && !phaseId) {
+      setError('Selecciona la fase del curso a la que pertenece esta clase.');
+      return;
+    }
+    if (needsExam && !isEditing) {
+      if (examQuestions.length === 0) {
+        setError('Agrega al menos una pregunta al examen.');
+        return;
+      }
+      for (let i = 0; i < examQuestions.length; i += 1) {
+        const q = examQuestions[i];
+        if (!q.prompt.trim()) {
+          setError(`Falta el texto de la pregunta ${i + 1}.`);
+          return;
+        }
+        const filled = q.options.filter((o) => o.trim());
+        if (filled.length < 2) {
+          setError(`La pregunta ${i + 1} necesita al menos 2 incisos con texto.`);
+          return;
+        }
+        if (!q.options[q.correctIndex]?.trim()) {
+          setError(`Marca cuál inciso es la correcta en la pregunta ${i + 1}.`);
+          return;
+        }
+      }
+    }
+    submittingRef.current = true;
     setSubmitting(true);
     setError(null);
     try {
       if (needsLive && !isEditing) {
         await api.createLiveSession({
           title: title.trim(),
-          hostName: selectedInstructor?.fullName ?? liveHostName.trim(),
           scheduledAt: new Date(liveScheduledAt).toISOString(),
           durationMinutes: durationMinutes ? Number(durationMinutes) : undefined,
           courseId,
+          phaseId,
+        });
+        onLiveSaved?.();
+        onClose();
+        return;
+      }
+
+      if (needsExam && !isEditing) {
+        /* Incisos vacíos (ej. el profesor agregó un 4to inciso y lo dejó en
+           blanco) se descartan acá — no antes, porque hasta este punto el
+           índice de la correcta todavía tiene que corresponder 1 a 1 con lo
+           que se ve en el formulario. */
+        const questions = examQuestions.map((q) => {
+          const correctText = q.options[q.correctIndex]?.trim() ?? '';
+          const options = q.options.map((o) => o.trim()).filter(Boolean);
+          return { prompt: q.prompt.trim(), options, correctIndex: Math.max(0, options.indexOf(correctText)) };
+        });
+        await api.createEvaluation({
+          title: title.trim(),
+          description: content.trim() || undefined,
+          passingScore: examPassingScore ? Number(examPassingScore) : undefined,
+          courseId,
+          phaseId,
+          phasePosition: examPosition,
+          questions,
         });
         onLiveSaved?.();
         onClose();
@@ -349,8 +455,12 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
       const dto = {
         title: title.trim(),
         content: content.trim(),
-        contentType,
+        /* 'live' y 'exam' son pseudo-tipos que ya se manejaron arriba y
+           siempre retornan antes de llegar acá — nunca se guardan como
+           contentType real de una lección. */
+        contentType: contentType as Lesson['contentType'],
         courseId,
+        phaseId: phaseId || undefined,
         durationMinutes: durationMinutes ? Number(durationMinutes) : undefined,
         fileUrl: needsDocument || needsVideo ? fileUrl ?? undefined : undefined,
       };
@@ -363,6 +473,7 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -399,6 +510,64 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
             sx={fieldSx}
           />
         </Field>
+
+        {!(isEditing && (needsLive || needsExam)) && (
+          <PhaseSelect
+            courseId={courseId}
+            phases={phases}
+            value={phaseId}
+            onChange={setPhaseId}
+            onPhasesChange={setPhases}
+            disabled={busy}
+            required={needsLive || needsExam}
+            variant="mui"
+          />
+        )}
+
+        {needsExam && !isEditing && (
+          <>
+            <Field label="Puntaje mínimo aprobatorio (%)">
+              <TextField
+                type="number"
+                value={examPassingScore}
+                onChange={(e) => setExamPassingScore(e.target.value)}
+                disabled={busy}
+                fullWidth
+                size="small"
+                slotProps={{ htmlInput: { min: 1, max: 100 } }}
+                sx={fieldSx}
+              />
+            </Field>
+
+            <Field label="Posición dentro de la fase">
+              <div className="flex rounded-full border border-[#DDE7D7] bg-white p-1">
+                {([
+                  { value: 'start', label: 'Al comienzo' },
+                  { value: 'end', label: 'Al final' },
+                ] as const).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setExamPosition(option.value)}
+                    disabled={busy}
+                    className={`flex-1 rounded-full py-1.5 text-[0.8125rem] font-bold transition-colors ${
+                      examPosition === option.value ? 'bg-[var(--green-600)] text-white' : 'text-[var(--ink-soft)] hover:bg-[var(--green-50)]'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[0.75rem] text-[var(--ink-muted)]">
+                "Al comienzo" lo pone antes de las lecciones de la fase; "al final" lo pone como examen de cierre, después de completarlas todas.
+              </p>
+            </Field>
+
+            <Field label="Preguntas del examen">
+              <QuestionsEditor questions={examQuestions} onChange={setExamQuestions} disabled={busy} />
+            </Field>
+          </>
+        )}
 
         {(needsDocument || needsVideo) && (
           <Field label={needsVideo ? 'Video (opcional)' : 'Documento (opcional)'}>
@@ -439,26 +608,7 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
         {needsLive && !isEditing && (
           <>
             <Field label="Anfitrión">
-              {currentUserIsInstructor ? (
-                <TextField value={liveHostName} disabled fullWidth size="small" helperText="El anfitrión será el profesor que crea la clase." sx={fieldSx} />
-              ) : (
-                <Select
-                  value={liveHostName}
-                  onChange={(e: SelectChangeEvent) => setLiveHostName(e.target.value)}
-                  displayEmpty
-                  disabled={busy || instructors.length === 0}
-                  fullWidth
-                  size="small"
-                  sx={fieldSx}
-                >
-                  <MenuItem value="" disabled>{instructors.length === 0 ? 'No hay profesores disponibles' : 'Selecciona un profesor'}</MenuItem>
-                  {instructors.map((instructor) => (
-                    <MenuItem key={instructor.id} value={instructor.fullName}>
-                      {instructor.fullName} · {instructor.email}
-                    </MenuItem>
-                  ))}
-                </Select>
-              )}
+              <TextField value={currentHostName} disabled fullWidth size="small" helperText="El anfitrión y administrador será quien crea esta clase." sx={fieldSx} />
             </Field>
             <Field label="Fecha y hora">
               <DateTimePickerField value={liveScheduledAt} onChange={setLiveScheduledAt} disabled={busy} />
@@ -467,6 +617,14 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
               <Icon icon={APP_ICONS.lock} width={13} height={13} />
               Se programa una sesión en vivo real. No se guarda como video ni como lección.
             </p>
+            <div className="flex items-start gap-2 rounded-2xl border border-[var(--yellow-200,#F5DFA0)] bg-[var(--yellow-50,#FFF9EC)] px-3.5 py-3">
+              <Icon icon={APP_ICONS.warning} width={17} height={17} className="mt-0.5 shrink-0 text-[var(--yellow-600,#B98900)]" />
+              <p className="text-[0.8125rem] leading-5 text-[var(--ink-soft)]">
+                <strong className="text-[var(--ink)]">Importante:</strong> si no entrás a la sala a la hora exacta programada,
+                la clase se cancela automáticamente a los <strong>15 minutos</strong> y se les avisa a los inscritos
+                que se va a reagendar.
+              </p>
+            </div>
           </>
         )}
         {needsLive && isEditing && (
@@ -475,19 +633,21 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
           </p>
         )}
 
-        <Field label="Duración en minutos (opcional)">
-          <TextField
-            type="number"
-            value={durationMinutes}
-            onChange={(e) => setDurationMinutes(e.target.value)}
-            placeholder="Ej. 25"
-            disabled={busy}
-            fullWidth
-            size="small"
-            slotProps={{ htmlInput: { min: 1 } }}
-            sx={fieldSx}
-          />
-        </Field>
+        {!needsExam && (
+          <Field label="Duración en minutos (opcional)">
+            <TextField
+              type="number"
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(e.target.value)}
+              placeholder="Ej. 25"
+              disabled={busy}
+              fullWidth
+              size="small"
+              slotProps={{ htmlInput: { min: 1 } }}
+              sx={fieldSx}
+            />
+          </Field>
+        )}
 
         {error && (
           <p className="rounded-xl bg-[#FFF1ED] px-3.5 py-2.5 text-[0.8125rem] text-[#BF2600]">{error}</p>
@@ -503,7 +663,7 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
             disabled={uploading || submitting}
             sx={{ ...softButtonSx, bgcolor: 'var(--green-600)', color: '#fff', '&:hover': { bgcolor: 'var(--green-700)' } }}
           >
-            {submitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : needsLive ? 'Programar clase' : 'Agregar lección'}
+            {submitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : needsLive ? 'Programar clase' : needsExam ? 'Asignar examen' : 'Agregar lección'}
           </Button>
         </div>
       </form>

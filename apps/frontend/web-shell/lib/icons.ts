@@ -31,6 +31,9 @@ export const APP_ICONS = {
   clipboard:   'solar:clipboard-list-bold-duotone',
   shield:      'solar:shield-check-bold-duotone',
   liveDot:     'solar:videocamera-record-bold-duotone',
+  expand:      'solar:full-screen-bold',
+  collapse:    'solar:quit-full-screen-bold',
+  bell:        'solar:bell-bold-duotone',
 
   /* Aprendizaje / cursos */
   book:        'solar:book-2-bold-duotone',
@@ -59,7 +62,7 @@ export const APP_ICONS = {
   send:        'solar:plain-2-bold',
   newChat:     'solar:add-square-bold',
   robot:       'solar:magic-stick-3-bold-duotone',
-  expand:      'solar:full-screen-square-linear',
+  chatExpand:  'solar:full-screen-square-linear',
   pin:         'solar:pin-bold',
 } as const;
 

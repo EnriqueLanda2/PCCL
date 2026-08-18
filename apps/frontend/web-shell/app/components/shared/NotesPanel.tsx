@@ -173,7 +173,7 @@ export function NotesPanel({ lessonId, scopeLabel }: NotesPanelProps) {
     <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--neutral-100)', borderRadius: 'var(--radius-md)', background: 'var(--panel)', overflow: 'hidden' }}>
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--neutral-100)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h3 style={{ fontSize: '0.9063rem', fontWeight: 600, color: 'var(--ink)' }}>
-          Notas{scopeLabel ? ` · ${scopeLabel}` : ''}
+          Mis notas{scopeLabel ? ` · ${scopeLabel}` : ''}
         </h3>
         <span style={{ fontSize: '0.7188rem', color: 'var(--ink-muted)' }}>{notes.length} nota{notes.length === 1 ? '' : 's'}</span>
       </div>

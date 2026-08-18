@@ -13,7 +13,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { Request } from 'express';
 import { firstValueFrom } from 'rxjs';
-import { PAYMENT_PATTERNS } from '@app/contracts';
+import { PAYMENT_PATTERNS, OrderSource } from '@app/contracts';
 import { PAYMENT_CLIENT } from '@app/messaging';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
@@ -27,13 +27,14 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   @Post('orders')
   createOrder(
-    @Body() dto: { courseId: string; accessType?: 'monthly' | 'permanent' },
+    @Body() dto: { courseId: string; accessType?: 'monthly' | 'permanent'; source?: OrderSource },
     @CurrentUser() u: RequestUser,
   ) {
     return firstValueFrom(
       this.client.send(PAYMENT_PATTERNS.ORDER_CREATE, {
         courseId: dto.courseId,
         accessType: dto.accessType,
+        source: dto.source,
         userId: u.sub,
       }),
     );

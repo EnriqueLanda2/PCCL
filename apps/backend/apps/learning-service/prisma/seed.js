@@ -29,7 +29,7 @@ const KAHOOT_QUESTIONS = [
   },
   {
     prompt: '¿Qué formato tienen los exámenes por tema?',
-    options: ['Libre sin calificación', 'Tipo Kahoot con opciones', 'Solo descarga de PDF', 'Foro abierto'],
+    options: ['Libre sin calificación', ' con opciones', 'Solo descarga de PDF', 'Foro abierto'],
     correctIndex: 1,
     timeLimitSeconds: 30,
   },
@@ -263,7 +263,7 @@ async function main() {
           where: { id: existingTopicEvaluation.id },
           data: {
             title: lesson.title,
-            description: `Examen tipo Kahoot del tema: ${lesson.title}.`,
+            description: `Examen  del tema: ${lesson.title}.`,
             kind: 'kahoot',
             passingScore: 70,
             questions: existingTopicEvaluation.questions ?? KAHOOT_QUESTIONS,
@@ -275,7 +275,7 @@ async function main() {
         const evaluation = await prisma.evaluation.create({
           data: {
             title: lesson.title,
-            description: `Examen tipo Kahoot del tema: ${lesson.title}.`,
+            description: `Examen  del tema: ${lesson.title}.`,
             topic: lesson.title,
             kind: 'kahoot',
             passingScore: 70,

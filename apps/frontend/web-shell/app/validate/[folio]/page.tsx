@@ -8,7 +8,7 @@
 
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { Suspense, use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { publicToCardData } from '@/lib/certificates';
@@ -43,6 +43,16 @@ const TONE_STYLES = {
 } as const;
 
 export default function ValidateCertificatePage({
+  params,
+}: Readonly<{ params: Promise<{ folio: string }> }>) {
+  return (
+    <Suspense fallback={null}>
+      <ValidateCertificateContent params={params} />
+    </Suspense>
+  );
+}
+
+function ValidateCertificateContent({
   params,
 }: Readonly<{ params: Promise<{ folio: string }> }>) {
   const { folio: rawFolio } = use(params);

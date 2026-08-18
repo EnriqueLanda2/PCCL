@@ -22,14 +22,14 @@ import { MessageBubble } from '@/registry/new-york/ui/message-bubble';
 import { Composer } from '@/registry/new-york/ui/composer';
 import { Icon } from '@iconify/react';
 import { APP_ICONS } from '@/lib/icons';
+import { api } from '@/lib/api';
 
 interface LiveClassRoomProps {
-  /** Identificador único de la sala, ej. "Rumbo-Clase-X99" */
-  roomName: string;
+  /** Id de la sesión en vivo — quién es moderador lo decide el backend
+      (quien la creó), nunca se elige del lado del cliente. */
+  sessionId: string;
   /** Nombre mostrado del alumno o profesor actual */
   userName: string;
-  /** El profesor entra con privilegios de moderador (salta la sala de espera) */
-  isHost?: boolean;
   /** Se dispara cuando el usuario sale de la llamada — úsalo para redirigir */
   onLeave?: () => void;
   className?: string;
@@ -45,8 +45,10 @@ interface ChatMessage {
   at: string;
 }
 
-/** Dominio público de Jitsi por defecto; sobreescribible si se autoaloja un servidor propio */
-const JITSI_DOMAIN = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? 'meet.jit.si';
+/** Dominio público de Jitsi por defecto — se usa mientras se resuelve el
+    token de JaaS, o directamente si no hay JaaS configurado en el backend
+    (ver JaasService). */
+const DEFAULT_JITSI_DOMAIN = process.env.NEXT_PUBLIC_JITSI_DOMAIN ?? 'meet.jit.si';
 
 function shortTime(): string {
   return new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
@@ -61,17 +63,45 @@ function JitsiSpinner() {
   );
 }
 
-export function LiveClassRoom({ roomName, userName, isHost = false, onLeave, className }: Readonly<LiveClassRoomProps>) {
+export function LiveClassRoom({ sessionId, userName, onLeave, className }: Readonly<LiveClassRoomProps>) {
   const [status,   setStatus]   = useState<RoomStatus>('connecting');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft,    setDraft]    = useState('');
   const [unread,   setUnread]   = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
+  /* Credenciales de la sala — quién es moderador ya viene decidido en el
+     token que firma el backend, así que acá solo se consume. */
+  const [creds, setCreds] = useState<{ token: string | null; domain: string; room: string; isModerator: boolean } | null>(null);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const apiRef    = useRef<IJitsiMeetExternalApi | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const chatOpenRef = useRef(chatOpen);
   const leavingRef = useRef(false);
+
+  useEffect(() => {
+    const onFullscreenChange = () => setIsFullscreen(document.fullscreenElement === containerRef.current);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void containerRef.current?.requestFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    let alive = true;
+    api.liveSessionJitsiToken(sessionId)
+      .then((result) => { if (alive) setCreds(result); })
+      .catch(() => { if (alive) setCreds({ token: null, domain: DEFAULT_JITSI_DOMAIN, room: `Rumbo-${sessionId}`, isModerator: false }); });
+    return () => { alive = false; };
+  }, [sessionId]);
 
   useEffect(() => {
     chatOpenRef.current = chatOpen;
@@ -88,18 +118,23 @@ export function LiveClassRoom({ roomName, userName, isHost = false, onLeave, cla
 
   /* Se enlazan los eventos de chat de la API externa para pintar los mensajes
      con MessageBubble en vez de abrir el panel nativo de Jitsi. */
-  const handleApiReady = useCallback((api: IJitsiMeetExternalApi) => {
-    apiRef.current = api;
+  const handleApiReady = useCallback((jitsiApi: IJitsiMeetExternalApi) => {
+    apiRef.current = jitsiApi;
     setStatus('live');
 
-    api.executeCommand('setLanguage', 'es');
-    api.on('readyToClose', handleReadyToClose);
-    api.on('videoConferenceLeft', handleReadyToClose);
-    api.on('toolbarButtonClicked', (event: { key?: string }) => {
+    /* La clase pasa a "en vivo" para el resto de los alumnos recién acá —
+       cuando el anfitrión de verdad se conectó a la sala, no antes. */
+    if (creds?.isModerator) {
+      api.startLiveSession(sessionId).catch(() => {});
+    }
+
+    jitsiApi.on('readyToClose', handleReadyToClose);
+    jitsiApi.on('videoConferenceLeft', handleReadyToClose);
+    jitsiApi.on('toolbarButtonClicked', (event: { key?: string }) => {
       if (event?.key === 'hangup') handleReadyToClose();
     });
 
-    api.on('incomingMessage', (e: { nick?: string; message?: string; from?: string }) => {
+    jitsiApi.on('incomingMessage', (e: { nick?: string; message?: string; from?: string }) => {
       if (!e?.message) return;
       setMessages((prev) => [...prev, {
         id: `${e.from ?? 'x'}-${Date.now()}-${prev.length}`,
@@ -113,7 +148,7 @@ export function LiveClassRoom({ roomName, userName, isHost = false, onLeave, cla
 
     /* Jitsi confirma el envío por su cuenta; se pinta desde aquí para que el
        mensaje propio aparezca una sola vez y siempre en el mismo orden. */
-    api.on('outgoingMessage', (e: { message?: string }) => {
+    jitsiApi.on('outgoingMessage', (e: { message?: string }) => {
       if (!e?.message) return;
       setMessages((prev) => [...prev, {
         id: `me-${Date.now()}-${prev.length}`,
@@ -123,7 +158,7 @@ export function LiveClassRoom({ roomName, userName, isHost = false, onLeave, cla
         at: shortTime(),
       }]);
     });
-  }, [handleReadyToClose, userName]);
+  }, [handleReadyToClose, userName, creds, sessionId]);
 
   useEffect(() => {
     const api = apiRef.current;
@@ -166,15 +201,22 @@ export function LiveClassRoom({ roomName, userName, isHost = false, onLeave, cla
   }
 
   return (
-    <div className={`flex w-full flex-col gap-3 lg:flex-row ${className ?? ''}`}>
+    <div
+      ref={containerRef}
+      className={`flex w-full flex-col gap-3 lg:flex-row ${isFullscreen ? 'h-screen bg-[var(--bg-dark)] p-3' : ''} ${className ?? ''}`}
+    >
       {/* ── Video ── */}
       <div
         className="relative aspect-video w-full flex-1 overflow-hidden rounded-[1.25rem] bg-[var(--bg-dark)]"
         style={{ boxShadow: '0 0 0 1px var(--glow-accent, var(--green-500)), 0 24px 48px rgba(14,26,38,0.35)' }}
       >
+        {!creds ? (
+          <JitsiSpinner />
+        ) : (
         <JitsiMeeting
-          domain={JITSI_DOMAIN}
-          roomName={roomName}
+          domain={creds.domain}
+          roomName={creds.room}
+          jwt={creds.token ?? undefined}
           lang="es"
           spinner={JitsiSpinner}
           userInfo={{ displayName: userName, email: '' }}
@@ -199,7 +241,11 @@ export function LiveClassRoom({ roomName, userName, isHost = false, onLeave, cla
             recordingSharingEnabled: false,
             disableDeepLinking: true,
             disableThirdPartyRequests: true,
-            prejoinPageEnabled: !isHost,
+            /* Con token de JaaS, Jitsi ya sabe quién es moderador — nadie
+               necesita pasar por una pantalla previa a elegir nada. Sin
+               token (fallback a meet.jit.si público) se deja la pantalla
+               previa, que es el comportamiento seguro por defecto. */
+            prejoinPageEnabled: !creds.token,
             disableInviteFunctions: true,
             // Marca: sin logo ni promos de Jitsi
             defaultLogoUrl: '',
@@ -227,6 +273,7 @@ export function LiveClassRoom({ roomName, userName, isHost = false, onLeave, cla
             DEFAULT_LOCAL_DISPLAY_NAME: 'Tú',
           }}
         />
+        )}
 
         {/* Placa de marca sobre la esquina del watermark. En el meet.jit.si
             público el logo lo sirve su despliegue y las banderas de config no
@@ -245,6 +292,17 @@ export function LiveClassRoom({ roomName, userName, isHost = false, onLeave, cla
           <span className="text-[0.8125rem] font-extrabold tracking-tight text-white">Rumbo</span>
           <span className="ml-1 text-[0.625rem] font-bold uppercase tracking-[0.14em] text-white/45">En vivo</span>
         </div>
+
+        {/* ── Pantalla completa ── */}
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Expandir a pantalla completa'}
+          title={isFullscreen ? 'Salir de pantalla completa' : 'Expandir a pantalla completa'}
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(14,26,38,0.65)] text-white transition-colors hover:bg-[rgba(14,26,38,0.85)]"
+        >
+          <Icon icon={isFullscreen ? APP_ICONS.collapse : APP_ICONS.expand} width={16} height={16} />
+        </button>
       </div>
 
       {/* ── Chat propio ── */}

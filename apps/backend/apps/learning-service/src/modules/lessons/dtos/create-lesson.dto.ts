@@ -10,6 +10,7 @@ export class CreateLessonDto {
   @IsString() @IsNotEmpty() content!: string;
   @IsString() @IsIn(LESSON_CONTENT_TYPES) contentType!: LessonContentType;
   @IsUUID() courseId!: string;
+  @IsUUID() @IsOptional() phaseId?: string;
   @IsInt() @IsPositive() @IsOptional() durationMinutes?: number;
   @IsString() @IsOptional() fileUrl?: string;
 }

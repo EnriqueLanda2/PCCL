@@ -187,7 +187,7 @@ export function EnrollableCourses({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-5">
             {paginatedAvailable.map((course, i) => (
               <div key={course.id} className="dashboard-card-in flex flex-col" style={{ animationDelay: `${Math.min(i, 9) * 45}ms` }}>
                 <CourseCard

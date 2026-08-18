@@ -24,16 +24,48 @@ export class CertificationController {
     @Inject(CERTIFICATION_CLIENT) private readonly client: ClientProxy,
   ) {}
 
-  @Post('certificates/:inscriptionId')
-  generate(
+  /** El alumno ya no emite directo — pide, y queda pendiente de aprobación. */
+  @Post('certificates/requests/:inscriptionId')
+  requestCertificate(
     @Param('inscriptionId') inscriptionId: string,
     @CurrentUser() u: RequestUser,
   ) {
     return firstValueFrom(
-      this.client.send(CERTIFICATION_PATTERNS.CERT_GENERATE, {
+      this.client.send(CERTIFICATION_PATTERNS.CERT_REQUEST_CREATE, {
         inscriptionId,
         actor: u?.email ?? 'anonymous',
       }),
+    );
+  }
+
+  @Get('certificates/requests/mine/:inscriptionId')
+  findMyCertificateRequest(@Param('inscriptionId') inscriptionId: string) {
+    return firstValueFrom(
+      this.client.send(CERTIFICATION_PATTERNS.CERT_REQUEST_FIND_MINE, { inscriptionId }),
+    );
+  }
+
+  /** Cola de solicitudes pendientes — solo admin/instructor la usan, pero no
+      hace falta un guard extra: el scope ya acota a "sus" cursos y un
+      alumno normal (scope 'user') recibe [] acá abajo. */
+  @Get('certificates/requests/pending')
+  findPendingCertificateRequests(@CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(CERTIFICATION_PATTERNS.CERT_REQUEST_FIND_PENDING, { scope: resolveScope(u) }),
+    );
+  }
+
+  @Post('certificates/requests/:id/approve')
+  approveCertificateRequest(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(CERTIFICATION_PATTERNS.CERT_REQUEST_APPROVE, { id, actor: u?.email ?? 'anonymous' }),
+    );
+  }
+
+  @Post('certificates/requests/:id/reject')
+  rejectCertificateRequest(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(CERTIFICATION_PATTERNS.CERT_REQUEST_REJECT, { id, actor: u?.email ?? 'anonymous' }),
     );
   }
 

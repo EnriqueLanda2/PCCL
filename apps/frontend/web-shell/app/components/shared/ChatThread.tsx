@@ -472,7 +472,7 @@ export function ChatThread({
             title="Ver en pantalla completa"
             style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', display: 'flex', padding: '0.25rem', cursor: 'pointer' }}
           >
-            <Icon icon={APP_ICONS.expand} width={17} height={17} />
+            <Icon icon={APP_ICONS.chatExpand} width={17} height={17} />
           </button>
         )}
         {onClose && (

@@ -9,4 +9,10 @@ export const IDENTITY_PATTERNS = {
   USER_UPDATE_AVATAR: 'identity.user.update_avatar',
   RBAC_PROFILE: 'identity.rbac.profile',
   RBAC_CATALOGS: 'identity.rbac.catalogs',
+  PUSH_TOKEN_REGISTER: 'identity.push_token.register',
+  PUSH_NOTIFY_USERS: 'identity.push.notify_users',
+  NOTIFICATION_FIND_ALL: 'identity.notification.find_all',
+  NOTIFICATION_UNREAD_COUNT: 'identity.notification.unread_count',
+  NOTIFICATION_MARK_READ: 'identity.notification.mark_read',
+  NOTIFICATION_MARK_ALL_READ: 'identity.notification.mark_all_read',
 } as const;

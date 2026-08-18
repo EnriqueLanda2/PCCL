@@ -7,7 +7,9 @@ import { PrismaService } from '../../prisma/prisma.service';
  * inscrito. Se arma de dos fuentes reales:
  *
  *  · lecciones      → pendientes salvo que exista LessonCompletion suya
- *  · evaluaciones   → pendientes salvo que exista un EvaluationAttempt suyo
+ *  · evaluaciones   → pendientes salvo que su mejor intento alcance
+ *                     evaluation.passingScore (intentar y reprobar NO cuenta
+ *                     como hecho, para que coincida con progressPercentage)
  *
  * Siempre se acota a las inscripciones del propio usuario, así que un alumno
  * nunca ve tareas de cursos ajenos aunque pida un courseId arbitrario.
@@ -40,17 +42,24 @@ export class TasksService {
       }),
       this.prisma.evaluation.findMany({
         where: { courseId: { in: courseIds } },
-        select: { id: true, title: true, courseId: true },
+        select: { id: true, title: true, courseId: true, passingScore: true },
         orderBy: { createdAt: 'asc' },
       }),
       this.prisma.evaluationAttempt.findMany({
         where: { studentId: userId, evaluation: { courseId: { in: courseIds } } },
-        select: { evaluationId: true },
+        select: { evaluationId: true, score: true },
       }),
     ]);
 
     const seenLessons = new Set(completions.map((c) => c.lessonId));
-    const seenEvals = new Set(attempts.map((a) => a.evaluationId));
+    const bestEvalScore = new Map<string, number>();
+    for (const attempt of attempts) {
+      const score = Number(attempt.score ?? 0);
+      bestEvalScore.set(attempt.evaluationId, Math.max(bestEvalScore.get(attempt.evaluationId) ?? 0, score));
+    }
+    const passedEvals = new Set(
+      evaluations.filter((e) => (bestEvalScore.get(e.id) ?? 0) >= e.passingScore).map((e) => e.id),
+    );
 
     const tasks: PendingTask[] = [
       ...lessons.map((l) => ({
@@ -69,7 +78,7 @@ export class TasksService {
         title: e.title,
         courseId: e.courseId,
         courseTitle: titleByCourse.get(e.courseId) ?? 'Curso',
-        done: seenEvals.has(e.id),
+        done: passedEvals.has(e.id),
       })),
     ];
 

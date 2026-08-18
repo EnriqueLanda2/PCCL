@@ -6,6 +6,7 @@ export class UpdateLessonDto {
   @IsString() @IsOptional() content?: string;
   @IsString() @IsIn(LESSON_CONTENT_TYPES) @IsOptional() contentType?: string;
   @IsUUID() @IsOptional() courseId?: string;
+  @IsUUID() @IsOptional() phaseId?: string;
   @IsInt() @IsPositive() @IsOptional() durationMinutes?: number;
   @IsString() @IsOptional() fileUrl?: string;
 }

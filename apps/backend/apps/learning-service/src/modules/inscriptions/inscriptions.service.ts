@@ -212,7 +212,7 @@ export class InscriptionsService {
       missingEvaluations,
       reason: eligible
         ? null
-        : 'Completa todas las lecciones y aprueba todos los exámenes tipo Kahoot del curso.',
+        : 'Completa todas las lecciones y aprueba todos los exámenes  del curso.',
     };
   }
 }

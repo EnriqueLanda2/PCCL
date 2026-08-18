@@ -20,11 +20,15 @@ import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { RequestUser } from '../auth/interfaces/request-user.interface';
 import { resolveScope } from '../auth/data-scope';
+import { JaasService } from './jaas.service';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class LearningController {
-  constructor(@Inject(LEARNING_CLIENT) private readonly client: ClientProxy) {}
+  constructor(
+    @Inject(LEARNING_CLIENT) private readonly client: ClientProxy,
+    private readonly jaas: JaasService,
+  ) {}
 
   private actor(user: RequestUser | null) {
     return user?.email ?? 'anonymous';
@@ -70,6 +74,16 @@ export class LearningController {
       this.client.send(LEARNING_PATTERNS.COURSE_FIND_ALL, {
         scope: resolveScope(u),
       }),
+    );
+  }
+
+  /* Va antes de 'courses/:id' a propósito, mismo motivo que 'courses/public':
+     si no, Nest resuelve por orden de declaración y ':id' se tragaría
+     'courses/favorites' tratando "favorites" como un id. */
+  @Get('courses/favorites')
+  findMyFavoriteCourseIds(@CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.COURSE_FAVORITE_FIND_MINE, { userId: u.sub }),
     );
   }
 
@@ -150,6 +164,53 @@ export class LearningController {
 	        courseId: id,
 	        userId: u.sub,
 	      }),
+	    );
+	  }
+
+	  /* userId sale siempre del JWT: un alumno solo puede guardar/desguardar
+	     cursos para sí mismo, nunca para otro. */
+	  @Post('courses/:id/favorite')
+	  setCourseFavorite(@Param('id') id: string, @Body() dto: { saved: boolean }, @CurrentUser() u: RequestUser) {
+	    return firstValueFrom(
+	      this.client.send(LEARNING_PATTERNS.COURSE_FAVORITE_TOGGLE, {
+	        userId: u.sub,
+	        courseId: id,
+	        saved: Boolean(dto?.saved),
+	        actor: this.actor(u),
+	      }),
+	    );
+	  }
+
+	  /* ─── FASES DEL CURSO ───
+	     Agrupan lecciones y clases en vivo en pasos secuenciales del camino. */
+	  @Get('courses/:id/phases')
+	  findCoursePhases(@Param('id') id: string) {
+	    return firstValueFrom(
+	      this.client.send(LEARNING_PATTERNS.PHASE_FIND_BY_COURSE, { courseId: id }),
+	    );
+	  }
+
+	  @Post('courses/:id/phases')
+	  createCoursePhase(@Param('id') id: string, @Body() dto: { title?: string }, @CurrentUser() u: RequestUser) {
+	    if (!this.canManageCourses(u)) {
+	      throw new ForbiddenException('Solo admin o profesor pueden crear fases');
+	    }
+	    return firstValueFrom(
+	      this.client.send(LEARNING_PATTERNS.PHASE_CREATE, {
+	        courseId: id,
+	        title: dto?.title ?? '',
+	        actor: this.actor(u),
+	      }),
+	    );
+	  }
+
+	  @Delete('phases/:id')
+	  removeCoursePhase(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+	    if (!this.canManageCourses(u)) {
+	      throw new ForbiddenException('Solo admin o profesor pueden eliminar fases');
+	    }
+	    return firstValueFrom(
+	      this.client.send(LEARNING_PATTERNS.PHASE_DELETE, { id }),
 	    );
 	  }
 
@@ -317,10 +378,13 @@ export class LearningController {
     );
   }
 
+  /* Cada quien ve solo sus propias notas — son apuntes personales de
+     estudio, no un comentario público del curso (eso ya existe aparte,
+     ver CommentsModule). */
   @Get('lessons/:lessonId/notes')
-  findNotesByLesson(@Param('lessonId') lessonId: string) {
+  findNotesByLesson(@Param('lessonId') lessonId: string, @CurrentUser() u: RequestUser) {
     return firstValueFrom(
-      this.client.send(LEARNING_PATTERNS.NOTE_FIND_BY_LESSON, { lessonId }),
+      this.client.send(LEARNING_PATTERNS.NOTE_FIND_BY_LESSON, { lessonId, actor: this.actor(u) }),
     );
   }
 
@@ -382,6 +446,15 @@ export class LearningController {
         evaluationId: id,
         studentId: u.sub,
       }),
+    );
+  }
+
+  /** Para el repaso de solo lectura: qué contestó el usuario la última vez,
+      sin dejarlo volver a responder. */
+  @Get('evaluations/:id/my-attempt')
+  findMyAttempt(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.EVALUATION_FIND_MY_ATTEMPT, { evaluationId: id, studentId: u.sub }),
     );
   }
 
@@ -501,6 +574,27 @@ export class LearningController {
   findOneLiveSession(@Param('id') id: string) {
     return firstValueFrom(
       this.client.send(LEARNING_PATTERNS.LIVE_SESSION_FIND_ONE, { id }),
+    );
+  }
+
+  /* Quién es moderador de la sala de Jitsi se decide acá, nunca lo elige el
+     usuario: es moderador quien creó la clase, punto. Ver JaasService para
+     el porqué del token. */
+  @Get('live-sessions/:id/jitsi-token')
+  async getJitsiToken(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    const session = await firstValueFrom<{ createdBy?: string | null } | null>(
+      this.client.send(LEARNING_PATTERNS.LIVE_SESSION_FIND_ONE, { id }),
+    );
+    const isModerator = Boolean(session?.createdBy && session.createdBy === u.email);
+    return { ...this.jaas.tokenFor(`Rumbo-${id}`, u, isModerator), isModerator };
+  }
+
+  /** El frontend llama esto al conectarse a la sala — recién ahí la clase
+      pasa a "en vivo" de verdad (ver LiveSessionsService.start). */
+  @Post('live-sessions/:id/start')
+  startLiveSession(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.LIVE_SESSION_START, { id, actor: u.email }),
     );
   }
 

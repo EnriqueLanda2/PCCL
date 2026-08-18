@@ -28,6 +28,9 @@ export class LiveSessionsController {
   @MessagePattern(LEARNING_PATTERNS.LIVE_SESSION_DELETE)
   remove(@Payload() p: { id: string }) { return this.service.remove(p.id); }
 
+  @MessagePattern(LEARNING_PATTERNS.LIVE_SESSION_START)
+  start(@Payload() p: { id: string; actor: string }) { return this.service.start(p.id, p.actor); }
+
   @MessagePattern(LEARNING_PATTERNS.LIVE_SESSION_FIND_NEXT_PUBLIC)
   findNextPublic() { return this.service.findNextPublic(); }
 }

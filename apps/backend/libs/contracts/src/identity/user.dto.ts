@@ -31,3 +31,22 @@ export interface CreateUserPayload extends MsgContext {
   password: string;
   roleIds: string[];
 }
+
+export interface PushTokenRegisterPayload {
+  userId: string;
+  token: string;
+}
+
+export interface PushNotifyUsersPayload {
+  userIds: string[];
+  title: string;
+  body: string;
+}
+
+export interface NotificationRecord {
+  id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt: string;
+}

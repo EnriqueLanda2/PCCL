@@ -16,8 +16,9 @@ export class NotesService {
     return note;
   }
 
-  findByLesson(lessonId: string) {
-    return this.prisma.note.findMany({ where: { lessonId }, orderBy: { createdAt: 'asc' } });
+  /** Notas propias — cada usuario solo ve las que escribió él mismo. */
+  findByLesson(lessonId: string, actor: string) {
+    return this.prisma.note.findMany({ where: { lessonId, createdBy: actor }, orderBy: { createdAt: 'asc' } });
   }
 
   async findOne(id: string) {

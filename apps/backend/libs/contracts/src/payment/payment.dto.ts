@@ -1,9 +1,15 @@
 export type CourseAccessType = 'monthly' | 'permanent';
 
+/** De dónde vino la venta — determina el reparto de comisión.
+    'organic': 25% plataforma / 75% instructor (default).
+    'instructor_referral' | 'site_promo': 50% / 50%. */
+export type OrderSource = 'organic' | 'instructor_referral' | 'site_promo';
+
 export interface OrderCreatePayload {
   userId: string;
   courseId: string;
   accessType?: CourseAccessType;
+  source?: OrderSource;
 }
 
 export interface OrderFindOnePayload {
@@ -22,6 +28,10 @@ export interface CourseEarnings {
   instructorEmail: string | null;
   salesCount: number;
   grossRevenue: number;
+  /** Comisión de la plataforma sobre `grossRevenue` (25% o 50% según `source` de cada venta). */
+  platformRevenue: number;
+  /** Lo que le corresponde al instructor sobre `grossRevenue`. */
+  instructorRevenue: number;
   currency: string;
 }
 

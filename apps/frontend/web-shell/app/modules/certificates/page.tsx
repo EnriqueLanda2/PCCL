@@ -9,9 +9,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
+import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import { api } from '@/lib/api';
+import type { CertificateRequest } from '@/lib/types';
 import { toCardData } from '@/lib/certificates';
 import { StatCard } from '@/app/components/shared/StatCard';
 import { EmptyState } from '@/app/components/shared/EmptyState';
@@ -37,6 +39,32 @@ export default function CertificatesPage() {
   const [search,       setSearch]       = useState('');
   const [page,         setPage]         = useState(1);
 
+  const [requests, setRequests] = useState<CertificateRequest[]>([]);
+  const [requestsBusy, setRequestsBusy] = useState<string | null>(null);
+  const [requestLabels, setRequestLabels] = useState<Record<string, { course: string; student: string }>>({});
+
+  const loadRequests = () => {
+    api.pendingCertificateRequests().then(async (list) => {
+      setRequests(list);
+      const courseIds = Array.from(new Set(list.map((r) => r.courseId)));
+      const userIds = Array.from(new Set(list.map((r) => r.userId)));
+      const [courses, users] = await Promise.all([
+        Promise.all(courseIds.map((id) => api.course(id).catch(() => null))),
+        Promise.all(userIds.map((id) => api.user(id).catch(() => null))),
+      ]);
+      const courseTitle = new Map(courses.filter(Boolean).map((c) => [c!.id, c!.title]));
+      const studentName = new Map(users.filter(Boolean).map((u) => [u!.id, u!.fullName]));
+      const labels: Record<string, { course: string; student: string }> = {};
+      for (const r of list) {
+        labels[r.id] = {
+          course: courseTitle.get(r.courseId) ?? 'Curso',
+          student: studentName.get(r.userId) ?? 'Alumno',
+        };
+      }
+      setRequestLabels(labels);
+    }).catch(() => setRequests([]));
+  };
+
   useEffect(() => {
     let alive = true;
     /* Nada de datos de muestra: la lista llega ya acotada al usuario por el
@@ -46,11 +74,33 @@ export default function CertificatesPage() {
       .then((list) => { if (alive) setCertificates(list.map(toCardData)); })
       .catch(() => { if (alive) setFailed(true); })
       .finally(() => { if (alive) setLoading(false); });
+    loadRequests();
     return () => { alive = false; };
   }, []);
 
+  const approveRequest = async (id: string) => {
+    setRequestsBusy(id);
+    try {
+      await api.approveCertificateRequest(id);
+      setRequests((prev) => prev.filter((r) => r.id !== id));
+      api.certificates().then((list) => setCertificates(list.map(toCardData))).catch(() => {});
+    } finally {
+      setRequestsBusy(null);
+    }
+  };
+
+  const rejectRequest = async (id: string) => {
+    setRequestsBusy(id);
+    try {
+      await api.rejectCertificateRequest(id);
+      setRequests((prev) => prev.filter((r) => r.id !== id));
+    } finally {
+      setRequestsBusy(null);
+    }
+  };
+
   const issued  = useMemo(() => certificates.filter((c) => c.status === 'valid').length,   [certificates]);
-  const pending = useMemo(() => certificates.filter((c) => c.status === 'pending').length, [certificates]);
+  const pending = requests.length;
   const rate    = certificates.length > 0 ? Math.round((issued / certificates.length) * 100) : 0;
   const statusOptions = useMemo(() => {
     const counts = new Map<string, number>();
@@ -129,6 +179,52 @@ export default function CertificatesPage() {
         <StatCard label="Pendientes de aprobar" value={pending} icon={<Icon icon={APP_ICONS.clock} width={20} height={20} />} variant="yellow" />
         <StatCard label="Tasa de aprobación"    value={`${rate}%`} deltaUp icon={<Icon icon={APP_ICONS.chart} width={20} height={20} />} variant="blue" />
       </div>
+
+      {/* ── Solicitudes pendientes de aprobar ── */}
+      {requests.length > 0 && (
+        <div className="rounded-[1.375rem] border border-[var(--yellow-200,#F5DFA0)] bg-[var(--yellow-50,#FFF9EC)] p-4">
+          <h3 className="mb-3 text-[0.9375rem] font-extrabold text-[var(--ink)]">
+            Solicitudes de certificado pendientes ({requests.length})
+          </h3>
+          <div className="flex flex-col gap-2">
+            {requests.map((req) => {
+              const label = requestLabels[req.id];
+              const busy = requestsBusy === req.id;
+              return (
+                <div
+                  key={req.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--neutral-100)] bg-white px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-[0.9063rem] font-bold text-[var(--ink)]">{label?.student ?? 'Cargando…'}</p>
+                    <p className="truncate text-[0.8125rem] text-[var(--ink-muted)]">{label?.course ?? ''}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      disabled={busy}
+                      onClick={() => void rejectRequest(req.id)}
+                      sx={{ borderRadius: '999px', fontFamily: 'var(--font-sans)', fontWeight: 700, textTransform: 'none', borderColor: 'var(--neutral-200)', color: 'var(--ink-soft)' }}
+                    >
+                      Rechazar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="contained"
+                      disabled={busy}
+                      onClick={() => void approveRequest(req.id)}
+                      sx={{ borderRadius: '999px', fontFamily: 'var(--font-sans)', fontWeight: 800, textTransform: 'none', bgcolor: 'var(--green-600)', boxShadow: 'none', '&:hover': { bgcolor: 'var(--green-700)', boxShadow: 'none' } }}
+                    >
+                      {busy ? 'Procesando…' : 'Aprobar'}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Grid de holo cards ── */}
       {filtered.length === 0 ? (

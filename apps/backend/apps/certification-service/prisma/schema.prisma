@@ -32,6 +32,27 @@ model Certificate {
   @@map("certificates")
 }
 
+/** El alumno ya no recibe el certificado automáticamente al completar el
+    curso — pide uno, y queda pendiente hasta que un admin o el instructor
+    del curso lo apruebe (recién ahí se crea el Certificate real). */
+model CertificateRequest {
+  id            String    @id @default(uuid()) @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  inscriptionId String    @unique @map("inscription_id") @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  courseId      String    @map("course_id") @db.Uuid
+  /** pending | approved | rejected */
+  status        String    @default("pending") @db.VarChar(20)
+  reviewedBy    String?   @map("reviewed_by") @db.VarChar(100)
+  reviewedAt    DateTime? @map("reviewed_at") @db.Timestamp(6)
+  certificateId String?   @map("certificate_id") @db.Uuid
+
+  @@index([status])
+  @@index([userId])
+  @@map("certificate_requests")
+}
+
 model AuditLog {
   id              String    @id @default(uuid()) @db.Uuid
   transactionDate DateTime  @default(now()) @map("transaction_date") @db.Timestamp(6)

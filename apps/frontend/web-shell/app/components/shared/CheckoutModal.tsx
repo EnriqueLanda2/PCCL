@@ -23,7 +23,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import type { Appearance } from '@stripe/stripe-js';
 import { api, getErrorMessage } from '@/lib/api';
 import { getStripe, isStripeConfigured } from '@/lib/stripe';
-import type { Course } from '@/lib/types';
+import type { Course, OrderSource } from '@/lib/types';
 import { Modal } from '@/app/components/ui/Modal';
 import { Card } from '@/app/components/ui/Card';
 import { WaveSpinner } from '@/app/components/ui/WaveSpinner';
@@ -59,6 +59,20 @@ const APPEARANCE: Appearance = {
     },
   },
 };
+
+/** De dónde viene la compra, leído directo de `window.location.search` (no
+    `useSearchParams`: este modal es puramente interactivo — se abre por un
+    clic, nunca durante SSR — así que no hace falta el boundary de Suspense
+    que ese hook exige). `?promo=` marca una promoción del sitio; `?ref=`,
+    un enlace de referido del instructor. Si no hay ninguno, la venta es
+    orgánica y el backend aplica el reparto por defecto. */
+function orderSourceFromLocation(): OrderSource | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('promo')) return 'site_promo';
+  if (params.has('ref')) return 'instructor_referral';
+  return undefined;
+}
 
 function formatMoney(amount: number, currency: string) {
   return new Intl.NumberFormat('es', { style: 'currency', currency }).format(amount);
@@ -128,12 +142,21 @@ function CheckoutForm({ orderId, amount, currency, onPaid }: Readonly<CheckoutFo
         elements,
         redirect: 'if_required',
       });
-      if (confirmError) {
+
+      /* Puede pasar si el webhook tardó en confirmar la orden y el usuario
+         reintentó: Stripe rechaza volver a confirmar un intent que ya había
+         quedado `succeeded`. No es un pago fallido — hay que reconciliar en
+         vez de mostrar error. */
+      const alreadySucceeded =
+        confirmError?.code === 'payment_intent_unexpected_state' &&
+        confirmError.payment_intent?.status === 'succeeded';
+
+      if (confirmError && !alreadySucceeded) {
         setError(confirmError.message ?? 'No se pudo procesar el pago.');
         setSubmitting(false);
         return;
       }
-      if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'processing') {
+      if (alreadySucceeded || paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'processing') {
         await waitForPaidOrder();
       }
     } catch (err) {
@@ -209,7 +232,7 @@ export function CheckoutModal({ open, course, onClose, onPaid }: Readonly<Checko
       setError(null);
       setLoading(true);
       api
-        .createOrder(course.id, accessType)
+        .createOrder(course.id, accessType, orderSourceFromLocation())
         .then((order) => {
           if (!alive) return;
           if (order.status === 'paid') {

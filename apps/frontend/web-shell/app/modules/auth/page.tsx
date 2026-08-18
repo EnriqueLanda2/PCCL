@@ -22,7 +22,7 @@
 'use client';
 
 import type React from 'react';
-import { use, useCallback, useEffect, useState } from 'react';
+import { Suspense, use, useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
@@ -32,6 +32,7 @@ import { api, ApiError } from '@/lib/api';
 import { appRoutes, postLoginRoute, withNext } from '@/lib/routes';
 import { APP_ICONS } from '@/lib/icons';
 import { cn } from '@/lib/cn';
+import { saveUserName } from '@/lib/sessionUser';
 
 type Mode = 'login' | 'register';
 
@@ -82,6 +83,20 @@ const NAVY_COPY: Record<Mode, {
 type NextParam = string | string[] | undefined;
 
 export default function AuthPage({
+  searchParams,
+}: Readonly<{ searchParams?: Promise<{ next?: NextParam }> }>) {
+  return (
+    <Suspense fallback={null}>
+      <AuthPageContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+/* Separado del export por defecto para que `use(searchParams)` tenga su
+   propio boundary de Suspense: sin uno, React DevTools confunde el árbol de
+   fibras al resolver la promesa y tira "cleaning up async info that was not
+   on the parent Suspense boundary" en consola. */
+function AuthPageContent({
   searchParams,
 }: Readonly<{ searchParams?: Promise<{ next?: NextParam }> }>) {
   const pathname = usePathname();
@@ -248,6 +263,9 @@ function LoginForm({ nextParam, onSwitch }: Readonly<{ nextParam: NextParam; onS
       const { user, access } = await api.login(email, password);
       sessionStorage.setItem('pccl_user',   JSON.stringify(user));
       sessionStorage.setItem('pccl_access', JSON.stringify(access));
+      /* El nombre va además cifrado en localStorage: sessionStorage se vacía al
+         cerrar la pestaña y el saludo del panel debe sobrevivir a la recarga. */
+      saveUserName(user.fullName);
       router.replace(postLoginRoute(nextParam, access.menu));
     } catch (err) {
       if (err instanceof ApiError) {
@@ -355,6 +373,9 @@ function RegisterForm({ nextParam, onSwitch }: Readonly<{ nextParam: NextParam; 
       const { user, access } = await api.register(fullName.trim(), email.trim(), password);
       sessionStorage.setItem('pccl_user',   JSON.stringify(user));
       sessionStorage.setItem('pccl_access', JSON.stringify(access));
+      /* El nombre va además cifrado en localStorage: sessionStorage se vacía al
+         cerrar la pestaña y el saludo del panel debe sobrevivir a la recarga. */
+      saveUserName(user.fullName);
       router.replace(postLoginRoute(nextParam, access.menu));
     } catch (err) {
       if (err instanceof ApiError) {

@@ -27,13 +27,38 @@ model Course {
   currency        String       @default("USD") @db.VarChar(3)
   isFree          Boolean      @default(false) @map("is_free")
   lessons         Lesson[]
+  phases          Phase[]
   inscriptions    Inscription[]
   evaluations     Evaluation[]
   liveSessions    LiveSession[]
   comments        CourseComment[]
   reviews         CourseReview[]
+  favorites       CourseFavorite[]
 
   @@map("courses")
+}
+
+/// Fase/módulo del curso — agrupa lecciones en pasos secuenciales (ej. "Fase
+/// 1: Fundamentos"). `order` determina la secuencia; una clase en vivo o una
+/// lección puede pertenecer a una fase para que el alumno sepa dónde encaja
+/// dentro del camino del curso.
+model Phase {
+  id              String        @id @default(uuid()) @db.Uuid
+  transactionDate DateTime      @default(now()) @map("transaction_date") @db.Timestamp(6)
+  createdBy       String?       @map("created_by") @db.VarChar(100)
+  updatedBy       String?       @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
+  title           String        @db.VarChar(140)
+  order           Int
+  courseId        String        @map("course_id") @db.Uuid
+  course          Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons         Lesson[]
+  liveSessions    LiveSession[]
+  evaluations     Evaluation[]
+
+  @@index([courseId])
+  @@map("phases")
 }
 
 /// Reseña real de un alumno sobre un curso. Una reseña por alumno/curso.
@@ -96,6 +121,8 @@ model Lesson {
   durationMinutes Int?           @map("duration_minutes")
   courseId        String         @map("course_id") @db.Uuid
   course          Course         @relation(fields: [courseId], references: [id])
+  phaseId         String?        @map("phase_id") @db.Uuid
+  phase           Phase?         @relation(fields: [phaseId], references: [id], onDelete: SetNull)
   califications   Calification[]
   notes           Note[]
   completions     LessonCompletion[]
@@ -141,6 +168,24 @@ model LessonCompletion {
   @@unique([userId, lessonId])
   @@index([userId])
   @@map("lesson_completions")
+}
+
+/** "Guardado" del alumno en la ficha de curso — un bookmark simple, no
+    implica inscripción ni progreso, solo lo enlaza a su lista de guardados. */
+model CourseFavorite {
+  id              String   @id @default(uuid()) @db.Uuid
+  transactionDate DateTime @default(now()) @map("transaction_date") @db.Timestamp(6)
+  createdBy       String?  @map("created_by") @db.VarChar(100)
+  updatedBy       String?  @map("updated_by") @db.VarChar(100)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  userId          String   @map("user_id") @db.Uuid
+  courseId        String   @map("course_id") @db.Uuid
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@map("course_favorites")
 }
 
 model Inscription {
@@ -235,6 +280,12 @@ model Evaluation {
   questions       Json?
   courseId        String              @map("course_id") @db.Uuid
   course          Course              @relation(fields: [courseId], references: [id])
+  phaseId         String?             @map("phase_id") @db.Uuid
+  phase           Phase?              @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  /// Dónde cae este examen dentro de la fase: antes de sus lecciones ('start')
+  /// o después de completarlas todas ('end', el default — un examen final
+  /// de fase).
+  phasePosition   String              @default("end") @map("phase_position") @db.VarChar(10)
   attempts        EvaluationAttempt[]
 
   @@map("evaluations")
@@ -255,6 +306,8 @@ model LiveSession {
   status          String   @default("scheduled") @db.VarChar(20) // scheduled | live | ended | canceled
   courseId        String?  @map("course_id") @db.Uuid
   course          Course?  @relation(fields: [courseId], references: [id])
+  phaseId         String?  @map("phase_id") @db.Uuid
+  phase           Phase?   @relation(fields: [phaseId], references: [id], onDelete: SetNull)
 
   @@map("live_sessions")
 }

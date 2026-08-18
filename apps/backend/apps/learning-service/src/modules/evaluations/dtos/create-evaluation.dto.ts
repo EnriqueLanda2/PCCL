@@ -1,4 +1,4 @@
-import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 
 export interface KahootQuestionDto {
   prompt: string;
@@ -15,4 +15,6 @@ export class CreateEvaluationDto {
   @IsInt() @Min(1) @Max(100) @IsOptional() passingScore?: number;
   @IsArray() @IsOptional() questions?: KahootQuestionDto[];
   @IsString() @IsNotEmpty() courseId!: string;
+  @IsUUID() @IsOptional() phaseId?: string;
+  @IsIn(['start', 'end']) @IsOptional() phasePosition?: 'start' | 'end';
 }

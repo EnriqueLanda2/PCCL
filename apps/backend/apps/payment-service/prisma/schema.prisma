@@ -26,6 +26,14 @@ model Order {
   status                  String    @default("pending") @db.VarChar(20)
   provider                String    @default("stripe") @db.VarChar(40)
   providerPaymentIntentId String?   @unique @map("provider_payment_intent_id") @db.VarChar(160)
+  /** De dónde vino la venta: 'organic' (25% plataforma / 75% instructor),
+      'instructor_referral' o 'site_promo' (50% / 50% en ambos). */
+  source                  String    @default("organic") @map("source") @db.VarChar(30)
+  /** Reparto calculado al crear la orden, a partir de `amount` y `source`.
+      Se guarda (no se recalcula al leer) para que un cambio futuro en las
+      reglas de comisión no reescriba ventas ya cerradas. */
+  platformAmount          Decimal   @default(0) @map("platform_amount") @db.Decimal(10, 2)
+  instructorAmount        Decimal   @default(0) @map("instructor_amount") @db.Decimal(10, 2)
   payment                 Payment?
 
   @@map("orders")

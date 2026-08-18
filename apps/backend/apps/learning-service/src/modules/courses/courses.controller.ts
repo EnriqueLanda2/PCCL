@@ -60,4 +60,29 @@ export class CoursesController {
   certificateEligibility(@Payload() p: { courseId: string; userId: string }) {
     return this.service.certificateEligibility(p.courseId, p.userId);
   }
+
+  @MessagePattern(LEARNING_PATTERNS.COURSE_FAVORITE_TOGGLE)
+  setFavorite(@Payload() p: { userId: string; courseId: string; saved: boolean; actor: string }) {
+    return this.service.setFavorite(p.userId, p.courseId, p.saved, p.actor);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.COURSE_FAVORITE_FIND_MINE)
+  findMyFavoriteCourseIds(@Payload() p: { userId: string }) {
+    return this.service.findMyFavoriteCourseIds(p.userId);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.PHASE_CREATE)
+  createPhase(@Payload() p: { courseId: string; title: string; actor: string }) {
+    return this.service.createPhase(p.courseId, p.title, p.actor);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.PHASE_FIND_BY_COURSE)
+  findPhases(@Payload() p: { courseId: string }) {
+    return this.service.findPhases(p.courseId);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.PHASE_DELETE)
+  removePhase(@Payload() p: { id: string }) {
+    return this.service.removePhase(p.id);
+  }
 }

@@ -3,6 +3,7 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { saveUserName, useUserName } from '@/lib/sessionUser';
 import type { AccessProfile, Certificate, Course, Inscription } from '@/lib/types';
 import { Card } from '@/app/components/ui/Card';
 import { Badge } from '@/app/components/ui/Badge';
@@ -226,6 +227,9 @@ export default function DashboardPage() {
   const [cachedUser, setCachedUser] = useState<{ id?: string; fullName?: string; email?: string } | null>(null);
   const [sessionName, setSessionName] = useState('Usuario');
   const [loading, setLoading] = useState(true);
+  /* Nombre descifrado desde localStorage (lo escribe el login). Es el único que
+     sobrevive a una recarga, así que manda sobre lo que haya en sessionStorage. */
+  const storedName = useUserName();
 
   useEffect(() => {
     let alive = true;
@@ -238,6 +242,9 @@ export default function DashboardPage() {
       if (cachedUserData) {
         setCachedUser(cachedUserData);
         setSessionName(cachedUserData.fullName ?? cachedUserData.email ?? 'Usuario');
+        /* Rellena `pccl_name` en sesiones que ya estaban abiertas antes de que
+           el login empezara a cifrar el nombre. */
+        if (cachedUserData.fullName) saveUserName(cachedUserData.fullName);
       }
     });
 
@@ -266,6 +273,7 @@ export default function DashboardPage() {
           if (current?.fullName) {
             setCachedUser((prev) => ({ ...prev, id: current.id, email: current.email, fullName: current.fullName }));
             setSessionName(current.fullName);
+            saveUserName(current.fullName);
             const cached = getCached<Record<string, unknown>>('pccl_user') ?? {};
             sessionStorage.setItem('pccl_user', JSON.stringify({ ...cached, id: current.id, email: current.email, fullName: current.fullName }));
             window.dispatchEvent(new Event('pccl_user_updated'));
@@ -289,7 +297,11 @@ export default function DashboardPage() {
   const isManagerView = mode !== 'student';
   const copy = MODE_COPY[mode];
 
-  const firstName = (sessionName || cachedUser?.fullName || cachedUser?.email || 'Usuario').split(' ')[0];
+  /* Nombre completo y no solo el primero: el usuario de pruebas se llama
+     "Usuario de prueba", así que recortarlo daría "Hola, Usuario" — idéntico al
+     saludo genérico que se veía cuando no había nombre y sin forma de saber si
+     el dato llegó. */
+  const displayName = storedName || sessionName || cachedUser?.fullName || cachedUser?.email || 'Usuario';
 
   /* `courses.createdBy` guarda el correo del actor, no su UUID: el gateway
      escribe `user.email` como actor al crear el curso. */
@@ -368,7 +380,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-4 pb-6">
       <PageHeader
-        title={<>Hola, {firstName}</>}
+        title={<>Hola, {displayName}</>}
         subtitle={copy.subtitle}
         action={<Badge variant={copy.badgeTone}>{copy.badge}</Badge>}
       />
