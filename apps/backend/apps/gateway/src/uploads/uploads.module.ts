@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { S3StorageService } from '@app/common';
 import { UploadsController } from './uploads.controller';
+import { CloudinaryService } from './cloudinary.service';
+import { LocalFileService } from './local-file.service';
 
 @Module({
   controllers: [UploadsController],
-  providers: [S3StorageService],
+  providers: [CloudinaryService, LocalFileService],
 })
 export class UploadsModule {}
