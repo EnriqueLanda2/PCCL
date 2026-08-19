@@ -1,0 +1,90 @@
+services:
+  nats:
+    image: nats:2.10-alpine
+    ports:
+      - "4222:4222"
+    restart: unless-stopped
+
+  identity-service:
+    build:
+      context: ../../../apps/backend
+      dockerfile: ../../infra/docker/images/services/Dockerfile.identity
+    env_file:
+      - ../../../apps/backend/.env.production
+    environment:
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - nats
+    restart: unless-stopped
+
+  learning-service:
+    build:
+      context: ../../../apps/backend
+      dockerfile: ../../infra/docker/images/services/Dockerfile.learning
+    env_file:
+      - ../../../apps/backend/.env.production
+    environment:
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - nats
+      - identity-service
+    restart: unless-stopped
+
+  certification-service:
+    build:
+      context: ../../../apps/backend
+      dockerfile: ../../infra/docker/images/services/Dockerfile.certification
+    env_file:
+      - ../../../apps/backend/.env.production
+    environment:
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - nats
+      - learning-service
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: ../../../apps/backend
+      dockerfile: ../../infra/docker/images/services/Dockerfile.payment
+    env_file:
+      - ../../../apps/backend/.env.production
+    environment:
+      NATS_URL: nats://nats:4222
+    depends_on:
+      - nats
+      - learning-service
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ../../../apps/backend
+      dockerfile: ../../infra/docker/images/services/Dockerfile.gateway
+    env_file:
+      - ../../../apps/backend/.env.production
+    environment:
+      NATS_URL: nats://nats:4222
+    ports:
+      - "3010:3010"
+    depends_on:
+      - nats
+      - identity-service
+      - learning-service
+      - certification-service
+      - payment-service
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../../..
+      dockerfile: infra/docker/images/frontend/Dockerfile.web-shell
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3010}
+        NEXT_PUBLIC_JITSI_DOMAIN: ${NEXT_PUBLIC_JITSI_DOMAIN:-meet.jit.si}
+        NEXT_PUBLIC_RPM_SUBDOMAIN: ${NEXT_PUBLIC_RPM_SUBDOMAIN:-disabled}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-disabled}
+    ports:
+      - "3002:3002"
+    depends_on:
+      - gateway
+    restart: unless-stopped

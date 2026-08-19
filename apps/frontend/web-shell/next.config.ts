@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   turbopack: {
     // Point at the pnpm workspace root (not this package's own folder): pnpm
     // resolves hoisted deps like `next` via symlinks into the root
