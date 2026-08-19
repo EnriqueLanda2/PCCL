@@ -50,6 +50,56 @@ export interface PublicCourseDetail extends PublicCourse {
   lessons: PublicLesson[];
 }
 
+/** Insignia del alumno. `progress` viene topado a `target` desde el backend. */
+export interface Badge {
+  id: string;
+  label: string;
+  description: string;
+  earned: boolean;
+  progress: number;
+  target: number;
+}
+
+/**
+ * Resumen de gamificación — GET /gamification/me.
+ * Todo se deriva de la actividad ya registrada; no hay tablas de puntos.
+ */
+export interface GamificationSummary {
+  userId: string;
+  points: number;
+  level: number;
+  /** Puntos acumulados dentro del nivel actual, para la barra de progreso. */
+  pointsIntoLevel: number;
+  /** Puntos que mide el nivel actual de extremo a extremo. */
+  pointsForNextLevel: number;
+  nextLevelAt: number;
+  currentStreak: number;
+  longestStreak: number;
+  totals: {
+    lessonsCompleted: number;
+    evaluationsPassed: number;
+    evaluationsAttempted: number;
+    coursesCompleted: number;
+    coursesEnrolled: number;
+  };
+  badges: Badge[];
+  badgesEarned: number;
+  /** Zona horaria con la que el servidor decide el día de la racha. */
+  timezone: string;
+}
+
+/** Fila de la tabla de posiciones — GET /gamification/leaderboard. */
+export interface LeaderboardEntry {
+  position: number;
+  userId: string;
+  fullName: string;
+  avatarUrl: string | null;
+  points: number;
+  currentStreak: number;
+  lessonsCompleted: number;
+  isMe: boolean;
+}
+
 export interface Course {
   id: string;
   title: string;

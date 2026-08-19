@@ -19,7 +19,9 @@ import type {
   CourseComment,
   CourseReview,
   Evaluation,
+  GamificationSummary,
   Inscription,
+  LeaderboardEntry,
   Lesson,
   LiveSession,
   Note,
@@ -69,6 +71,17 @@ export const api = {
 
   /** Detalle con temario de un curso publicado — vista previa antes de inscribirse. */
   publicCourse: (id: string) => get<PublicCourseDetail>(`/courses/public/${id}`),
+
+  /* ── Gamificación ──────────────────────────────────────
+     Puntos, racha e insignias derivados de la actividad ya
+     registrada. El resumen es siempre del alumno del token:
+     no recibe userId a propósito. */
+  gamification: () => get<GamificationSummary>('/gamification/me'),
+
+  leaderboard: (courseId?: string) =>
+    get<LeaderboardEntry[]>(
+      courseId ? `/gamification/leaderboard?courseId=${courseId}` : '/gamification/leaderboard',
+    ),
 
   createCourse:  (dto: Partial<Course>) => post<Course>('/courses', dto),
   publishCourse: (id: string) => patch<Course>(`/courses/${id}/publish`, {}),

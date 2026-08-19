@@ -8,6 +8,9 @@ export const LEARNING_PATTERNS = {
   COURSE_UPDATE: 'learning.course.update',
   COURSE_DELETE: 'learning.course.delete',
   COURSE_PUBLISH: 'learning.course.publish',
+  GAMIFICATION_SUMMARY: 'learning.gamification.summary',
+  GAMIFICATION_LEADERBOARD: 'learning.gamification.leaderboard',
+
   COURSE_REVIEW_FIND_BY_COURSE: 'learning.course.review.find_by_course',
   COURSE_REVIEW_UPSERT: 'learning.course.review.upsert',
   COURSE_CERTIFICATE_ELIGIBILITY: 'learning.course.certificate_eligibility',

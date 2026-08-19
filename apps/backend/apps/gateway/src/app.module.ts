@@ -9,6 +9,7 @@ import { LearningController } from './learning/learning.controller';
 import { CertificationController } from './certification/certification.controller';
 import { PaymentController } from './payment/payment.controller';
 import { StatsController } from './stats/stats.controller';
+import { GamificationController } from './gamification/gamification.controller';
 import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
@@ -37,6 +38,7 @@ import { UploadsModule } from './uploads/uploads.module';
     CertificationController,
     PaymentController,
     StatsController,
+    GamificationController,
   ],
 })
 export class AppModule {}

@@ -12,6 +12,7 @@ import { NotesModule } from './modules/notes/notes.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { GamificationModule } from './modules/gamification/gamification.module';
 import { MessagingModule } from '@app/messaging';
 
 @Module({
@@ -30,6 +31,7 @@ import { MessagingModule } from '@app/messaging';
     TasksModule,
     CommentsModule,
     ChatModule,
+    GamificationModule,
   ],
 })
 export class AppModule {}

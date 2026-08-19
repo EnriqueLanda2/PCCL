@@ -7,6 +7,8 @@ import type { AccessProfile, Certificate, Course, Inscription } from '@/lib/type
 import { Card } from '@/app/components/ui/Card';
 import { Badge } from '@/app/components/ui/Badge';
 import { PageHeader } from '@/app/components/shared/PageHeader';
+import { GamificationPanel } from '@/app/components/shared/GamificationPanel';
+import { Leaderboard } from '@/app/components/shared/Leaderboard';
 import { RadarChart } from '@/app/components/ui/RadarChart';
 import { WaveSpinner } from '@/app/components/ui/WaveSpinner';
 
@@ -398,6 +400,15 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* Gamificación: solo para alumnos. Un instructor no completa lecciones
+          ni responde exámenes, así que su resumen saldría en ceros. */}
+      {!isManagerView && (
+        <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <GamificationPanel />
+          <Leaderboard description="Entre tus compañeros, por puntos acumulados" />
+        </div>
+      )}
 
       <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
         <Card className="p-4 dashboard-card-in">

@@ -11,6 +11,8 @@ export { Carousel3DRing } from './Carousel3DRing';
 export type { Carousel3DItem } from './Carousel3DRing';
 export { Reveal } from './Reveal';
 export { CoursePreviewModal } from './CoursePreviewModal';
+export { GamificationPanel } from './GamificationPanel';
+export { Leaderboard } from './Leaderboard';
 export { CreateCourseModal } from './CreateCourseModal';
 export { CreateLessonModal } from './CreateLessonModal';
 export { LiveClassRoom } from './LiveClassRoom';
