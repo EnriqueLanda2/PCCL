@@ -77,7 +77,7 @@ services:
   frontend:
     build:
       context: ../../..
-      dockerfile: infra/docker/images/frontend/Dockerfile.web-shell
+      dockerfile: infra/docker/images/services/Dockerfile.frontend
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3010}
         NEXT_PUBLIC_JITSI_DOMAIN: ${NEXT_PUBLIC_JITSI_DOMAIN:-meet.jit.si}

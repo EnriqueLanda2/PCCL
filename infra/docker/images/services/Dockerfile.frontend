@@ -1,18 +1,26 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
 COPY apps/frontend/web-shell/package.json ./
 RUN npm install --no-audit --no-fund
 COPY apps/frontend/web-shell ./
 # NEXT_PUBLIC_* vars are inlined into the client bundle at build time, so this
 # has to be a build ARG (not a runtime environment var like the other services).
 ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_JITSI_DOMAIN=meet.jit.si
+ARG NEXT_PUBLIC_RPM_SUBDOMAIN=disabled
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=disabled
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_JITSI_DOMAIN=$NEXT_PUBLIC_JITSI_DOMAIN
+ENV NEXT_PUBLIC_RPM_SUBDOMAIN=$NEXT_PUBLIC_RPM_SUBDOMAIN
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3002
+ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=builder /app ./
 EXPOSE 3002
 CMD ["npm", "run", "start"]
