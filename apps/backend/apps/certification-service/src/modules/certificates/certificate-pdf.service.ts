@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
+import { S3StorageService } from '@app/common';
 import PDFDocument from 'pdfkit';
 import * as QRCode from 'qrcode';
 
@@ -64,18 +63,12 @@ function formatDate(d: Date): string {
 }
 
 /** Arma el PDF de la constancia (ambas caras de la tarjeta, lado a lado) y lo
-    sube a Cloudinary. Un solo lugar para las dos cosas porque nadie más
+    sube a S3. Un solo lugar para las dos cosas porque nadie más
     necesita el buffer crudo: `issue()`/`downloadPdf()` solo quieren la URL
     final para guardarla en `pdfUrl`. */
 @Injectable()
 export class CertificatePdfService {
-  constructor(private readonly config: ConfigService) {
-    cloudinary.config({
-      cloud_name: this.config.get<string>('CLOUDINARY_CLOUD_NAME'),
-      api_key: this.config.get<string>('CLOUDINARY_API_KEY'),
-      api_secret: this.config.get<string>('CLOUDINARY_API_SECRET'),
-    });
-  }
+  constructor(private readonly storage: S3StorageService) {}
 
   async generateAndUpload(data: CertificatePdfData): Promise<string> {
     const buffer = await this.render(data);
@@ -280,18 +273,12 @@ export class CertificatePdfService {
   }
 
   private uploadPdf(buffer: Buffer, publicId: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'pccl/certificates', resource_type: 'raw', public_id: publicId, format: 'pdf', overwrite: true },
-        (error, result?: UploadApiResponse) => {
-          if (error || !result) {
-            reject(error ?? new Error('Cloudinary no devolvió resultado.'));
-            return;
-          }
-          resolve(result.secure_url);
-        },
-      );
-      stream.end(buffer);
-    });
+    return this.storage.uploadPublic(
+      buffer,
+      `${publicId}.pdf`,
+      'application/pdf',
+      'certificate',
+      { publicId, prefix: 'certificates', cacheControl: 'public, max-age=3600' },
+    );
   }
 }
