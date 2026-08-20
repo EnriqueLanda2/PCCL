@@ -58,6 +58,12 @@ export const api = {
   register: (fullName: string, email: string, password: string) =>
     post<LoginResponse>('/auth/register', { fullName, email, password }),
 
+  forgotPassword: (email: string) =>
+    post<{ message: string }>('/auth/forgot-password', { email }),
+
+  resetPassword: (email: string, code: string, newPassword: string) =>
+    post<{ message: string }>('/auth/reset-password', { email, code, newPassword }),
+
   logout:   () => post<{ message: string }>('/auth/logout'),
 
   me:       () => get<SessionUser>('/auth/me'),
