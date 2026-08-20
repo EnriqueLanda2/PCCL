@@ -2,6 +2,7 @@ export const appRoutes = {
   home:          '/',
   login:         '/identity/auth',
   register:      '/identity/register',
+  forgotPassword: '/identity/forgot-password',
   dashboard:     '/learning/dashboard',
   courses:       '/learning/courses',
   /* Descubrimiento: cursos publicados en los que el usuario aún NO está
@@ -30,7 +31,7 @@ export const appRoutes = {
 export type AppRouteKey = keyof typeof appRoutes;
 
 /** Public routes that skip the auth shell */
-export const PUBLIC_ROUTES: string[] = [appRoutes.login, appRoutes.register];
+export const PUBLIC_ROUTES: string[] = [appRoutes.login, appRoutes.register, appRoutes.forgotPassword];
 
 /* ── Post-login/register landing route ──
    Mapa módulo backend → ruta frontend, usado por login y registro

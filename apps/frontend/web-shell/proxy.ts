@@ -12,6 +12,7 @@ import type { NextRequest } from 'next/server';
 const PUBLIC_PATHS = [
   '/identity/auth',
   '/identity/register',
+  '/identity/forgot-password',
   '/modules/auth',
   '/modules/register',
 ];
