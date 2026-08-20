@@ -7,13 +7,14 @@ const USER = { id: 'user-1', email: 'ana@example.com', active: true } as any;
 function buildService(opts: {
   user?: any;
   existingCode?: any;
+  updateResult?: any;
 } = {}) {
   const prisma = {
     passwordResetCode: {
       findFirst: jest.fn().mockResolvedValue(opts.existingCode ?? null),
       updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       create: jest.fn().mockResolvedValue({ id: 'code-1' }),
-      update: jest.fn().mockResolvedValue({}),
+      update: jest.fn().mockResolvedValue(opts.updateResult ?? {}),
     },
     user: { update: jest.fn().mockResolvedValue({}) },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
@@ -58,6 +59,15 @@ describe('AuthService · forgotPassword', () => {
     expect(result).toEqual({ message: 'Si el correo existe, te llegó un código.' });
   });
 
+  it('responde con el mensaje genérico aunque falle el envío del correo', async () => {
+    const { service, mailService } = buildService();
+    mailService.sendPasswordResetCode.mockRejectedValue(new Error('resend down'));
+
+    const result = await service.forgotPassword('ana@example.com');
+
+    expect(result).toEqual({ message: 'Si el correo existe, te llegó un código.' });
+  });
+
   it('no reenvía si ya hay un código pedido hace menos de 60s', async () => {
     const { service, prisma, mailService } = buildService({
       existingCode: {
@@ -87,17 +97,22 @@ describe('AuthService · resetPassword', () => {
     expect(result).toEqual({ message: 'Contraseña actualizada.' });
   });
 
-  it('rechaza un código incorrecto e incrementa attempts', async () => {
+  it('rechaza un código incorrecto e incrementa attempts atómicamente', async () => {
     const codeHash = await bcrypt.hash('123456', 10);
     const { service, prisma } = buildService({
       existingCode: { id: 'code-1', codeHash, attempts: 0, expiresAt: new Date(Date.now() + 60_000) },
+      updateResult: { attempts: 1 },
     });
 
     await expect(service.resetPassword('ana@example.com', '000000', 'NuevaPass123')).rejects.toThrow(
       BadRequestException,
     );
+    expect(prisma.passwordResetCode.update).toHaveBeenCalledTimes(1);
     expect(prisma.passwordResetCode.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'code-1' }, data: expect.objectContaining({ attempts: 1 }) }),
+      expect.objectContaining({
+        where: { id: 'code-1' },
+        data: expect.objectContaining({ attempts: { increment: 1 } }),
+      }),
     );
   });
 
@@ -105,15 +120,25 @@ describe('AuthService · resetPassword', () => {
     const codeHash = await bcrypt.hash('123456', 10);
     const { service, prisma } = buildService({
       existingCode: { id: 'code-1', codeHash, attempts: 4, expiresAt: new Date(Date.now() + 60_000) },
+      updateResult: { attempts: 5 },
     });
 
     await expect(service.resetPassword('ana@example.com', '000000', 'NuevaPass123')).rejects.toThrow(
       BadRequestException,
     );
-    expect(prisma.passwordResetCode.update).toHaveBeenCalledWith(
+    expect(prisma.passwordResetCode.update).toHaveBeenCalledTimes(2);
+    expect(prisma.passwordResetCode.update).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
         where: { id: 'code-1' },
-        data: expect.objectContaining({ attempts: 5, usedAt: expect.any(Date) }),
+        data: expect.objectContaining({ attempts: { increment: 1 } }),
+      }),
+    );
+    expect(prisma.passwordResetCode.update).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: { id: 'code-1' },
+        data: expect.objectContaining({ usedAt: expect.any(Date) }),
       }),
     );
   });

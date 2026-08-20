@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -24,6 +25,8 @@ const EXPIRED_CODE_MESSAGE = 'El código expiró o se agotaron los intentos. Sol
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger('AuthService');
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -109,7 +112,9 @@ export class AuthService {
           },
         });
 
-        await this.mailService.sendPasswordResetCode(user.email, code);
+        this.mailService
+          .sendPasswordResetCode(user.email, code)
+          .catch((err) => this.logger.error(`No se pudo enviar el código a ${user.email}`, err));
       }
     }
 
@@ -131,12 +136,17 @@ export class AuthService {
 
     const valid = await bcrypt.compare(code, record.codeHash);
     if (!valid) {
-      const attempts = record.attempts + 1;
-      const exhausted = attempts >= RESET_CODE_MAX_ATTEMPTS;
-      await this.prisma.passwordResetCode.update({
+      const updated = await this.prisma.passwordResetCode.update({
         where: { id: record.id },
-        data: exhausted ? { attempts, usedAt: new Date() } : { attempts },
+        data: { attempts: { increment: 1 } },
       });
+      const exhausted = updated.attempts >= RESET_CODE_MAX_ATTEMPTS;
+      if (exhausted) {
+        await this.prisma.passwordResetCode.update({
+          where: { id: record.id },
+          data: { usedAt: new Date() },
+        });
+      }
       throw new BadRequestException(exhausted ? EXPIRED_CODE_MESSAGE : INVALID_CODE_MESSAGE);
     }
 
