@@ -136,4 +136,25 @@ describe('AuthService · resetPassword', () => {
       BadRequestException,
     );
   });
+
+  it('da el mismo mensaje genérico si el usuario no existe o si no tiene código vigente', async () => {
+    const { service: serviceNoUser } = buildService({ user: null });
+    const { service: serviceNoCode } = buildService({ existingCode: null });
+
+    let messageForNoUser = '';
+    let messageForNoCode = '';
+    try {
+      await serviceNoUser.resetPassword('nadie@example.com', '123456', 'NuevaPass123');
+    } catch (err) {
+      messageForNoUser = (err as BadRequestException).message;
+    }
+    try {
+      await serviceNoCode.resetPassword('ana@example.com', '123456', 'NuevaPass123');
+    } catch (err) {
+      messageForNoCode = (err as BadRequestException).message;
+    }
+
+    expect(messageForNoUser).toBe(messageForNoCode);
+    expect(messageForNoUser).not.toBe('');
+  });
 });

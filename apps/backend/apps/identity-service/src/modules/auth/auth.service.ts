@@ -118,13 +118,14 @@ export class AuthService {
 
   async resetPassword(email: string, code: string, newPassword: string) {
     const user = await this.usersService.findByEmail(email);
-    if (!user) throw new BadRequestException(INVALID_CODE_MESSAGE);
+    const record = user
+      ? await this.prisma.passwordResetCode.findFirst({
+          where: { userId: user.id, usedAt: null },
+          orderBy: { createdAt: 'desc' },
+        })
+      : null;
 
-    const record = await this.prisma.passwordResetCode.findFirst({
-      where: { userId: user.id, usedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (!record || record.expiresAt < new Date()) {
+    if (!user || !record || record.expiresAt < new Date()) {
       throw new BadRequestException(EXPIRED_CODE_MESSAGE);
     }
 
