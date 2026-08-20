@@ -321,7 +321,7 @@ function LoginForm({ nextParam, onSwitch }: Readonly<{ nextParam: NextParam; onS
             <input type="checkbox" className="accent-primary-500 w-4 h-4" />
             Recordarme
           </label>
-          <Link href="#" className="text-primary-500 hover:text-primary-600 font-medium">
+          <Link href={appRoutes.forgotPassword} className="text-primary-500 hover:text-primary-600 font-medium">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
