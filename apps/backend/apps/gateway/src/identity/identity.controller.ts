@@ -61,6 +61,22 @@ export class IdentityController {
   }
 
   @Public()
+  @Post('auth/forgot-password')
+  forgotPassword(@Body() dto: { email: string }) {
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.AUTH_FORGOT_PASSWORD, dto),
+    );
+  }
+
+  @Public()
+  @Post('auth/reset-password')
+  resetPassword(@Body() dto: { email: string; code: string; newPassword: string }) {
+    return firstValueFrom(
+      this.client.send(IDENTITY_PATTERNS.AUTH_RESET_PASSWORD, dto),
+    );
+  }
+
+  @Public()
   @Post('auth/logout')
   logout(@Res({ passthrough: true }) res: Response) {
     const cookieDomain = this.config.get<string>('COOKIE_DOMAIN', 'localhost');
