@@ -25,6 +25,7 @@ model User {
   userRoles       UserRole[]
   pushTokens      PushToken[]
   notifications   Notification[]
+  passwordResetCodes PasswordResetCode[]
 
   @@map("users")
 }
@@ -127,6 +128,20 @@ model Notification {
 
   @@index([userId, readAt])
   @@map("notifications")
+}
+
+model PasswordResetCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash") @db.VarChar(255)
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at") @db.Timestamp(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamp(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("password_reset_codes")
 }
 
 model RolePrivilege {
