@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -8,9 +9,18 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RbacService } from '../rbac/rbac.service';
 import { UsersService } from '../users/users.service';
+import { MailService } from '../mail/mail.service';
+
+const RESET_CODE_TTL_MS = 15 * 60_000;
+const RESET_CODE_RESEND_COOLDOWN_MS = 60_000;
+const RESET_CODE_MAX_ATTEMPTS = 5;
+const GENERIC_FORGOT_MESSAGE = 'Si el correo existe, te llegó un código.';
+const INVALID_CODE_MESSAGE = 'Código incorrecto.';
+const EXPIRED_CODE_MESSAGE = 'El código expiró o se agotaron los intentos. Solicita uno nuevo.';
 
 @Injectable()
 export class AuthService {
@@ -20,6 +30,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly rbacService: RbacService,
     private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
   ) {}
 
   async login(email: string, password: string) {
@@ -69,5 +80,77 @@ export class AuthService {
     );
 
     return this.login(email, password);
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+
+    if (user) {
+      const existing = await this.prisma.passwordResetCode.findFirst({
+        where: { userId: user.id, usedAt: null, expiresAt: { gt: new Date() } },
+        orderBy: { createdAt: 'desc' },
+      });
+      const recentlyRequested =
+        existing && Date.now() - existing.createdAt.getTime() < RESET_CODE_RESEND_COOLDOWN_MS;
+
+      if (!recentlyRequested) {
+        await this.prisma.passwordResetCode.updateMany({
+          where: { userId: user.id, usedAt: null },
+          data: { usedAt: new Date() },
+        });
+
+        const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+        const codeHash = await bcrypt.hash(code, 10);
+        await this.prisma.passwordResetCode.create({
+          data: {
+            userId: user.id,
+            codeHash,
+            expiresAt: new Date(Date.now() + RESET_CODE_TTL_MS),
+          },
+        });
+
+        await this.mailService.sendPasswordResetCode(user.email, code);
+      }
+    }
+
+    return { message: GENERIC_FORGOT_MESSAGE };
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) throw new BadRequestException(INVALID_CODE_MESSAGE);
+
+    const record = await this.prisma.passwordResetCode.findFirst({
+      where: { userId: user.id, usedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!record || record.expiresAt < new Date()) {
+      throw new BadRequestException(EXPIRED_CODE_MESSAGE);
+    }
+
+    const valid = await bcrypt.compare(code, record.codeHash);
+    if (!valid) {
+      const attempts = record.attempts + 1;
+      const exhausted = attempts >= RESET_CODE_MAX_ATTEMPTS;
+      await this.prisma.passwordResetCode.update({
+        where: { id: record.id },
+        data: exhausted ? { attempts, usedAt: new Date() } : { attempts },
+      });
+      throw new BadRequestException(exhausted ? EXPIRED_CODE_MESSAGE : INVALID_CODE_MESSAGE);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash, updatedBy: 'password-reset' },
+      }),
+      this.prisma.passwordResetCode.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { message: 'Contraseña actualizada.' };
   }
 }
