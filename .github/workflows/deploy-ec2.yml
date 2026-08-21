@@ -13,7 +13,10 @@ concurrency:
 jobs:
   deploy:
     runs-on: [self-hosted, linux, x64, pccl-production]
-    timeout-minutes: 30
+    timeout-minutes: 60
+    env:
+      # Avoid exhausting the small EC2 while Docker rebuilds all services.
+      COMPOSE_PARALLEL_LIMIT: 2
 
     steps:
       - name: Update production checkout
