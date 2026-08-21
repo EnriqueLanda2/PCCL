@@ -118,6 +118,19 @@ export class AlexaService {
     );
   }
 
+  /* Lista los cursos publicados reales: la skill de Alexa la usa para
+     sincronizar en caliente (Dynamic Entities) el catálogo de temas que
+     reconoce, en vez de tener una lista fija en el modelo de interacción
+     que se desactualiza cada vez que se publica o retira un curso. */
+  async listCourseTopics() {
+    const courses = await this.prisma.course.findMany({
+      where: { status: 'published' },
+      select: { title: true },
+      orderBy: { title: 'asc' },
+    });
+    return { topics: courses.map((c) => c.title) };
+  }
+
   /* ─── AGENDAR CLASE ───
      PCCL es la fuente de verdad: la fila se crea en `live_sessions` antes de
      que Alexa confirme nada, así que si esto falla, Alexa nunca dice que la
@@ -128,12 +141,21 @@ export class AlexaService {
       throw new BadRequestException('Falta el tema, la fecha o la hora de la clase.');
     }
 
-    const scheduledAt = new Date(`${input.date}T${input.time}:00`);
+    /* -06:00 fija la hora como horario de México (sin horario de verano
+       desde 2022). Sin esto, "22:00" que dijo el alumno por voz se
+       interpretaba como 22:00 UTC (16:00 México) y la clase quedaba
+       guardada 6 horas antes de lo que Alexa confirmó. */
+    const scheduledAt = new Date(`${input.date}T${input.time}:00-06:00`);
     if (Number.isNaN(scheduledAt.getTime())) {
       throw new BadRequestException('La fecha o la hora no son válidas.');
     }
     if (scheduledAt.getTime() <= Date.now()) {
       throw new BadRequestException('Esa fecha u hora ya pasó. Elige una fecha futura.');
+    }
+
+    const course = await this.findCourseByTopic(topic);
+    if (!course) {
+      throw new NotFoundException(`No encontré un curso activo de "${topic}" en PCCL.`);
     }
 
     const { email } = this.linkedHost();
@@ -146,11 +168,10 @@ export class AlexaService {
     });
     if (existing) return this.toAgendaResponse(existing, topic, input.date, input.time);
 
-    const course = await this.findCourseByTopic(topic);
     /* Solo se ata al curso si además tiene una fase: create() exige fase
        cuando hay courseId (ver assertPhase en LiveSessionsService), y un
        curso publicado sin fases no tiene dónde encajar la clase. */
-    const phaseId = course?.phases[0]?.id;
+    const phaseId = course.phases[0]?.id;
 
     const created = await this.liveSessions.create(
       {
