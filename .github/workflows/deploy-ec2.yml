@@ -62,9 +62,10 @@ jobs:
         run: |
           set -euo pipefail
           cd /home/ubuntu/PCCL
-          compose=(docker compose \
-            -f infra/docker/compose/docker-compose.full.yml \
-            -f infra/docker/compose/docker-compose.prod.yml)
+          # Production databases live in RDS.  Never include the development
+          # compose file here: it defines local PostgreSQL containers and
+          # overrides the RDS URLs from apps/backend/.env.production.
+          compose=(docker compose -f infra/docker/compose/docker-compose.prod.yml)
 
           case "${{ steps.changes.outputs.scope }}" in
             frontend)
@@ -75,7 +76,7 @@ jobs:
                 identity-service learning-service certification-service payment-service gateway
               ;;
             full)
-              "${compose[@]}" up -d --build --remove-orphans
+              "${compose[@]}" up -d --build
               ;;
             none)
               echo "No application or deployment files changed; skipping Docker rebuild."
@@ -90,7 +91,4 @@ jobs:
         shell: bash
         run: |
           cd /home/ubuntu/PCCL
-          docker compose \
-            -f infra/docker/compose/docker-compose.full.yml \
-            -f infra/docker/compose/docker-compose.prod.yml \
-            ps
+          docker compose -f infra/docker/compose/docker-compose.prod.yml ps
