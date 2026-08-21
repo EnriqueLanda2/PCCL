@@ -82,6 +82,9 @@ services:
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
       OLLAMA_BASIC_AUTH_USERNAME: ${OLLAMA_BASIC_AUTH_USERNAME:-}
       OLLAMA_BASIC_AUTH_PASSWORD: ${OLLAMA_BASIC_AUTH_PASSWORD:-}
+      # Skill de Alexa: cuenta real de PCCL bajo la que se agenda/registra.
+      ALEXA_LINKED_USER_EMAIL: ${ALEXA_LINKED_USER_EMAIL:-}
+      ALEXA_LINKED_USER_ID: ${ALEXA_LINKED_USER_ID:-}
     depends_on:
       - nats
       - postgres-learning
@@ -146,6 +149,8 @@ services:
       JAAS_APP_ID: ${JAAS_APP_ID:-}
       JAAS_API_KEY_ID: ${JAAS_API_KEY_ID:-}
       JAAS_PRIVATE_KEY: ${JAAS_PRIVATE_KEY:-}
+      # Clave compartida que valida las llamadas del Lambda de la skill de Alexa.
+      ALEXA_API_KEY: ${ALEXA_API_KEY:-}
     depends_on:
       - nats
       - identity-service
