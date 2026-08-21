@@ -155,9 +155,60 @@ export class CoursesService {
     return { id, deleted: true };
   }
 
+  /** Escape directo para admin — publica sin pasar por revisión. */
   async publish(id: string, actor: string) {
     await this.findOne(id);
     await this.prisma.course.update({ where: { id }, data: { status: 'published', updatedBy: actor } });
+    return this.findOne(id);
+  }
+
+  /**
+   * El instructor manda su curso a la cola del revisor. Solo tiene sentido
+   * desde 'draft' (primera vez) o 'rejected' (después de corregir) — un
+   * curso ya publicado o ya en cola no se reenvía.
+   */
+  async submitForModeration(id: string, actor: string) {
+    const course = await this.findOne(id);
+    if (course.status !== 'draft' && course.status !== 'rejected') {
+      throw new BadRequestException(
+        `Solo se puede enviar a revisión un curso en borrador o rechazado (estado actual: ${course.status}).`,
+      );
+    }
+    await this.prisma.course.update({
+      where: { id },
+      data: { status: 'pending_review', updatedBy: actor },
+    });
+    return this.findOne(id);
+  }
+
+  /**
+   * Decisión del revisor. El motivo de rechazo NO es opcional — sin él, el
+   * instructor solo sabría que algo estuvo mal, nunca qué corregir. Al
+   * aprobar, el curso queda publicado en el mismo paso: no hay un estado
+   * intermedio "aprobado pero no publicado" porque nadie lo pidió y solo
+   * sería un clic extra sin beneficio.
+   */
+  async moderate(id: string, decision: 'approved' | 'rejected', note: string | null, actor: string) {
+    const course = await this.findOne(id);
+    if (course.status !== 'pending_review') {
+      throw new BadRequestException(
+        `Este curso no está en revisión (estado actual: ${course.status}).`,
+      );
+    }
+    const trimmedNote = note?.trim() || null;
+    if (decision === 'rejected' && !trimmedNote) {
+      throw new BadRequestException('Indica el motivo del rechazo — el instructor necesita saber qué corregir.');
+    }
+    await this.prisma.course.update({
+      where: { id },
+      data: {
+        status: decision === 'approved' ? 'published' : 'rejected',
+        moderationNote: trimmedNote,
+        moderatedBy: actor,
+        moderatedAt: new Date(),
+        updatedBy: actor,
+      },
+    });
     return this.findOne(id);
   }
 
@@ -305,6 +356,33 @@ export class CoursesService {
 
   findPhases(courseId: string) {
     return this.prisma.phase.findMany({ where: { courseId }, orderBy: { order: 'asc' } });
+  }
+
+  async updatePhase(id: string, title: string, actor: string) {
+    const phase = await this.prisma.phase.findUnique({ where: { id } });
+    if (!phase) throw new NotFoundException('Fase no encontrada');
+    const trimmed = title?.trim();
+    if (!trimmed) throw new BadRequestException('El nombre de la fase no puede quedar vacío.');
+    return this.prisma.phase.update({ where: { id }, data: { title: trimmed, updatedBy: actor } });
+  }
+
+  /** Reordena TODAS las fases del curso de una vez: `orderedIds` es la lista
+      completa en su nuevo orden y `order` pasa a ser su índice + 1. Exigir la
+      lista completa (no un movimiento suelto) evita huecos o empates de
+      `order` si dos ediciones llegan cruzadas. */
+  async reorderPhases(courseId: string, orderedIds: string[], actor: string) {
+    const phases = await this.prisma.phase.findMany({ where: { courseId }, select: { id: true } });
+    const known = new Set(phases.map((p) => p.id));
+    const unique = [...new Set(orderedIds ?? [])].filter((id) => known.has(id));
+    if (unique.length !== phases.length) {
+      throw new BadRequestException('La lista de fases no coincide con las fases actuales del curso.');
+    }
+    await this.prisma.$transaction(
+      unique.map((id, index) =>
+        this.prisma.phase.update({ where: { id }, data: { order: index + 1, updatedBy: actor } }),
+      ),
+    );
+    return this.findPhases(courseId);
   }
 
   async removePhase(id: string) {

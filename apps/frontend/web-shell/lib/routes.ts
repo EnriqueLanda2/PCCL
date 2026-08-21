@@ -17,6 +17,8 @@ export const appRoutes = {
   califications: '/learning/califications',
   certificates:  '/certification/certificates',
   progress:      '/learning/progress',
+  /** Cola de aprobación/rechazo del revisor — también accesible para admin. */
+  review:        '/learning/review',
   audit:         '/certification/audit',
   users:         '/identity/users',
   rbac:          '/identity/rbac',
@@ -43,6 +45,7 @@ const MODULE_ROUTE: Record<string, string> = {
   califications: appRoutes.califications, certificates: appRoutes.certificates,
   progress: appRoutes.progress, audit: appRoutes.audit,
   users: appRoutes.users, rbac: appRoutes.rbac,
+  moderation: appRoutes.review,
 };
 
 export function firstRoute(menu: { module: string; visible: boolean }[]): string {

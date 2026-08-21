@@ -4,8 +4,11 @@ const { users: SEED_USERS } = require('../../../prisma/seed-shared');
 
 const prisma = new PrismaClient();
 
-const baseRoles = ['alumno', 'instructor', 'admin'];
-const legacyRoles = ['revisor'];
+/* 'revisor' vivió una temporada como "legacyRoles" que este mismo seed
+   borraba en cada corrida (ver commits previos). Vuelve porque el proyecto
+   integrador lo pide explícitamente: alguien tiene que validar un curso
+   antes de que se publique, aparte de quien lo escribió. */
+const baseRoles = ['alumno', 'instructor', 'admin', 'revisor'];
 
 /* ── Catálogo de módulos del sistema (debe calzar con buildMenu() en rbac.service.ts) ── */
 const MODULES = [
@@ -19,6 +22,7 @@ const MODULES = [
   { key: 'reports',       name: 'Auditoría' },
   { key: 'users',         name: 'Usuarios' },
   { key: 'rbac',          name: 'RBAC' },
+  { key: 'moderation',    name: 'Moderación' },
 ];
 
 /* ── Privilegios por módulo (code = "modulo:accion") ── */
@@ -48,6 +52,8 @@ const PRIVILEGES = [
   { code: 'users:update',        action: 'update',   module: 'users' },
   { code: 'rbac:read',           action: 'read',     module: 'rbac' },
   { code: 'rbac:manage',         action: 'manage',   module: 'rbac' },
+  { code: 'moderation:read',     action: 'read',     module: 'moderation' },
+  { code: 'moderation:update',   action: 'update',   module: 'moderation' },
 ];
 
 /* ── Qué privilegios recibe cada rol base ── */
@@ -72,6 +78,15 @@ const ROLE_PRIVILEGES = {
     'certificates:read', 'certificates:download',
     'progress:read',
   ],
+  /* Solo ve/aprueba lo que hay que revisar. `courses:read` sin `:create` ni
+     `:update` — el revisor lee el curso completo para validarlo, pero no lo
+     edita: si algo hay que corregir, se lo dice al instructor y este lo
+     reenvía a revisión, no lo edita él mismo. */
+  revisor: [
+    'dashboard:read',
+    'courses:read',
+    'moderation:read', 'moderation:update',
+  ],
 };
 
 async function upsertUser({ id, fullName, email, password, roleName }, roleIdByName) {
@@ -95,20 +110,6 @@ async function upsertUser({ id, fullName, email, password, roleName }, roleIdByN
 }
 
 async function main() {
-  /* ── Limpieza de roles heredados: el sistema solo conserva 3 roles base ── */
-  for (const name of legacyRoles) {
-    const legacyRole = await prisma.role.findUnique({ where: { name } });
-    if (!legacyRole) continue;
-    await prisma.userRole.deleteMany({ where: { roleId: legacyRole.id } });
-    await prisma.rolePrivilege.deleteMany({ where: { roleId: legacyRole.id } });
-    await prisma.role.delete({ where: { id: legacyRole.id } });
-  }
-
-  await prisma.user.updateMany({
-    where: { email: 'revisor@prueba.com' },
-    data: { active: false, updatedBy: 'seed' },
-  });
-
   /* ── Roles base ── */
   for (const name of baseRoles) {
     await prisma.role.upsert({

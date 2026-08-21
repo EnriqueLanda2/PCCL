@@ -17,7 +17,13 @@ export function resolveScope(user: RequestUser | null): DataScope {
   const isAdmin = roles
     ? roles.includes('admin')
     : user.permissions.includes('rbac:manage');
-  if (isAdmin) return { kind: 'all' };
+  /* El revisor necesita ver cursos de CUALQUIER instructor para poder
+     aprobarlos o rechazarlos — no solo los propios, que es lo que le tocaría
+     si cayera en la rama de instructor de abajo. Mismo alcance que admin. */
+  const isReviewer = roles
+    ? roles.includes('revisor')
+    : user.permissions.includes('moderation:update');
+  if (isAdmin || isReviewer) return { kind: 'all' };
 
   const isInstructor = roles
     ? roles.includes('instructor') || roles.includes('profesor')

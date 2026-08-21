@@ -117,7 +117,11 @@ export function CourseCard({
       </button>
 
       <div className="flex flex-1 flex-col px-5 pb-5 pt-5">
-        <div className="mb-3 flex flex-wrap items-center gap-2 text-[0.8125rem] font-semibold text-[var(--blue-600)]">
+        {/* Una sola línea (sin wrap): si la meta envuelve a 2-3 renglones,
+            cada tarjeta termina con una altura distinta y la cuadrícula se ve
+            despareja. Lo que no quepa se recorta — el detalle completo vive
+            en la ficha del curso. */}
+        <div className="mb-3 flex items-center gap-2 overflow-hidden whitespace-nowrap text-[0.8125rem] font-semibold text-[var(--blue-600)]">
           <span>{category}</span>
           {(duration || lessons > 0 || contentMeta) && <span className="text-[var(--neutral-300)]">•</span>}
           {duration ? <span>{duration}</span> : lessons > 0 ? <span>{lessons} lecciones</span> : null}
@@ -141,11 +145,15 @@ export function CourseCard({
           )}
         </div>
 
-        <h3 className="line-clamp-2 text-[1.0625rem] font-extrabold leading-snug text-[var(--ink)]">
+        {/* min-h en em = exactamente 2 líneas (2 × line-height): el título y
+            la descripción siempre RESERVAN ese alto aunque ocupen una sola
+            línea — sin esto cada tarjeta mide distinto según cuánto texto
+            tenga y la cuadrícula se ve dispareja. */}
+        <h3 className="line-clamp-2 min-h-[2.75em] text-[1.0625rem] font-extrabold leading-snug text-[var(--ink)]">
           {course.title}
         </h3>
 
-        <p className="mt-3 line-clamp-2 text-[0.9063rem] leading-relaxed text-[var(--ink-soft)]">
+        <p className="mt-3 line-clamp-2 min-h-[3.25em] text-[0.9063rem] leading-relaxed text-[var(--ink-soft)]">
           {course.description || 'Explora el contenido del curso y continúa tu aprendizaje.'}
         </p>
 

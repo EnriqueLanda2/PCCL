@@ -18,6 +18,7 @@ const ROUTE_META: Record<string, { title: string; eyebrow?: string; icon?: React
   dashboard: { title: 'Resumen general', eyebrow: 'Panel' },
   catalog: { title: 'Catálogo de cursos', eyebrow: 'Explorar' },
   courses: { title: 'Mis cursos', eyebrow: 'Aprendizaje' },
+  review: { title: 'Revisión de cursos', eyebrow: 'Moderación' },
   live: { title: 'Clases en vivo', eyebrow: 'Aprendizaje' },
   lessons: { title: 'Temas y lecciones', eyebrow: 'Gestión académica' },
   progress: { title: 'Estudiantes', eyebrow: 'Seguimiento' },

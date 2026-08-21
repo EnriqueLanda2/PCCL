@@ -11,6 +11,7 @@
 const users = {
   admin:      { id: '11111111-1111-4111-8111-111111111101', email: 'admin@prueba.com',      fullName: 'Usuario de prueba',      password: 'Admin1234!',      roleName: 'admin' },
   instructor: { id: '11111111-1111-4111-8111-111111111102', email: 'instructor@prueba.com', fullName: 'Instructor de prueba',   password: 'Instructor1234!', roleName: 'instructor' },
+  revisor:    { id: '11111111-1111-4111-8111-111111111103', email: 'revisor@prueba.com',    fullName: 'Revisor de prueba',      password: 'Revisor1234!',    roleName: 'revisor' },
   sofia:      { id: '11111111-1111-4111-8111-111111111110', email: 'sofia.ramirez@prueba.com',   fullName: 'Sofía Ramírez',    password: 'Alumno1234!', roleName: 'alumno' },
   mariana:    { id: '11111111-1111-4111-8111-111111111111', email: 'mariana.lopez@prueba.com',   fullName: 'Mariana López',    password: 'Alumno1234!', roleName: 'alumno' },
   diego:      { id: '11111111-1111-4111-8111-111111111112', email: 'diego.hernandez@prueba.com', fullName: 'Diego Hernández',  password: 'Alumno1234!', roleName: 'alumno' },

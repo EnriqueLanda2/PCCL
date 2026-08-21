@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import MenuItem from '@mui/material/MenuItem';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import { api, getErrorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
 import type { Course, CourseEarnings, Inscription } from '@/lib/types';
 import { Badge } from '@/app/components/ui/Badge';
 import { AppButton, AppInput, AppSelect } from '@/app/components/ui/AppControls';
@@ -18,7 +18,7 @@ import { DEFAULT_PAGE_SIZE, Pagination } from '@/app/components/ui/Pagination';
 import { EmptyState } from '@/app/components/shared/EmptyState';
 import { PageHeader } from '@/app/components/shared/PageHeader';
 import { CourseContentView } from '@/app/components/shared/CourseContentView';
-import { CreateCourseModal } from '@/app/components/shared/CreateCourseModal';
+import { CourseStudioView } from '@/app/components/shared/CourseStudioView';
 import { CheckoutModal } from '@/app/components/shared/CheckoutModal';
 import { CourseCard } from '@/app/components/shared/CourseCard';
 import { EnrollableCourses } from '@/app/components/shared/EnrollableCourses';
@@ -72,7 +72,10 @@ const DENSE_BUTTON_SX = {
   whiteSpace: 'nowrap',
 };
 
-const STATUS_LABEL: Record<string, string> = { published: 'Publicado', draft: 'Borrador' };
+const STATUS_LABEL: Record<string, string> = {
+  published: 'Publicado', draft: 'Borrador',
+  pending_review: 'En revisión', rejected: 'Rechazado',
+};
 const SORT_OPTIONS = [
   { value: 'newest',   label: 'Más recientes' },
   { value: 'title',    label: 'A → Z'         },
@@ -172,11 +175,12 @@ export default function CoursesPage() {
   const [roles,        setRoles]        = useState<string[]>([]);
   const [earnings,     setEarnings]     = useState<CourseEarnings[]>([]);
   const [loading,      setLoading]      = useState(true);
-  const [modalOpen,    setModalOpen]    = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  /* Estudio del instructor: studioOpen=true con studioCourse=null es "crear
+     curso nuevo"; con curso, es editar/administrar uno propio. */
+  const [studioOpen,   setStudioOpen]   = useState(false);
+  const [studioCourse, setStudioCourse] = useState<Course | null>(null);
   const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null);
-  const [publishingId, setPublishingId] = useState<string | null>(null);
-  const [publishError, setPublishError] = useState<string | null>(null);
   /* Arranca en null en ambos lados — sessionStorage no existe en el servidor */
   const [myEmail] = useState<string | null>(() => (typeof window === 'undefined' ? null : getCachedEmail()));
 
@@ -332,15 +336,28 @@ export default function CoursesPage() {
      así que incluirlo haría que el contador señalara algo ya visible. */
   const activeFilterCount = levelFilters.length + statusFilters.length + (sortBy === 'newest' ? 0 : 1);
 
-  /** Alumnos compran cursos con costo antes de ver contenido; admin/profesor pueden administrarlos. */
+  /** Alumnos compran cursos con costo antes de ver contenido; quien administra
+      el curso entra a su estudio (crear/editar/temario), no a la ficha de alumno. */
   const handleSelectCourse = (course: Course) => {
     const requiresPayment = !course.isFree && (course.price ?? 0) > 0;
     const canManageCourse = isAdmin || (isInstructor && course.createdBy === myEmail);
-    if (requiresPayment && !enrolledCourseIds.has(course.id) && !canManageCourse) {
+    if (canManageCourse) {
+      setStudioCourse(course);
+      setStudioOpen(true);
+    } else if (requiresPayment && !enrolledCourseIds.has(course.id)) {
       setCheckoutCourse(course);
     } else {
       setSelectedCourse(course);
     }
+  };
+
+  const handleStudioSaved = (saved: Course) => {
+    setCourses((prev) => {
+      const exists = prev.some((c) => c.id === saved.id);
+      return exists ? prev.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...prev];
+    });
+    setStudioCourse(saved);
+    setCatalogKey((key) => key + 1);
   };
 
   const handlePaid = () => {
@@ -354,22 +371,9 @@ export default function CoursesPage() {
     setSelectedCourse(course);
   };
 
-  const canPublishCourse = (course: Course) =>
-    course.status === 'draft' && (isAdmin || (isInstructor && course.createdBy === myEmail));
-
-  const handlePublishCourse = async (course: Course) => {
-    setPublishingId(course.id);
-    setPublishError(null);
-    try {
-      const published = await api.publishCourse(course.id);
-      setCourses((prev) => prev.map((item) => (item.id === course.id ? published : item)));
-      setCatalogKey((key) => key + 1);
-    } catch (error) {
-      setPublishError(getErrorMessage(error));
-    } finally {
-      setPublishingId(null);
-    }
-  };
+  /* "Enviar a revisión" ya no vive en la tarjeta: se envía desde el estudio
+     del curso (CourseStudioView), que es donde el instructor edita y ve el
+     estado de moderación completo. */
 
   const studentTabs = [
     { id: 'mine' as const, label: 'Mis cursos', count: courses.length },
@@ -392,8 +396,31 @@ export default function CoursesPage() {
     : 'Cursos inscritos';
 
   /* ── Segmento de detalle: reemplaza el catálogo sin navegar de página ── */
+  if (studioOpen) {
+    return (
+      <CourseStudioView
+        course={studioCourse}
+        isAdmin={isAdmin}
+        onBack={() => { setStudioOpen(false); setStudioCourse(null); }}
+        onSaved={handleStudioSaved}
+        /* studioCourse se conserva a propósito: es lo que le dice al "volver"
+           de la ficha que esta vista previa vino del estudio, para regresar a
+           seguir editando en vez de caer a la lista de cursos. */
+        onPreview={(course) => { setStudioOpen(false); setSelectedCourse(course); }}
+      />
+    );
+  }
   if (selectedCourse) {
-    return <CourseContentView course={selectedCourse} onBack={() => setSelectedCourse(null)} />;
+    return (
+      <CourseContentView
+        course={selectedCourse}
+        backLabel={studioCourse ? 'Volver al estudio' : undefined}
+        onBack={() => {
+          setSelectedCourse(null);
+          if (studioCourse) setStudioOpen(true);
+        }}
+      />
+    );
   }
 
   return (
@@ -406,7 +433,7 @@ export default function CoursesPage() {
         action={canCreate ? (
           <AppButton
             variant="contained"
-            onClick={() => setModalOpen(true)}
+            onClick={() => { setStudioCourse(null); setStudioOpen(true); }}
             sx={{ px: 2.4, py: 1, boxShadow: '0 12px 24px rgba(30,139,72,0.18)' }}
           >
             + Nuevo curso
@@ -559,12 +586,6 @@ export default function CoursesPage() {
       {/* ── Course grid ── */}
       {(isAdmin || isInstructor || studentTab === 'mine') && (
       <div>
-          {publishError && (
-            <p className="mb-4 rounded-2xl border-l-4 border-[var(--red-500)] bg-[#FFF1ED] px-4 py-3 text-[0.8125rem] text-[var(--red-600)]">
-              {publishError}
-            </p>
-          )}
-
           {!loading && <SectionHeader title={currentSectionTitle} count={filtered.length} />}
 
           {/* Results summary */}
@@ -599,12 +620,15 @@ export default function CoursesPage() {
                 hasActiveFilters
                   ? { label: 'Limpiar filtros', onClick: clearAll }
                   : canCreate
-                  ? { label: '+ Crear primer curso', onClick: () => setModalOpen(true) }
+                  ? { label: '+ Crear primer curso', onClick: () => { setStudioCourse(null); setStudioOpen(true); } }
                   : undefined
               }
             />
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-5">
+            /* items-start: sin él, el grid estira cada celda a la fila más
+               alta y las tarjetas con menos contenido abajo (sin badges ni
+               botón de revisión) quedan con un hueco enorme en medio. */
+            <div className="grid grid-cols-1 items-start gap-6 sm:grid-cols-2 xl:grid-cols-5">
               {paginatedCourses.map((course, i) => {
                 const enrolled = enrolledCourseIds.has(course.id);
                 const canManageThisCourse = isAdmin || (isInstructor && course.createdBy === myEmail);
@@ -618,8 +642,24 @@ export default function CoursesPage() {
                   <div
                     key={course.id}
                     className="dashboard-card-in"
-                    style={{ display: 'flex', flexDirection: 'column', animationDelay: `${Math.min(i, 9) * 45}ms` }}
+                    style={{ position: 'relative', display: 'flex', flexDirection: 'column', animationDelay: `${Math.min(i, 9) * 45}ms` }}
                   >
+                    {/* Señal compacta de rechazo: el motivo completo vive en el
+                        estudio del curso; aquí solo el aviso (y de tooltip). */}
+                    {course.status === 'rejected' && (
+                      <span
+                        title={`Rechazado por el revisor${course.moderationNote ? `: ${course.moderationNote}` : ''}`}
+                        style={{
+                          position: 'absolute', top: '1rem', right: '1rem', zIndex: 2,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: '2rem', height: '2rem', borderRadius: '999px',
+                          background: '#fff', color: 'var(--red-500)',
+                          boxShadow: '0 8px 18px rgba(23,50,77,0.18)',
+                        }}
+                      >
+                        <Icon icon={APP_ICONS.warning} width={18} height={18} />
+                      </span>
+                    )}
                     <CourseCard
                       course={course}
                       progress={progressByCourseId.get(course.id) ?? 0}
@@ -639,19 +679,11 @@ export default function CoursesPage() {
                       </span>
                       <span style={{ display: 'flex', gap: '0.375rem' }}>
                         {course.status === 'draft' && <Badge variant="yellow">Borrador</Badge>}
+                        {course.status === 'pending_review' && <Badge variant="blue">En revisión</Badge>}
+                        {course.status === 'rejected' && <Badge variant="red">Rechazado</Badge>}
                       </span>
                     </div>
-                    {canPublishCourse(course) && (
-                      <AppButton
-                        variant="outlined"
-                        loading={publishingId === course.id}
-                        disabled={publishingId === course.id}
-                        onClick={() => void handlePublishCourse(course)}
-                        sx={{ mt: 1, width: '100%', justifyContent: 'center' }}
-                      >
-                        Publicar curso
-                      </AppButton>
-                    )}
+
                   </div>
                 );
               })}
@@ -698,12 +730,6 @@ export default function CoursesPage() {
       {!loading && filtered.length > 0 && (isAdmin || isInstructor || studentTab === 'mine') && (
         <Pagination page={pageSafe} totalItems={filtered.length} onChange={setPage} label="cursos" />
       )}
-
-      <CreateCourseModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onCreated={(course) => setCourses((prev) => [course, ...prev])}
-      />
 
       {checkoutCourse && (
         <CheckoutModal

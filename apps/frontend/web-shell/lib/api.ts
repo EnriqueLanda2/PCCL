@@ -7,6 +7,7 @@
 import { get, post, patch, del, uploadFile } from './apiClient';
 import type {
   AccessProfile,
+  AssignmentSubmission,
   AuditLog,
   Calification,
   ChatConversationSummary,
@@ -83,7 +84,16 @@ export const api = {
   publicCourse: (id: string) => get<PublicCourseDetail>(`/courses/public/${id}`),
 
   createCourse:  (dto: Partial<Course>) => post<Course>('/courses', dto),
+  updateCourse:  (id: string, dto: Partial<Course>) => patch<Course>(`/courses/${id}`, dto),
+  /** Publica directo, sin pasar por revisión — solo admin puede llamarlo. */
   publishCourse: (id: string) => patch<Course>(`/courses/${id}/publish`, {}),
+
+  /* ── Revisión de cursos ──────────────────────────────────
+     El instructor manda a la cola; el revisor (o admin) aprueba o rechaza.
+     Rechazar sin motivo lo rechaza el propio backend. */
+  submitCourseForReview: (id: string) => patch<Course>(`/courses/${id}/submit-review`, {}),
+  moderateCourse: (id: string, decision: 'approved' | 'rejected', note?: string) =>
+    patch<Course>(`/courses/${id}/review`, { decision, note }),
   courseCertificateEligibility: (courseId: string) =>
     get<CertificateEligibility>(`/courses/${courseId}/certificate-eligibility`),
 
@@ -95,17 +105,33 @@ export const api = {
 
   /* ── Uploads (Cloudinary) ─────────────────────────────── */
   uploadImage:    (file: File) => uploadFile<{ url: string }>('/uploads/image', file),
-  uploadDocument: (file: File) => uploadFile<{ url: string }>('/uploads/document', file),
+  uploadDocument: (file: File) => uploadFile<{ url: string; fileName?: string }>('/uploads/document', file),
   uploadVideo:    (file: File) => uploadFile<{ url: string }>('/uploads/video', file),
 
   lessons:       () => get<Lesson[]>('/lessons'),
   createLesson:  (dto: Partial<Lesson> & { courseId: string }) => post<Lesson>('/lessons', dto),
   updateLesson:  (id: string, dto: Partial<Lesson>) => patch<Lesson>(`/lessons/${id}`, dto),
 
+  /* ── Entregas de tareas (lección contentType 'assignment') ──
+     El alumno sube el archivo con uploadDocument y registra la entrega acá;
+     el instructor del curso lista las entregas y las califica a mano. */
+  submitAssignment: (lessonId: string, dto: { fileUrl: string; fileName?: string | null; comment?: string | null }) =>
+    post<AssignmentSubmission>(`/lessons/${lessonId}/assignment-submission`, dto),
+  myAssignmentSubmission: (lessonId: string) =>
+    get<AssignmentSubmission | null>(`/lessons/${lessonId}/assignment-submission/mine`),
+  assignmentSubmissions: (lessonId: string) =>
+    get<AssignmentSubmission[]>(`/lessons/${lessonId}/assignment-submissions`),
+  gradeAssignmentSubmission: (id: string, score: number, feedback?: string | null) =>
+    patch<AssignmentSubmission>(`/assignment-submissions/${id}/grade`, { score, feedback }),
+
   /** Fases/módulos del curso — el camino secuencial al que se atan lecciones
       y clases en vivo. */
   coursePhases: (courseId: string) => get<Phase[]>(`/courses/${courseId}/phases`),
   createPhase:  (courseId: string, title: string) => post<Phase>(`/courses/${courseId}/phases`, { title }),
+  updatePhase:  (id: string, title: string) => patch<Phase>(`/phases/${id}`, { title }),
+  /** La lista COMPLETA de ids en su nuevo orden — no un movimiento suelto. */
+  reorderPhases: (courseId: string, orderedIds: string[]) =>
+    patch<Phase[]>(`/courses/${courseId}/phases/reorder`, { orderedIds }),
   deletePhase:  (id: string) => del(`/phases/${id}`),
 
   liveSessions:      () => get<LiveSession[]>('/live-sessions'),

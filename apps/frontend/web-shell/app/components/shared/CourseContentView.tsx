@@ -70,9 +70,12 @@ function ratingLabel(rating?: number | null, count?: number | null) {
 interface CourseContentViewProps {
   course: Course;
   onBack: () => void;
+  /** Texto del enlace de regreso — p. ej. "Volver al estudio" cuando un
+      instructor entra como vista previa desde su estudio de curso. */
+  backLabel?: string;
 }
 
-export function CourseContentView({ course, onBack }: CourseContentViewProps) {
+export function CourseContentView({ course, onBack, backLabel }: CourseContentViewProps) {
   const [lessons, setLessons] = useState<Lesson[]>(course.lessons ?? []);
   const [canManage, setCanManage] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -357,7 +360,7 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
           '&:hover': { bgcolor: 'transparent', color: 'var(--blue-700)' },
         }}
       >
-        ← Volver al catálogo
+        ← {backLabel ?? 'Volver al catálogo'}
       </Button>
 
       {/* ── Course detail hero ── */}
@@ -380,7 +383,9 @@ export function CourseContentView({ course, onBack }: CourseContentViewProps) {
           <span className="rounded-full bg-white/90 px-3 py-1 text-[0.75rem] font-extrabold text-[var(--blue-700)]">{course.status === 'draft' ? 'Borrador' : 'Inscrito'}</span>
           <span className="rounded-full bg-white/20 px-3 py-1 text-[0.75rem] font-extrabold text-white backdrop-blur">{course.category ?? 'Curso'}</span>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.75rem, 3vw, 2.4rem)', lineHeight: 1.08, marginBottom: '0.5rem', maxWidth: '48rem' }}>
+        {/* color explícito: globals.css pinta todo h1 de #17324D, el mismo azul
+            del fondo del hero, y el título se perdía por completo */}
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.75rem, 3vw, 2.4rem)', lineHeight: 1.08, marginBottom: '0.5rem', maxWidth: '48rem', color: '#fff', textShadow: '0 1px 12px rgba(10,20,30,0.45)' }}>
           {course.title}
         </h1>
         <p style={{ fontSize: '0.9688rem', maxWidth: '48rem', opacity: 0.95, lineHeight: 1.55, fontWeight: 600 }}>

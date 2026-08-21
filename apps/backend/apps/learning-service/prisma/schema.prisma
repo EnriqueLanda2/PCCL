@@ -19,7 +19,15 @@ model Course {
   updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamp(6)
   title           String       @db.VarChar(140)
   description     String       @db.Text
+  /** draft | pending_review | published | rejected */
   status          String       @default("draft") @db.VarChar(20)
+  /** Motivo del revisor. Solo tiene sentido en 'rejected', pero no se limpia
+      al reenviar a revisión hasta que haya una decisión nueva — así el
+      instructor sigue viendo por qué se rechazó la última vez mientras
+      corrige, en vez de que el campo desaparezca apenas reenvía. */
+  moderationNote  String?      @map("moderation_note") @db.Text
+  moderatedBy     String?      @map("moderated_by") @db.VarChar(100)
+  moderatedAt     DateTime?    @map("moderated_at") @db.Timestamp(6)
   level           String       @default("basic") @db.VarChar(40)
   coverImageUrl   String?      @map("cover_image_url") @db.Text
   durationMinutes Int?         @map("duration_minutes")
@@ -127,8 +135,39 @@ model Lesson {
   notes           Note[]
   completions     LessonCompletion[]
   chatMessages    ChatMessage[]
+  submissions     AssignmentSubmission[]
 
   @@map("lessons")
+}
+
+/// Entrega de una tarea (lección con contentType 'assignment'): el alumno sube
+/// un archivo y el instructor la califica a mano con puntaje y retroalimentación.
+/// Una entrega por alumno/lección; re-entregar reemplaza el archivo y borra la
+/// calificación anterior (el instructor vuelve a calificar lo nuevo).
+/// userId apunta a identity-service (otra base) — sin relación SQL, igual que
+/// en Inscription; userEmail se guarda para que el instructor vea quién entregó
+/// sin cruzar bases.
+model AssignmentSubmission {
+  id          String    @id @default(uuid()) @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  lessonId    String    @map("lesson_id") @db.Uuid
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId      String    @map("user_id") @db.Uuid
+  userEmail   String?   @map("user_email") @db.VarChar(100)
+  fileUrl     String    @map("file_url") @db.Text
+  fileName    String?   @map("file_name") @db.VarChar(200)
+  comment     String?   @db.Text
+  submittedAt DateTime  @default(now()) @map("submitted_at") @db.Timestamp(6)
+  /// null = sin calificar todavía; 0–100
+  score       Int?
+  feedback    String?   @db.Text
+  gradedBy    String?   @map("graded_by") @db.VarChar(100)
+  gradedAt    DateTime? @map("graded_at") @db.Timestamp(6)
+
+  @@unique([lessonId, userId])
+  @@index([lessonId])
+  @@map("assignment_submissions")
 }
 
 /// Mensaje del chatbot "AIRumbo" (IA local vía Ollama). userId apunta a

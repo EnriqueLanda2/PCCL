@@ -27,4 +27,33 @@ export class LessonsController {
 
   @MessagePattern(LEARNING_PATTERNS.LESSON_DELETE)
   remove(@Payload() p: { id: string }) { return this.service.remove(p.id); }
+
+  /* ─── Entregas de tareas ─── */
+
+  @MessagePattern(LEARNING_PATTERNS.ASSIGNMENT_SUBMIT)
+  submitAssignment(@Payload() p: {
+    lessonId: string;
+    userId: string;
+    userEmail: string | null;
+    fileUrl: string;
+    fileName?: string | null;
+    comment?: string | null;
+  }) {
+    return this.service.submitAssignment(p);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.ASSIGNMENT_FIND_MINE)
+  findMyAssignmentSubmission(@Payload() p: { lessonId: string; userId: string }) {
+    return this.service.findMyAssignmentSubmission(p.lessonId, p.userId);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.ASSIGNMENT_FIND_BY_LESSON)
+  findAssignmentSubmissionsByLesson(@Payload() p: { lessonId: string; scope?: DataScope }) {
+    return this.service.findAssignmentSubmissionsByLesson(p.lessonId, p.scope);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.ASSIGNMENT_GRADE)
+  gradeAssignment(@Payload() p: { submissionId: string; score: number; feedback?: string | null; scope?: DataScope; actor: string }) {
+    return this.service.gradeAssignment(p);
+  }
 }

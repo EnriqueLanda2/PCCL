@@ -19,6 +19,7 @@ import { GoalCard } from '@/registry/new-york/ui/goal-card';
 import { EmptyState } from '@/app/components/shared/EmptyState';
 import { PageHeader } from '@/app/components/shared/PageHeader';
 import { CreateLessonModal } from '@/app/components/shared/CreateLessonModal';
+import { AssignmentGradingModal } from '@/app/components/shared/AssignmentGradingModal';
 import { CourseComments } from '@/app/components/shared/CourseComments';
 import { useLessonFileViewer } from '@/app/components/shared/LessonFileViewer';
 import { lessonType, getIcon, getLabel, getVariant } from '@/types/status';
@@ -50,11 +51,12 @@ function SkeletonRow() {
 }
 
 /* ── Single lesson row (accordion body) ── */
-function LessonListItem({ lesson, isLast, canCreate, onEditLesson }: {
+function LessonListItem({ lesson, isLast, canCreate, onEditLesson, onGradeLesson }: {
   lesson: Lesson;
   isLast: boolean;
   canCreate: boolean;
   onEditLesson: (lesson: Lesson) => void;
+  onGradeLesson: (lesson: Lesson) => void;
 }) {
   const icon    = getIcon(lessonType,    lesson.contentType);
   const label   = getLabel(lessonType,   lesson.contentType);
@@ -116,6 +118,14 @@ function LessonListItem({ lesson, isLast, canCreate, onEditLesson }: {
           <Badge variant={variant}>{label}</Badge>
         )}
 
+        {/* Entregas de la tarea — solo lecciones tipo 'assignment' y solo
+            para quien puede gestionarlas (instructor/admin) */}
+        {canCreate && lesson.contentType === 'assignment' && (
+          <Button type="button" variant="secondary" size="sm" onClick={() => onGradeLesson(lesson)}>
+            Entregas
+          </Button>
+        )}
+
         {/* Editar */}
         {canCreate && (
           <button
@@ -141,7 +151,7 @@ function LessonListItem({ lesson, isLast, canCreate, onEditLesson }: {
 }
 
 /* ── Accordion course group ── */
-function CourseGroup({ courseId, course, lessons, open, onToggle, canCreate, onAddLesson, onEditLesson }: {
+function CourseGroup({ courseId, course, lessons, open, onToggle, canCreate, onAddLesson, onEditLesson, onGradeLesson }: {
   courseId: string;
   course?: Course;
   lessons: Lesson[];
@@ -150,6 +160,7 @@ function CourseGroup({ courseId, course, lessons, open, onToggle, canCreate, onA
   canCreate: boolean;
   onAddLesson: (courseId: string) => void;
   onEditLesson: (lesson: Lesson) => void;
+  onGradeLesson: (lesson: Lesson) => void;
 }) {
   const done = lessons.filter((l) => l.completed).length;
   const pct  = Math.round((done / lessons.length) * 100);
@@ -220,6 +231,7 @@ function CourseGroup({ courseId, course, lessons, open, onToggle, canCreate, onA
               isLast={i === lessons.length - 1}
               canCreate={canCreate}
               onEditLesson={onEditLesson}
+              onGradeLesson={onGradeLesson}
             />
           ))}
         </div>
@@ -240,6 +252,7 @@ export default function LessonsPage() {
   const [modalOpen,      setModalOpen]      = useState(false);
   const [modalCourseId,  setModalCourseId]  = useState<string | null>(null);
   const [editingLesson,  setEditingLesson]  = useState<Lesson | null>(null);
+  const [gradingLesson,  setGradingLesson]  = useState<Lesson | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -412,6 +425,7 @@ export default function LessonsPage() {
               canCreate={canCreate}
               onAddLesson={openAddLesson}
               onEditLesson={openEditLesson}
+              onGradeLesson={setGradingLesson}
             />
           ))}
         </div>
@@ -424,6 +438,14 @@ export default function LessonsPage() {
           courseId={modalCourseId}
           lesson={editingLesson}
           onSaved={handleLessonSaved}
+        />
+      )}
+
+      {gradingLesson && (
+        <AssignmentGradingModal
+          open={Boolean(gradingLesson)}
+          onClose={() => setGradingLesson(null)}
+          lesson={gradingLesson}
         />
       )}
     </div>

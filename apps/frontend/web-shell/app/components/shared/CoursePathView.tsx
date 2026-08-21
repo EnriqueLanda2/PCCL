@@ -26,6 +26,7 @@ import { cn } from '@/lib/cn';
 import { CoursePathMap, type PathMapItem } from '@/app/components/shared/CoursePathMap';
 import { LiveClassRoom } from '@/app/components/shared/LiveClassRoom';
 import { useLessonFileViewer } from '@/app/components/shared/LessonFileViewer';
+import { AssignmentPanel } from '@/app/components/shared/AssignmentPanel';
 import { KahootEvaluationCard, KahootAttemptReview } from '@/app/components/shared/KahootEvaluationCard';
 import { contentTypeMeta, formatDuration } from '@/lib/lessonContentTypes';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -70,6 +71,11 @@ function LessonActivityPanel({
   const meta = contentTypeMeta(lesson.contentType);
   const duration = formatDuration(lesson.durationMinutes);
   const text = lesson.content ? plainTextContent(lesson.content) : '';
+  /* Una tarea no se puede dar por vista como una lectura: hasta que el alumno
+     no suba su entrega, el botón "Siguiente" queda bloqueado. */
+  const isAssignment = lesson.contentType === 'assignment';
+  const [hasSubmission, setHasSubmission] = useState(false);
+  const nextBlocked = isAssignment && !hasSubmission;
 
   return (
     <div className="flex w-full flex-1 flex-col gap-5 px-6 py-8 lg:px-10">
@@ -93,8 +99,14 @@ function LessonActivityPanel({
           <p className="whitespace-pre-wrap text-[0.9375rem] leading-7 text-[var(--ink-soft)]">{text}</p>
         )}
 
-        {!lesson.fileUrl && !text && (
+        {!lesson.fileUrl && !text && !isAssignment && (
           <p className="text-[0.875rem] text-[var(--ink-muted)]">Esta actividad todavía no tiene contenido cargado.</p>
+        )}
+
+        {isAssignment && (
+          <div className="mt-4">
+            <AssignmentPanel lesson={lesson} onSubmissionChange={(s) => setHasSubmission(Boolean(s))} />
+          </div>
         )}
       </div>
 
@@ -103,9 +115,12 @@ function LessonActivityPanel({
           {nextError && (
             <p className="w-full rounded-xl bg-[#FFF1ED] px-3.5 py-2.5 text-right text-[0.8125rem] text-[#BF2600]">{nextError}</p>
           )}
+          {nextBlocked && (
+            <p className="text-[0.75rem] text-[var(--ink-muted)]">Sube tu entrega para poder continuar.</p>
+          )}
           <button
             type="button"
-            disabled={nextBusy}
+            disabled={nextBusy || nextBlocked}
             onClick={onNext}
             className="rounded-full bg-[var(--green-600)] px-6 py-3 text-[0.9063rem] font-extrabold text-white shadow-[0_10px_24px_rgba(31,154,75,0.28)] transition-colors hover:bg-[var(--green-700)] disabled:opacity-60"
           >

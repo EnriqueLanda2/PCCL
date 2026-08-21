@@ -32,7 +32,7 @@ export class RbacService {
   private buildMenu(permissions: string[]) {
     return [
       'dashboard','courses','lessons','inscriptions','califications',
-      'certificates','progress','reports','users','rbac',
+      'certificates','progress','reports','users','rbac','moderation',
     ]
       .map((module) => ({ module, visible: permissions.some((p) => p.startsWith(`${module}:`)) }))
       .filter((m) => m.visible);

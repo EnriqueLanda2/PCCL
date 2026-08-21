@@ -54,11 +54,17 @@ export interface Course {
   id: string;
   title: string;
   description: string;
-  status: 'draft' | 'published';
+  /** pending_review = en cola del revisor. rejected = el revisor lo rechazó
+   *  (ver moderationNote). El instructor reenvía a revisión tras corregir. */
+  status: 'draft' | 'pending_review' | 'published' | 'rejected';
   level: string;
   /** URL de Cloudinary de la portada, si el instructor subió una */
   coverImageUrl?: string | null;
   createdBy?: string | null;
+  /** Motivo que dejó el revisor — solo tiene contenido tras un rechazo. */
+  moderationNote?: string | null;
+  moderatedBy?: string | null;
+  moderatedAt?: string | null;
   /* optional display fields */
   category?: string;
   instructorName?: string;
@@ -94,7 +100,7 @@ export interface Lesson {
   id: string;
   title: string;
   content: string;
-  contentType: 'text' | 'video' | 'link' | 'file' | 'quiz' | 'practice' | 'reading' | 'live';
+  contentType: 'text' | 'video' | 'link' | 'file' | 'quiz' | 'practice' | 'reading' | 'live' | 'assignment';
   /** URL de Cloudinary del adjunto (video o documento) cuando contentType es 'video' o 'file' */
   fileUrl?: string | null;
   /* optional display fields */
@@ -108,6 +114,24 @@ export interface Lesson {
   /** Fase del curso a la que pertenece, si se asignó una */
   phaseId?: string | null;
   phase?: Phase | null;
+}
+
+/** Entrega de una tarea (lección contentType 'assignment'): archivo que subió
+    el alumno + la calificación manual del instructor cuando ya la revisó. */
+export interface AssignmentSubmission {
+  id: string;
+  lessonId: string;
+  userId: string;
+  userEmail?: string | null;
+  fileUrl: string;
+  fileName?: string | null;
+  comment?: string | null;
+  submittedAt: string;
+  /** null = sin calificar todavía; 0–100 */
+  score?: number | null;
+  feedback?: string | null;
+  gradedBy?: string | null;
+  gradedAt?: string | null;
 }
 
 /** Tarea pendiente del alumno: lección por ver o evaluación por responder. */

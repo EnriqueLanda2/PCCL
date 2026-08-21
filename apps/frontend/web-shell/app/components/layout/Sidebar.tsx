@@ -33,6 +33,7 @@ const icons: Record<string, React.ReactNode> = {
   menu:          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18"><path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round"/></svg>,
   close:         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="16" height="16"><path d="M6 6l12 12M18 6L6 18" strokeLinecap="round"/></svg>,
   aiRumbo:       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M12 3a4 4 0 0 0-4 4v1a5 5 0 0 0-3 4.58V17a2 2 0 0 0 2 2h1l2 3 2-3h4l2 3 2-3h1a2 2 0 0 0 2-2v-4.42A5 5 0 0 0 16 8V7a4 4 0 0 0-4-4Z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9.5" cy="12.5" r="0.75" fill="currentColor" stroke="none"/><circle cx="14.5" cy="12.5" r="0.75" fill="currentColor" stroke="none"/></svg>,
+  moderation:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" width="16" height="16"><path d="M9 11l3 3L22 4M12 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
 };
 
 type MenuItem = { key: string; path: string; label: string; icon: string };
@@ -47,6 +48,7 @@ const menuCatalog: MenuItem[] = [
   { key: 'lessons',       path: appRoutes.lessons,       label: 'Temas y lecciones',   icon: 'catalog'    },
   { key: 'progress',      path: appRoutes.progress,      label: 'Estudiantes',         icon: 'progress'   },
   { key: 'certificates',  path: appRoutes.certificates,  label: 'Certificaciones',     icon: 'certificates' },
+  { key: 'moderation',    path: appRoutes.review,        label: 'Revisión de cursos',  icon: 'moderation' },
   { key: 'inscriptions',  path: appRoutes.inscriptions,  label: 'Inscripciones',       icon: 'inscriptions' },
   /* 'califications' se retiró del menú: la vista no aporta nada al usuario.
      La ruta y el módulo RBAC siguen existiendo, solo dejó de navegarse. */
@@ -55,7 +57,7 @@ const menuCatalog: MenuItem[] = [
   { key: 'rbac',          path: appRoutes.rbac,          label: 'RBAC',                icon: 'rbac'       },
 ];
 
-const learningGroup = new Set(['dashboard', 'aiRumbo', 'courses', 'catalog', 'liveClasses', 'earnings', 'lessons', 'progress']);
+const learningGroup = new Set(['dashboard', 'aiRumbo', 'courses', 'catalog', 'liveClasses', 'earnings', 'lessons', 'progress', 'moderation']);
 const certificationGroup = new Set(['certificates']);
 const extraGroup = new Set(['inscriptions', 'reports', 'users', 'rbac']);
 

@@ -25,7 +25,7 @@ import { APP_ICONS } from '@/lib/icons';
 import { PhaseSelect } from '@/app/components/shared/PhaseSelect';
 import { QuestionsEditor, emptyQuestion, type QuestionDraft } from '@/app/components/shared/QuestionsEditor';
 
-const CONTENT_TYPES: LessonContentType[] = ['video', 'file', 'reading', 'live', 'exam'];
+const CONTENT_TYPES: LessonContentType[] = ['video', 'file', 'reading', 'assignment', 'live', 'exam'];
 const WEEKDAYS = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -354,6 +354,7 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
   const needsVideo = contentType === 'video';
   const needsLive = contentType === 'live';
   const needsExam = contentType === 'exam';
+  const isAssignment = contentType === 'assignment';
   const currentHostName = liveHostName || currentUser?.email || '';
 
   const handleClose = () => { if (!busy) onClose(); };
@@ -498,11 +499,13 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
           </Select>
         </Field>
 
-        <Field label="Contenido / descripción">
+        <Field label={isAssignment ? 'Instrucciones de la tarea' : 'Contenido / descripción'}>
           <TextField
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Texto de la lección, o una descripción de lo que cubre el video/documento adjunto."
+            placeholder={isAssignment
+              ? 'Qué debe entregar el alumno y con qué criterios lo vas a calificar.'
+              : 'Texto de la lección, o una descripción de lo que cubre el video/documento adjunto.'}
             disabled={busy}
             fullWidth
             multiline
@@ -510,6 +513,14 @@ export function CreateLessonModal({ open, onClose, courseId, lesson, onSaved, on
             sx={fieldSx}
           />
         </Field>
+
+        {isAssignment && (
+          <p className="flex items-center gap-1.5 text-[0.75rem] text-[var(--ink-muted)]">
+            <Icon icon={APP_ICONS.file} width={13} height={13} />
+            El alumno subirá un archivo (PDF, Word o PowerPoint) como entrega, y tú la calificarás
+            manualmente desde <strong>Temas y lecciones → Entregas</strong>.
+          </p>
+        )}
 
         {!(isEditing && (needsLive || needsExam)) && (
           <PhaseSelect

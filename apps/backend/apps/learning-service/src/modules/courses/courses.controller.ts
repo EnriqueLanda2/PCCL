@@ -46,6 +46,16 @@ export class CoursesController {
     return this.service.publish(p.id, p.actor);
   }
 
+  @MessagePattern(LEARNING_PATTERNS.COURSE_SUBMIT_FOR_MODERATION)
+  submitForModeration(@Payload() p: { id: string; actor: string }) {
+    return this.service.submitForModeration(p.id, p.actor);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.COURSE_MODERATE)
+  moderate(@Payload() p: { id: string; decision: 'approved' | 'rejected'; note: string | null; actor: string }) {
+    return this.service.moderate(p.id, p.decision, p.note, p.actor);
+  }
+
   @MessagePattern(LEARNING_PATTERNS.COURSE_REVIEW_FIND_BY_COURSE)
   findReviews(@Payload() p: { courseId: string; viewerId?: string }) {
     return this.service.findReviews(p.courseId, p.viewerId);
@@ -79,6 +89,16 @@ export class CoursesController {
   @MessagePattern(LEARNING_PATTERNS.PHASE_FIND_BY_COURSE)
   findPhases(@Payload() p: { courseId: string }) {
     return this.service.findPhases(p.courseId);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.PHASE_UPDATE)
+  updatePhase(@Payload() p: { id: string; title: string; actor: string }) {
+    return this.service.updatePhase(p.id, p.title, p.actor);
+  }
+
+  @MessagePattern(LEARNING_PATTERNS.PHASE_REORDER)
+  reorderPhases(@Payload() p: { courseId: string; orderedIds: string[]; actor: string }) {
+    return this.service.reorderPhases(p.courseId, p.orderedIds, p.actor);
   }
 
   @MessagePattern(LEARNING_PATTERNS.PHASE_DELETE)

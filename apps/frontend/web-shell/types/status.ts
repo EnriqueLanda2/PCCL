@@ -131,7 +131,7 @@ export const coursePublishStatus: StatusMap<CoursePublishStatus> = {
    LECCIONES — tipo de contenido
    video · quiz · practice · reading · live
    ═══════════════════════════════════════════════════════════ */
-export type LessonContentType = 'video' | 'quiz' | 'practice' | 'reading' | 'live';
+export type LessonContentType = 'video' | 'quiz' | 'practice' | 'reading' | 'live' | 'assignment';
 
 export interface ContentTypeMap {
   icon:    Record<LessonContentType, string>;
@@ -147,6 +147,7 @@ export const lessonType: ContentTypeMap = {
     practice: 'solar:pen-2-bold-duotone',
     reading:  'solar:book-bookmark-bold-duotone',
     live:     'solar:videocamera-record-bold-duotone',
+    assignment: 'solar:clipboard-check-bold-duotone',
   },
   label: {
     video:    'Video',
@@ -154,6 +155,7 @@ export const lessonType: ContentTypeMap = {
     practice: 'Práctica',
     reading:  'Lectura',
     live:     'Sesión en vivo',
+    assignment: 'Tarea',
   },
   variant: {
     video:    'blue',
@@ -161,8 +163,9 @@ export const lessonType: ContentTypeMap = {
     practice: 'green',
     reading:  'dark',
     live:     'red',
+    assignment: 'green',
   },
-  chips: ['Todos', 'Video', 'Quiz', 'Practice', 'Reading', 'Live'],
+  chips: ['Todos', 'Video', 'Quiz', 'Practice', 'Reading', 'Live', 'Assignment'],
 };
 
 /* ═══════════════════════════════════════════════════════════

@@ -1,9 +1,11 @@
-export type LessonContentType = 'text' | 'video' | 'link' | 'file' | 'quiz' | 'practice' | 'reading' | 'live' | 'exam';
+export type LessonContentType = 'text' | 'video' | 'link' | 'file' | 'quiz' | 'practice' | 'reading' | 'live' | 'exam' | 'assignment';
 
 export const CONTENT_TYPE_META: Record<LessonContentType, { label: string; icon: string }> = {
   video:    { label: 'Clases en video',     icon: 'solar:play-circle-bold-duotone' },
   file:     { label: 'Clases por PDF',      icon: 'solar:file-text-bold-duotone' },
   reading:  { label: 'Material de lectura', icon: 'solar:book-bookmark-bold-duotone' },
+  /** El alumno sube un archivo como entrega y el instructor la califica a mano. */
+  assignment: { label: 'Tarea (entrega de archivo)', icon: 'solar:clipboard-check-bold-duotone' },
   text:     { label: 'Material',            icon: 'solar:document-text-bold-duotone' },
   link:     { label: 'Enlaces',             icon: 'solar:link-bold-duotone' },
   practice: { label: 'Prácticas',           icon: 'solar:pen-new-square-bold-duotone' },

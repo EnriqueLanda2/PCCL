@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -37,6 +38,12 @@ export class LearningController {
   private canManageCourses(user: RequestUser | null) {
     const roles = user?.roles ?? [];
     return roles.includes('admin') || roles.includes('instructor') || roles.includes('profesor');
+  }
+
+  /** Admin o revisor — quien puede aprobar/rechazar un curso en cola. */
+  private canModerateCourses(user: RequestUser | null) {
+    const roles = user?.roles ?? [];
+    return roles.includes('admin') || roles.includes('revisor');
   }
 
   /* ─── COURSES ─── */
@@ -109,15 +116,53 @@ export class LearningController {
     );
   }
 
+  /* Solo admin — no instructor. Publicar sin pasar por revisión es la
+     excepción, no el camino normal: un instructor manda su curso a revisión
+     (ver más abajo) y es el revisor quien lo publica al aprobarlo. */
   @Patch('courses/:id/publish')
   publishCourse(@Param('id') id: string, @CurrentUser() u: RequestUser) {
-    if (!this.canManageCourses(u)) {
-      throw new ForbiddenException('Solo admin o profesor pueden publicar cursos');
+    if (!(u.roles ?? []).includes('admin')) {
+      throw new ForbiddenException('Solo admin puede publicar un curso sin pasar por revisión');
     }
 
     return firstValueFrom(
       this.client.send(LEARNING_PATTERNS.COURSE_PUBLISH, {
         id,
+        actor: this.actor(u),
+      }),
+    );
+  }
+
+  @Patch('courses/:id/submit-review')
+  submitCourseForReview(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    if (!this.canManageCourses(u)) {
+      throw new ForbiddenException('Solo admin o instructor pueden enviar un curso a revisión');
+    }
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.COURSE_SUBMIT_FOR_MODERATION, {
+        id,
+        actor: this.actor(u),
+      }),
+    );
+  }
+
+  @Patch('courses/:id/review')
+  moderateCourse(
+    @Param('id') id: string,
+    @Body() dto: { decision?: 'approved' | 'rejected'; note?: string | null },
+    @CurrentUser() u: RequestUser,
+  ) {
+    if (!this.canModerateCourses(u)) {
+      throw new ForbiddenException('Solo admin o revisor pueden aprobar o rechazar cursos');
+    }
+    if (dto?.decision !== 'approved' && dto?.decision !== 'rejected') {
+      throw new BadRequestException('decision debe ser "approved" o "rejected"');
+    }
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.COURSE_MODERATE, {
+        id,
+        decision: dto.decision,
+        note: dto.note ?? null,
         actor: this.actor(u),
       }),
     );
@@ -204,6 +249,36 @@ export class LearningController {
 	    );
 	  }
 
+	  @Patch('phases/:id')
+	  updateCoursePhase(@Param('id') id: string, @Body() dto: { title?: string }, @CurrentUser() u: RequestUser) {
+	    if (!this.canManageCourses(u)) {
+	      throw new ForbiddenException('Solo admin o profesor pueden renombrar fases');
+	    }
+	    return firstValueFrom(
+	      this.client.send(LEARNING_PATTERNS.PHASE_UPDATE, {
+	        id,
+	        title: dto?.title ?? '',
+	        actor: this.actor(u),
+	      }),
+	    );
+	  }
+
+	  /* La lista completa en su nuevo orden — el servicio valida que coincida
+	     con las fases reales del curso antes de reasignar los `order`. */
+	  @Patch('courses/:id/phases/reorder')
+	  reorderCoursePhases(@Param('id') id: string, @Body() dto: { orderedIds?: string[] }, @CurrentUser() u: RequestUser) {
+	    if (!this.canManageCourses(u)) {
+	      throw new ForbiddenException('Solo admin o profesor pueden reordenar fases');
+	    }
+	    return firstValueFrom(
+	      this.client.send(LEARNING_PATTERNS.PHASE_REORDER, {
+	        courseId: id,
+	        orderedIds: dto?.orderedIds ?? [],
+	        actor: this.actor(u),
+	      }),
+	    );
+	  }
+
 	  @Delete('phases/:id')
 	  removeCoursePhase(@Param('id') id: string, @CurrentUser() u: RequestUser) {
 	    if (!this.canManageCourses(u)) {
@@ -260,6 +335,74 @@ export class LearningController {
   removeLesson(@Param('id') id: string) {
     return firstValueFrom(
       this.client.send(LEARNING_PATTERNS.LESSON_DELETE, { id }),
+    );
+  }
+
+  /* ─── ENTREGAS DE TAREAS (lección contentType 'assignment') ───
+     El alumno entrega para sí mismo (userId sale del JWT); calificar exige
+     admin o el instructor dueño del curso — la pertenencia la re-verifica el
+     learning-service con el scope, no el cliente. */
+  @Post('lessons/:id/assignment-submission')
+  submitAssignment(
+    @Param('id') id: string,
+    @Body() dto: { fileUrl?: string; fileName?: string | null; comment?: string | null },
+    @CurrentUser() u: RequestUser,
+  ) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.ASSIGNMENT_SUBMIT, {
+        lessonId: id,
+        userId: u.sub,
+        userEmail: u.email ?? null,
+        fileUrl: dto?.fileUrl ?? '',
+        fileName: dto?.fileName ?? null,
+        comment: dto?.comment ?? null,
+      }),
+    );
+  }
+
+  @Get('lessons/:id/assignment-submission/mine')
+  findMyAssignmentSubmission(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.ASSIGNMENT_FIND_MINE, {
+        lessonId: id,
+        userId: u.sub,
+      }),
+    );
+  }
+
+  @Get('lessons/:id/assignment-submissions')
+  findAssignmentSubmissions(@Param('id') id: string, @CurrentUser() u: RequestUser) {
+    if (!this.canManageCourses(u)) {
+      throw new ForbiddenException('Solo admin o instructor pueden ver las entregas de una tarea');
+    }
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.ASSIGNMENT_FIND_BY_LESSON, {
+        lessonId: id,
+        scope: resolveScope(u),
+      }),
+    );
+  }
+
+  @Patch('assignment-submissions/:id/grade')
+  gradeAssignmentSubmission(
+    @Param('id') id: string,
+    @Body() dto: { score?: number; feedback?: string | null },
+    @CurrentUser() u: RequestUser,
+  ) {
+    if (!this.canManageCourses(u)) {
+      throw new ForbiddenException('Solo admin o instructor pueden calificar entregas');
+    }
+    if (typeof dto?.score !== 'number') {
+      throw new BadRequestException('Falta la calificación (score numérico de 0 a 100)');
+    }
+    return firstValueFrom(
+      this.client.send(LEARNING_PATTERNS.ASSIGNMENT_GRADE, {
+        submissionId: id,
+        score: dto.score,
+        feedback: dto?.feedback ?? null,
+        scope: resolveScope(u),
+        actor: this.actor(u),
+      }),
     );
   }
 

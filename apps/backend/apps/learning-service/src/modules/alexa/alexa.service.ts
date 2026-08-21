@@ -30,7 +30,9 @@ interface SaveTriviaResultInput {
   answers: unknown[];
 }
 
-interface TriviaQuestion {
+/* export: el controller expone un método que devuelve este tipo, y sin
+   exportarlo `tsc --noEmit` truena con TS4053 (tipo innombrable). */
+export interface TriviaQuestion {
   id: string;
   topic: string;
   question: string;

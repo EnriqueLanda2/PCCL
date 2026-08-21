@@ -8,6 +8,8 @@ export const LEARNING_PATTERNS = {
   COURSE_UPDATE: 'learning.course.update',
   COURSE_DELETE: 'learning.course.delete',
   COURSE_PUBLISH: 'learning.course.publish',
+  COURSE_SUBMIT_FOR_MODERATION: 'learning.course.submit_for_moderation',
+  COURSE_MODERATE: 'learning.course.moderate',
   COURSE_REVIEW_FIND_BY_COURSE: 'learning.course.review.find_by_course',
   COURSE_REVIEW_UPSERT: 'learning.course.review.upsert',
   COURSE_CERTIFICATE_ELIGIBILITY: 'learning.course.certificate_eligibility',
@@ -16,6 +18,8 @@ export const LEARNING_PATTERNS = {
 
   PHASE_CREATE: 'learning.phase.create',
   PHASE_FIND_BY_COURSE: 'learning.phase.find_by_course',
+  PHASE_UPDATE: 'learning.phase.update',
+  PHASE_REORDER: 'learning.phase.reorder',
   PHASE_DELETE: 'learning.phase.delete',
 
   LESSON_CREATE: 'learning.lesson.create',
@@ -57,6 +61,11 @@ export const LEARNING_PATTERNS = {
   COMMENT_CREATE: 'learning.comment.create',
   COMMENT_TOGGLE_LIKE: 'learning.comment.toggle_like',
   COMMENT_DELETE: 'learning.comment.delete',
+
+  ASSIGNMENT_SUBMIT: 'learning.assignment.submit',
+  ASSIGNMENT_FIND_MINE: 'learning.assignment.find_mine',
+  ASSIGNMENT_FIND_BY_LESSON: 'learning.assignment.find_by_lesson',
+  ASSIGNMENT_GRADE: 'learning.assignment.grade',
 
   TASK_FIND_PENDING: 'learning.task.find_pending',
   LESSON_SET_COMPLETED: 'learning.lesson.set_completed',
