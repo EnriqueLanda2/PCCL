@@ -81,4 +81,5 @@ export const LEARNING_PATTERNS = {
   ALEXA_GENERATE_TRIVIA: 'learning.alexa.generate_trivia',
   ALEXA_SAVE_TRIVIA_RESULT: 'learning.alexa.save_trivia_result',
   ALEXA_GET_PROGRESS: 'learning.alexa.get_progress',
+  ALEXA_LIST_COURSES: 'learning.alexa.list_courses',
 } as const;

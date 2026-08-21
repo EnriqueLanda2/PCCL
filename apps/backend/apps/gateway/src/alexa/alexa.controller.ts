@@ -87,4 +87,11 @@ export class AlexaController {
       this.client.send(LEARNING_PATTERNS.ALEXA_GET_PROGRESS, { alexaUserId }),
     );
   }
+
+  /* La skill la llama al abrir sesión para sincronizar (Dynamic Entities)
+     el catálogo real de cursos que reconoce por voz. */
+  @Get('cursos')
+  listCourses() {
+    return firstValueFrom(this.client.send(LEARNING_PATTERNS.ALEXA_LIST_COURSES, {}));
+  }
 }

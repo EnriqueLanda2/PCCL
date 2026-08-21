@@ -36,4 +36,9 @@ export class AlexaController {
   getProgress(@Payload() p: { alexaUserId: string }) {
     return this.service.getProgress(p.alexaUserId);
   }
+
+  @MessagePattern(LEARNING_PATTERNS.ALEXA_LIST_COURSES)
+  listCourses() {
+    return this.service.listCourseTopics();
+  }
 }
