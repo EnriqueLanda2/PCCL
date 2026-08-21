@@ -1,0 +1,44 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-ec2
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, x64, pccl-production]
+    timeout-minutes: 30
+
+    steps:
+      - name: Update production checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /home/ubuntu/PCCL
+          git fetch origin main
+          git pull --ff-only origin main
+
+      - name: Rebuild and start services
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /home/ubuntu/PCCL
+          docker compose \
+            -f infra/docker/compose/docker-compose.full.yml \
+            -f infra/docker/compose/docker-compose.prod.yml \
+            up -d --build --remove-orphans
+
+      - name: Show running services
+        shell: bash
+        run: |
+          cd /home/ubuntu/PCCL
+          docker compose \
+            -f infra/docker/compose/docker-compose.full.yml \
+            -f infra/docker/compose/docker-compose.prod.yml \
+            ps
