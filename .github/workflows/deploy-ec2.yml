@@ -27,15 +27,64 @@ jobs:
           git fetch origin main
           git pull --ff-only origin main
 
-      - name: Rebuild and start services
+      - name: Detect services affected by this push
+        shell: bash
+        id: changes
+        run: |
+          set -euo pipefail
+          cd /home/ubuntu/PCCL
+
+          before="${{ github.event.before }}"
+          after="${{ github.sha }}"
+          # Manual runs and an unavailable base SHA use the safe full-stack path.
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] \
+            || ! git cat-file -e "${before}^{commit}" 2>/dev/null; then
+            echo "scope=full" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          changed_files="$(git diff --name-only "$before" "$after")"
+          echo "Changed files:"
+          printf '%s\n' "$changed_files"
+
+          if printf '%s\n' "$changed_files" | grep -Eq '^(infra/docker/compose/|\.github/workflows/deploy-ec2\.yml$)'; then
+            echo "scope=full" >> "$GITHUB_OUTPUT"
+          elif printf '%s\n' "$changed_files" | grep -Eq '^(apps/backend/|infra/docker/images/services/Dockerfile\.(identity|learning|certification|payment|gateway)$)'; then
+            echo "scope=backend" >> "$GITHUB_OUTPUT"
+          elif printf '%s\n' "$changed_files" | grep -Eq '^(apps/frontend/web-shell/|infra/docker/images/services/Dockerfile\.frontend$)'; then
+            echo "scope=frontend" >> "$GITHUB_OUTPUT"
+          else
+            echo "scope=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rebuild and start only affected services
         shell: bash
         run: |
           set -euo pipefail
           cd /home/ubuntu/PCCL
-          docker compose \
+          compose=(docker compose \
             -f infra/docker/compose/docker-compose.full.yml \
-            -f infra/docker/compose/docker-compose.prod.yml \
-            up -d --build --remove-orphans
+            -f infra/docker/compose/docker-compose.prod.yml)
+
+          case "${{ steps.changes.outputs.scope }}" in
+            frontend)
+              "${compose[@]}" up -d --build frontend
+              ;;
+            backend)
+              "${compose[@]}" up -d --build \
+                identity-service learning-service certification-service payment-service gateway
+              ;;
+            full)
+              "${compose[@]}" up -d --build --remove-orphans
+              ;;
+            none)
+              echo "No application or deployment files changed; skipping Docker rebuild."
+              ;;
+            *)
+              echo "Unknown deployment scope" >&2
+              exit 1
+              ;;
+          esac
 
       - name: Show running services
         shell: bash
