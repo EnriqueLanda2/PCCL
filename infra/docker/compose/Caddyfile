@@ -16,5 +16,9 @@ www.{$DOMAIN} {
 	handle /alexa/* {
 		reverse_proxy gateway:3010
 	}
+	# Archivos locales persistidos por el gateway.
+	handle /uploads/* {
+		reverse_proxy gateway:3010
+	}
 	reverse_proxy frontend:3002
 }
