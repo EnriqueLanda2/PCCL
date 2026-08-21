@@ -300,7 +300,18 @@ export default function AiRumboPage() {
             aria-haspopup="dialog"
             style={{
               display: 'flex', alignItems: 'center', gap: '0.625rem',
-              height: '3.25rem', minWidth: '21rem', maxWidth: 'min(24rem, calc(100vw - 18rem))',
+              height: '3.25rem',
+              /* Antes era minWidth:'21rem' + maxWidth:'min(24rem, calc(100vw - 18rem))'.
+                 Con viewport < 39rem (21+18) el min ganaba sobre el max — así se
+                 resuelven los conflictos min/max — y el botón se quedaba forzado a
+                 336px de ancho. En un teléfono de 412px eso empujaba el botón "+"
+                 de al lado 12.6px fuera de la pantalla, sin forma de tocarlo.
+                 Un solo width con min() nunca puede entrar en conflicto consigo
+                 mismo: topa en 21rem en desktop y encoge en cualquier viewport más
+                 angosto, dejando siempre el hueco exacto para el 1rem de margen
+                 izquierdo, el botón "+" (2.85rem), su gap (0.625rem) y otro 1rem de
+                 respiro a la derecha. */
+              width: 'min(21rem, calc(100vw - 1rem - 2.85rem - 0.625rem - 1rem))',
               padding: '0 1.1rem', borderRadius: '999px', border: '1px solid rgba(87, 132, 94, 0.18)',
               background: 'rgba(255,255,255,0.94)', color: 'var(--ink)',
               boxShadow: '0 10px 22px rgba(23,50,77,0.08)', cursor: 'pointer',

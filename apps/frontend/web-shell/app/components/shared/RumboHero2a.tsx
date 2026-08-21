@@ -160,32 +160,32 @@ export function RumboHero2a({ sesionActiva = false, userName, courses, destacado
             </svg>
           </button>
         </div>
-      </header>
 
-      {mobileNavOpen && (
-        <div id="rumbo2a-mobile-panel" className="rumbo2a-mobile-panel" style={{ fontFamily: SANS }}>
-          <Link href={appRoutes.home} onClick={() => setMobileNavOpen(false)}>Inicio</Link>
-          {activa ? (
-            <>
-              <Link href={appRoutes.catalog} onClick={() => setMobileNavOpen(false)}>Catálogo</Link>
-              <Link href={appRoutes.courses} onClick={() => setMobileNavOpen(false)}>Mis cursos</Link>
-              <Link href={appRoutes.certificates} onClick={() => setMobileNavOpen(false)}>Certificados</Link>
-            </>
-          ) : (
-            <a href="#catalogo-publico" onClick={() => setMobileNavOpen(false)}>Catálogo</a>
-          )}
-          {!activa && (
-            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-              <Link href={appRoutes.login} onClick={() => setMobileNavOpen(false)} style={{ flex: 1, textAlign: 'center', fontWeight: 600, color: '#16241c', border: '1px solid #e3efe7', borderRadius: 999, padding: '10px 0' }}>
-                Iniciar sesión
-              </Link>
-              <Link href={appRoutes.register} onClick={() => setMobileNavOpen(false)} style={{ flex: 1, textAlign: 'center', fontWeight: 700, color: '#fff', background: '#1a7a4a', borderRadius: 999, padding: '10px 0' }}>
-                Comenzar →
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
+        {mobileNavOpen && (
+          <div id="rumbo2a-mobile-panel" className="rumbo2a-mobile-panel" style={{ fontFamily: SANS }}>
+            <Link href={appRoutes.home} onClick={() => setMobileNavOpen(false)}>Inicio</Link>
+            {activa ? (
+              <>
+                <Link href={appRoutes.catalog} onClick={() => setMobileNavOpen(false)}>Catálogo</Link>
+                <Link href={appRoutes.courses} onClick={() => setMobileNavOpen(false)}>Mis cursos</Link>
+                <Link href={appRoutes.certificates} onClick={() => setMobileNavOpen(false)}>Certificados</Link>
+              </>
+            ) : (
+              <a href="#catalogo-publico" onClick={() => setMobileNavOpen(false)}>Catálogo</a>
+            )}
+            {!activa && (
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <Link href={appRoutes.login} onClick={() => setMobileNavOpen(false)} style={{ flex: 1, textAlign: 'center', fontWeight: 600, color: '#16241c', border: '1px solid #e3efe7', borderRadius: 999, padding: '10px 0' }}>
+                  Iniciar sesión
+                </Link>
+                <Link href={appRoutes.register} onClick={() => setMobileNavOpen(false)} style={{ flex: 1, textAlign: 'center', fontWeight: 700, color: '#fff', background: '#1a7a4a', borderRadius: 999, padding: '10px 0' }}>
+                  Comenzar →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+      </header>
 
       {/* ── Hero ── */}
       <div className="rumbo2a-hero-grid rumbo2a-fade-up">

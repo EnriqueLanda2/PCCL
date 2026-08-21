@@ -145,13 +145,18 @@ export function CourseHoloCard({
     if (el) el.style.transform = 'rotateX(0deg) rotateY(0deg)';
   }, []);
 
-  const toggleFlip = () => {
-    if (onToggleFlip) {
-      onToggleFlip();
-    } else {
-      setLocalFlipped((f) => !f);
-    }
-  };
+  /* Dos modos, nunca los dos a la vez: si el contenedor controla el volteo
+     (carrusel, que solo admite una tarjeta abierta) manda `onToggleFlip`; si no
+     —grids `fluid`, o un carrusel de una sola tarjeta— la tarjeta se administra
+     sola. `flipped = flippedProp ?? localFlipped` garantiza que la rama que no
+     se usa quede ignorada, así que esto no puede togglear dos veces.
+
+     `onToggleFlip` es opcional: llamarlo sin comprobar revienta en el grid de
+     calificaciones y en el carrusel de una sola tarjeta. */
+  const toggleFlip = useCallback(() => {
+    if (onToggleFlip) onToggleFlip();
+    else setLocalFlipped((f) => !f);
+  }, [onToggleFlip]);
 
   return (
     <div
@@ -161,6 +166,10 @@ export function CourseHoloCard({
          se ve, sin el margen muerto que deja el scale-down cerca de los bordes. */
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
+      /* El toque es el "hover" del móvil: sin esto, tocar una tarjeta no la
+         enfocaba y el carrusel seguía avanzando por debajo. pointerdown vale
+         para dedo y ratón; en ratón solo repite lo que ya hizo mouseenter. */
+      onPointerDown={onHoverEnter}
       className={fluid ? 'w-full animate-fade-in' : 'w-[14.75rem] flex-shrink-0 snap-center animate-fade-in sm:w-[16.25rem]'}
     >
       {/* El scale/opacity de "activa" vive en holo-scene, no en el wrapper de
@@ -252,7 +261,7 @@ export function CourseHoloCard({
           </Tooltip>
         </div>
       </div>
-      <p className="mt-2 select-none text-center text-[0.6875rem] text-[var(--ink-muted)]">Gira para ver más ↻</p>
+      <p className="mt-2 select-none text-center text-[0.6875rem] text-[var(--ink-muted)]">ver más ↻</p>
     </div>
   );
 }
@@ -291,8 +300,8 @@ function arrowSx(disabled: boolean, side: 'left' | 'right') {
   };
 }
 
-/** Cada cuánto avanza el autoplay — mismo ritmo que el carrusel de destacados del hero (RumboHero2a). */
-const AUTOPLAY_MS = 4500;
+/** Cada cuánto avanza el autoplay. Se reinicia cada vez que el usuario mueve el carrusel a mano (scroll o flechas). */
+const AUTOPLAY_MS = 1000;
 /** Cuánto debe descansar el cursor sobre una tarjeta antes de que el enfoque cambie a ella. */
 const HOVER_FOCUS_DELAY_MS = 500;
 
@@ -300,19 +309,16 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
   const trackRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const openIndexRef = useRef<number | null>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  /** Puntero encima (ratón). */
   const [hovered, setHovered] = useState(false);
   /** Índice bajo el cursor — el enfoque lo sigue tras HOVER_FOCUS_DELAY_MS,
       sin depender de que el scroll de centrado termine de asentarse. */
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   /** Índice de la única tarjeta que puede tener el reverso abierto a la vez. */
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  useEffect(() => {
-    openIndexRef.current = openIndex;
-  }, [openIndex]);
 
   /* Tarjeta activa = la más cercana al centro visible del track, recalculada
      en cada scroll/resize. Mismo listener que las flechas para no duplicar
@@ -352,9 +358,23 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
     const track = trackRef.current;
     if (!track) return;
     updateState();
+    /* En captura y sobre el track, no en el contenedor: así el gesto se
+       registra aunque algún hijo detenga la propagación. Cubre dedo y ratón
+       con el mismo par de eventos. */
+    /* Corta en seco el scroll suave que el autoplay pudiera tener en vuelo.
+       Sin esto, la tarjeta sigue desplazándose bajo el dedo mientras se
+       completa el gesto: se acaba abriendo una que ya iba de salida y
+       centrarla arrastra el carrusel HACIA ATRÁS, que es justo el salto a
+       "la tarjeta previa" que se veía. Un scrollTo a la posición actual con
+       behavior instantáneo aborta la animación en curso.
+       En captura y sobre el track, no en el contenedor: así se registra aunque
+       algún hijo detenga la propagación. */
+    const down = () => track.scrollTo({ left: track.scrollLeft, behavior: 'instant' });
+    track.addEventListener('pointerdown', down, { passive: true, capture: true });
     track.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
     return () => {
+      track.removeEventListener('pointerdown', down, { capture: true });
       track.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -379,7 +399,12 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
     const trackRect = track.getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
     const delta = (cardRect.left + cardRect.width / 2) - (trackRect.left + trackRect.width / 2);
-    track.scrollBy({ left: delta, behavior: 'smooth' });
+    /* Destino ABSOLUTO, no un scrollBy relativo: si ya hay una animación en
+       vuelo, un desplazamiento relativo se suma a donde la animación vaya a
+       terminar y el resultado depende del navegador. scrollLeft + delta, leídos
+       en el mismo instante, siempre dan la posición exacta que centra la
+       tarjeta. */
+    track.scrollTo({ left: track.scrollLeft + delta, behavior: 'smooth' });
   }, []);
 
   /** Abrir una tarjeta cierra cualquier otra que estuviera abierta — solo una a la vez. */
@@ -389,15 +414,20 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
 
   /** Enfocar por hover es inmediato. Cancela cualquier "vuelta al centro"
       pendiente — si el cursor ya está sobre otra tarjeta, no hace falta
-      esperar a que esa vuelta se complete. */
+      esperar a que esa vuelta se complete.
+
+      Solo mueve el ENFOQUE, nunca el scroll. Centrar la tarjeta señalada
+      provocaba un bucle: al deslizarse las tarjetas bajo un cursor quieto,
+      otra quedaba debajo y disparaba su propio hover, que volvía a centrar…
+      El carrusel se iba solo mientras el usuario intentaba mirar una tarjeta,
+      que es justo lo contrario de "con hover se mantiene en la card". */
   const focusOnHover = useCallback((i: number) => {
     if (hoverTimerRef.current) {
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
     }
     setHoverIndex(i);
-    if (openIndexRef.current === null) scrollToIndex(i);
-  }, [scrollToIndex]);
+  }, []);
 
   /** Al salir el cursor, el enfoque espera HOVER_FOCUS_DELAY_MS antes de
       volver al centro — así pasar el mouse por un hueco entre tarjetas
@@ -421,19 +451,36 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
     if (openIndex !== null) scrollToIndex(openIndex);
   }, [openIndex, scrollToIndex]);
 
-  /* Autoplay: intercala en loop entre las tarjetas. Se reprograma solo cada
-     vez que activeIndex se asienta (manual o automático), así que scrollear
-     a mano reinicia la cuenta en vez de competir con el temporizador. Se
-     detiene con el mouse encima, con alguna tarjeta mostrando su reverso, o
-     si el sistema pide menos movimiento. */
+  /* Única fuente de verdad de por qué el carrusel deja de avanzar solo.
+
+     Las tres razones son las que pidió el diseño:
+      · detalles abiertos → la tarjeta se queda enfocada hasta que se cierren
+        o se abran los de otra (openIndex ya es exclusivo: solo una a la vez);
+      · puntero encima → se queda en esa tarjeta y el enfoque pasa a ella;
+      · dedo apoyado → el equivalente táctil de lo anterior, porque en una
+        pantalla sin ratón el hover nunca ocurre.
+
+     Con una sola tarjeta no hay nada que rotar. */
+  /* Sin equivalente táctil del hover: en móvil, tocar una tarjeta sin abrir
+     sus detalles NO pausa el autoplay — solo lo hace abrir el reverso
+     (openIndex). Es una decisión explícita del usuario, no un descuido. */
+  const paused = items.length <= 1 || openIndex !== null || hovered;
+
+  /* Autoplay: avanza en loop. Se reprograma cada vez que activeIndex se
+     asienta (manual o automático), así que mover el carrusel a mano reinicia
+     la cuenta en vez de competir con el temporizador.
+
+     Las tres razones para detenerlo viven juntas acá arriba a propósito:
+     antes estaban repartidas entre banderas distintas y era imposible saber
+     qué lo frenaba en táctil — de hecho, en táctil no lo frenaba nada. */
   useEffect(() => {
-    if (items.length <= 1 || hovered || openIndex !== null) return;
+    if (paused) return;
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const id = setTimeout(() => {
       scrollToIndex((activeIndex + 1) % items.length);
     }, AUTOPLAY_MS);
     return () => clearTimeout(id);
-  }, [activeIndex, items.length, hovered, openIndex, scrollToIndex]);
+  }, [activeIndex, items.length, paused, scrollToIndex]);
 
   if (items.length === 0) return null;
 
@@ -451,6 +498,8 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
          deja hueco fijo a los lados para las flechas, en vez de que floten
          encima de la primera/última tarjeta como pasaba antes. */
       style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '0 3.5rem' }}
+      /* Solo ratón. El equivalente táctil (dedo apoyado) se escucha en captura
+         sobre el track — ver el efecto de listeners más arriba. */
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

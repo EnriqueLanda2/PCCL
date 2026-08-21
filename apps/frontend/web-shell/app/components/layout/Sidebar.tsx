@@ -47,9 +47,6 @@ const menuCatalog: MenuItem[] = [
   { key: 'lessons',       path: appRoutes.lessons,       label: 'Temas y lecciones',   icon: 'catalog'    },
   { key: 'progress',      path: appRoutes.progress,      label: 'Estudiantes',         icon: 'progress'   },
   { key: 'certificates',  path: appRoutes.certificates,  label: 'Certificaciones',     icon: 'certificates' },
-  /* Perfil propio. No es una vista de gestión: cualquier usuario autenticado
-     debe poder llegar a su cuenta, y es además desde donde se cambia el avatar. */
-  { key: 'profile',       path: appRoutes.identity,      label: 'Perfil e impartición', icon: 'profile'   },
   { key: 'inscriptions',  path: appRoutes.inscriptions,  label: 'Inscripciones',       icon: 'inscriptions' },
   /* 'califications' se retiró del menú: la vista no aporta nada al usuario.
      La ruta y el módulo RBAC siguen existiendo, solo dejó de navegarse. */
@@ -59,11 +56,6 @@ const menuCatalog: MenuItem[] = [
 ];
 
 const learningGroup = new Set(['dashboard', 'aiRumbo', 'courses', 'catalog', 'liveClasses', 'earnings', 'lessons', 'progress']);
-/* El perfil propio vive aquí. Sin esta clave el grupo "Cuenta" no se renderiza
-   y la entrada queda huérfana en `menuCatalog`: existe en el catálogo pero
-   ningún grupo la pinta, así que no hay manera de llegar al perfil desde el
-   menú. */
-const identityGroup = new Set(['profile']);
 const certificationGroup = new Set(['certificates']);
 const extraGroup = new Set(['inscriptions', 'reports', 'users', 'rbac']);
 
@@ -72,7 +64,7 @@ const extraGroup = new Set(['inscriptions', 'reports', 'users', 'rbac']);
    justo lo que pasó con "Perfil e impartición". Las claves sin grupo caen en
    "Más" en lugar de volverse invisibles. */
 const GROUPED_KEYS = new Set<string>([
-  ...learningGroup, ...identityGroup, ...certificationGroup, ...extraGroup,
+  ...learningGroup, ...certificationGroup, ...extraGroup,
 ]);
 /* Visibles para cualquier usuario autenticado — no están atados a un privilegio
    RBAC. El catálogo entra aquí porque inscribirse no requiere permisos de
@@ -80,7 +72,7 @@ const GROUPED_KEYS = new Set<string>([
 /* 'aiRumbo' entra aquí también: es una vista nueva de puro frontend que el
    backend de RBAC no conoce, así que nunca vendría en su menú — sin esto
    quedaría oculta para todos aunque el módulo exista. */
-const ALWAYS_VISIBLE_KEYS = ['profile', 'catalog', 'earnings', 'aiRumbo'];
+const ALWAYS_VISIBLE_KEYS = ['catalog', 'earnings', 'aiRumbo'];
 
 /* Vistas de gestión docente: listan datos de OTROS alumnos, así que se
    restringen por rol y no por privilegio. Un alumno conserva
@@ -323,7 +315,6 @@ export function Sidebar() {
     (m) => visibleKeys.includes(m.key) && (!STAFF_ONLY_KEYS.has(m.key) || isStaff),
   );
   const learningItems   = menu.filter((m) => learningGroup.has(m.key));
-  const identityItems   = menu.filter((m) => identityGroup.has(m.key));
   const certificationItems = menu.filter((m) => certificationGroup.has(m.key));
   const extraItems      = menu.filter((m) => extraGroup.has(m.key) || !GROUPED_KEYS.has(m.key));
 
@@ -351,7 +342,11 @@ export function Sidebar() {
         aria-label="Abrir menú"
         aria-expanded={mobileOpen}
         className={cn(
-          'fixed left-3 top-3 z-40 flex h-10 w-10 items-center justify-center rounded-full lg:hidden',
+          /* z-[310], no z-40: DashboardTopbar es z-[300] y este botón "va fijo
+             sobre esta barra" (ver el comentario en DashboardTopbar.tsx) — con
+             z-40 el header lo tapaba por completo, igual que le pasaba al
+             chevron de colapsar en desktop (ver el <aside> más abajo). */
+          'fixed left-3 top-3 z-[310] flex h-10 w-10 items-center justify-center rounded-full lg:hidden',
           'border border-[var(--sidebar-border)] bg-white text-[var(--green-700)] shadow-[0_8px_18px_rgba(23,50,77,0.12)]',
           mobileOpen && 'pointer-events-none opacity-0',
         )}
@@ -365,7 +360,10 @@ export function Sidebar() {
           type="button"
           aria-label="Cerrar menú"
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-[rgba(17,41,26,0.45)] backdrop-blur-[2px] lg:hidden"
+          /* Entre el header (z-[300]) y el <aside>/drawer (z-[310]): así el
+             header queda cubierto y sin poder recibir clics con el drawer
+             abierto, en vez de asomar por encima interactivo. */
+          className="fixed inset-0 z-[305] bg-[rgba(17,41,26,0.45)] backdrop-blur-[2px] lg:hidden"
         />
       )}
 
@@ -376,7 +374,15 @@ export function Sidebar() {
              fuerza overflow-x a auto también (visible no es combinable), y eso
              recortaba el chevron y el badge que sobresalen del borde. El scroll
              vive ahora en el <nav> de adentro. */
-          'bg-[var(--sidebar)] flex flex-col py-4 z-50',
+          /* z-[310], no z-50: el botón de colapsar sobresale del borde derecho
+             (right: -1.6rem, ver más abajo) hacia el hueco donde empieza
+             DashboardTopbar (z-[300]). El zIndex:20 del botón NO alcanza para
+             ganarle — está acotado al contexto de apilamiento de ESTE <aside>,
+             nunca compite contra el header, que es una caja completamente
+             aparte. Por eso el <aside> entero necesita superar al header, no
+             solo el botón. Se deja hueco por debajo de Modal (z-[400]) para
+             que un modal siga tapando el sidebar como corresponde. */
+          'bg-[var(--sidebar)] flex flex-col py-4 z-[310]',
           'border-r border-[var(--sidebar-border)] shadow-[0_0_0_1px_rgba(255,255,255,0.65)_inset]',
           'transition-[width,transform] duration-300 ease-in-out',
           /* Móvil: drawer superpuesto. Desktop: columna que acompaña el scroll.
@@ -456,22 +462,6 @@ export function Sidebar() {
             <>
               <SectionLabel collapsed={rail}>Gestión</SectionLabel>
               {learningItems.map((item) => (
-                <NavItem
-                  key={item.key}
-                  item={item}
-                  collapsed={rail}
-                  isActive={pathname.startsWith(item.path)}
-                  onNavigate={closeDrawer}
-                />
-              ))}
-            </>
-          )}
-
-          {/* ── Identity section ── */}
-          {identityItems.length > 0 && (
-            <>
-              <SectionLabel collapsed={rail}>Cuenta</SectionLabel>
-              {identityItems.map((item) => (
                 <NavItem
                   key={item.key}
                   item={item}

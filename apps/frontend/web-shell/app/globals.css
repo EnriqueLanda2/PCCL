@@ -371,6 +371,9 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: translateZ(0.1px);
+  /* La transición vive acá y no en la escena, porque es en la cara donde
+     aparece y desaparece el anillo verde (ver .holo-scene-active .holo-face). */
+  transition: box-shadow 300ms ease;
 
   /* Acabado tomado de PricingCard del registry: esquina 24px, superficie
      translúcida con desenfoque y borde hairline. La mecánica del volteo
@@ -426,9 +429,25 @@
 .holo-scene-active {
   border-radius: 24px;
   transition: box-shadow 300ms ease;
+  /* Solo la sombra ambiental: es la que proyecta la tarjeta sobre el fondo, así
+     que NO debe girar con ella. El anillo verde vive abajo, en las caras. */
+  box-shadow: 0 6px 16px -6px rgba(26, 122, 74, 0.35);
+}
+
+/* El anillo verde de "tarjeta activa" va en las CARAS, no en la escena.
+   .holo-scene solo aporta la perspectiva y nunca rota; quien gira es
+   .holo-flipper, que está dentro. Con el anillo afuera, la tarjeta giraba y su
+   borde se quedaba quieto. En la cara gira con ella, y de paso acompaña al
+   tilt del puntero, que antes tampoco lo movía.
+
+   Se repite la piel de .holo-face porque box-shadow no se acumula entre reglas:
+   declarar solo el anillo borraría el brillo interior y la sombra de material.
+   Frente y reverso llevan ambos .holo-face, así que las dos caras lo reciben. */
+.holo-scene-active .holo-face {
   box-shadow:
     0 0 0 3px var(--green-300, #86e0b0),
-    0 6px 16px -6px rgba(26, 122, 74, 0.35);
+    0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+    0 18px 40px -18px rgba(14, 26, 38, 0.28);
 }
 
 @keyframes sparkle-twinkle {
@@ -1219,7 +1238,11 @@
 
 .rumbo2a-fade-up { animation: rumbo2a-fade-up 0.7s ease both; }
 
-.rumbo2a-topbar { padding: 20px 40px; gap: 16px; flex-wrap: wrap; }
+/* position:relative lo vuelve el ancla del panel móvil, que cuelga de él con
+   top:100% — así el panel se posiciona contra ESTE header sin importar su
+   alto real (varía por padding/breakpoint), en vez de un offset fijo en px
+   que se desalinearía en cuanto la barra cambiara de tamaño. */
+.rumbo2a-topbar { position: relative; padding: 20px 40px; gap: 16px; flex-wrap: wrap; }
 .rumbo2a-topbar-nav { display: flex; gap: 28px; }
 .rumbo2a-badge span:last-child { display: inline; }
 
@@ -1242,13 +1265,26 @@
 }
 .rumbo2a-menu-btn:hover { border-color: #bfe0cd; }
 
+/* position:absolute (no static) para que sea un DESPLEGABLE de verdad: flota
+   sobre el hero en vez de ocupar espacio en el flujo y empujarlo hacia abajo.
+   z-index:80 basta para ganarle a cualquier cosa del hero (nada ahí pasa de
+   z-index:1; las transformadas del carrusel, como .holo-scene-active, crean
+   su propio contexto de apilamiento y no compiten con esto) y se queda por
+   debajo del splash de bienvenida (.book-intro-overlay, z-index:90), que de
+   cualquier modo bloquea los clics mientras está activo. */
 .rumbo2a-mobile-panel {
   display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 80;
   flex-direction: column;
   gap: 2px;
   padding: 10px 20px 18px;
   background: #ffffff;
   border-bottom: 1px solid #e3efe7;
+  box-shadow: 0 16px 32px -12px rgba(22, 36, 28, 0.18);
 }
 .rumbo2a-mobile-panel a {
   color: #16241c;
@@ -1285,6 +1321,30 @@
 .card-carousel-track { justify-content: flex-start; }
 @supports (justify-content: safe center) {
   .card-carousel-track { justify-content: safe center; }
+}
+
+/* En móvil solo cabe UNA tarjeta, así que la del centro debe quedar centrada
+   de verdad — incluida la primera y la última.
+
+   Con overflow, el `safe center` de arriba vuelve a flex-start (es su
+   trabajo), y entonces la primera tarjeta se apoya en el borde izquierdo del
+   contenido: queda descentrada tanto como holgura sobre el track, y NO hay
+   forma de arreglarlo scrolleando porque scrollLeft no puede ser negativo.
+   Medido en un viewport de 412px: track 300px, tarjeta 236px → 28px corridos
+   a la izquierda.
+
+   La holgura se convierte en padding del propio contenedor de scroll, que sí
+   forma parte del área scrolleable: así la primera tarjeta arranca ya
+   centrada y la última puede llegar al centro. El 100% se resuelve contra el
+   ancho del padre, no contra el del track.
+
+   El 14.75rem DEBE seguir a `w-[14.75rem]` de CourseHoloCard (CardCarousel.tsx).
+   Solo hasta 639px porque a partir de `sm` la tarjeta pasa a 16.25rem y ya
+   caben varias, donde centrar la primera no es lo que se espera. */
+@media (max-width: 639px) {
+  .card-carousel-track {
+    padding-inline: max(0.25rem, calc((100% - 14.75rem) / 2));
+  }
 }
 
 .rumbo2a-stats-row { display: flex; justify-content: center; gap: 56px; padding: 24px 40px 36px; flex-wrap: wrap; }

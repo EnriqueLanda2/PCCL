@@ -18,6 +18,8 @@ export const APP_ICONS = {
   trash:       'solar:trash-bin-trash-bold',
   upload:      'solar:upload-bold',
   lock:        'solar:lock-keyhole-bold',
+  eye:         'solar:eye-bold',
+  eyeClosed:   'solar:eye-closed-bold',
   check:       'solar:check-circle-bold',
   checkFilled: 'solar:check-circle-bold-duotone',
   warning:     'solar:danger-triangle-bold-duotone',

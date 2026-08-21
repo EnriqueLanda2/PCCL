@@ -57,7 +57,7 @@ export function Footer() {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '2rem', borderTop: '1px solid var(--neutral-100)', flexWrap: 'wrap', gap: '1rem' }}>
-        <span style={{ color: 'var(--ink-muted)' }}>© {year} Lumen.edu · Hecho con paciencia.</span>
+        <span style={{ color: 'var(--ink-muted)' }}>© {year} koodisoft.com · Hecho con paciencia.</span>
         <span style={{ color: 'var(--neutral-400)' }}>v1.0</span>
       </div>
     </footer>

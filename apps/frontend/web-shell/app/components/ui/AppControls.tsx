@@ -3,6 +3,7 @@
 import { Children, isValidElement, useState, type ReactNode } from 'react';
 import { Icon } from '@iconify/react';
 import MuiButton, { type ButtonProps as MuiButtonProps } from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import MuiSelect, { type SelectProps as MuiSelectProps } from '@mui/material/Select';
 import TextField, { type TextFieldProps } from '@mui/material/TextField';
@@ -37,22 +38,49 @@ const buttonSx = {
 export function AppInput({
   sx,
   withSearchIcon = false,
+  type,
   slotProps,
   ...props
 }: TextFieldProps & { withSearchIcon?: boolean }) {
+  /* Transparente para quien llama: basta con type="password", igual que en el
+     <Input> de texto plano (ui/Input.tsx) — cualquier AppInput de contraseña,
+     presente o futuro, hereda el ojo sin cambiar el sitio donde se usa. */
+  const isPassword = type === 'password';
+  const [revealed, setRevealed] = useState(false);
+
+  const needsAdornment = withSearchIcon || isPassword;
+
   return (
     <TextField
       fullWidth
       size="small"
+      type={isPassword ? (revealed ? 'text' : 'password') : type}
       sx={{ ...fieldSx, ...sx }}
-      slotProps={withSearchIcon ? {
+      slotProps={needsAdornment ? {
         ...slotProps,
         input: {
-          startAdornment: (
-            <InputAdornment position="start">
-              <Icon icon={APP_ICONS.search} width={16} height={16} style={{ color: 'var(--ink-muted)' }} />
-            </InputAdornment>
-          ),
+          ...(withSearchIcon && {
+            startAdornment: (
+              <InputAdornment position="start">
+                <Icon icon={APP_ICONS.search} width={16} height={16} style={{ color: 'var(--ink-muted)' }} />
+              </InputAdornment>
+            ),
+          }),
+          ...(isPassword && {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  type="button"
+                  onClick={() => setRevealed((v) => !v)}
+                  aria-label={revealed ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  edge="end"
+                  size="small"
+                >
+                  <Icon icon={revealed ? APP_ICONS.eyeClosed : APP_ICONS.eye} width={18} height={18} />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }),
         },
       } : slotProps}
       {...props}
