@@ -301,7 +301,7 @@ function arrowSx(disabled: boolean, side: 'left' | 'right') {
 }
 
 /** Cada cuánto avanza el autoplay. Se reinicia cada vez que el usuario mueve el carrusel a mano (scroll o flechas). */
-const AUTOPLAY_MS = 1000;
+const AUTOPLAY_MS = 3000;
 /** Cuánto debe descansar el cursor sobre una tarjeta antes de que el enfoque cambie a ella. */
 const HOVER_FOCUS_DELAY_MS = 500;
 
@@ -362,10 +362,10 @@ export function CardCarousel({ items }: Readonly<{ items: CardCarouselItem[] }>)
        registra aunque algún hijo detenga la propagación. Cubre dedo y ratón
        con el mismo par de eventos. */
     /* Corta en seco el scroll suave que el autoplay pudiera tener en vuelo.
-       Sin esto, la tarjeta sigue desplazándose bajo el dedo mientras se
-       completa el gesto: se acaba abriendo una que ya iba de salida y
-       centrarla arrastra el carrusel HACIA ATRÁS, que es justo el salto a
-       "la tarjeta previa" que se veía. Un scrollTo a la posición actual con
+         Sin esto, la tarjeta sigue desplazándose bajo el dedo mientras se
+         completa el gesto: se acaba abriendo una que ya iba de salida y
+         centrarla arrastra el carrusel HACIA ATRÁS, que es justo el salto a
+         "la tarjeta previa" que se veía. Un scrollTo a la posición actual con
        behavior instantáneo aborta la animación en curso.
        En captura y sobre el track, no en el contenedor: así se registra aunque
        algún hijo detenga la propagación. */
