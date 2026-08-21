@@ -312,6 +312,30 @@ model LiveSession {
   @@map("live_sessions")
 }
 
+/// Resultado real de una trivia de estudio generada por AIRumbo y contestada
+/// por voz desde la skill de Alexa. Es la fuente de verdad tanto para lo que
+/// Alexa dice en "cómo voy en mis estudios" como para cualquier vista futura
+/// en la web: no se inventa ni se cachea en Alexa, se calcula desde aquí.
+/// userId apunta a identity-service, igual que en Inscription/ChatMessage,
+/// por eso no hay relación SQL. alexaUserId es el id crudo que manda Alexa,
+/// se guarda solo como bitácora de qué dispositivo/cuenta de Alexa disparó
+/// el resultado.
+model AlexaTriviaResult {
+  id          String   @id @default(uuid()) @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  userId      String   @map("user_id") @db.Uuid
+  alexaUserId String   @map("alexa_user_id") @db.VarChar(200)
+  courseId    String?  @map("course_id") @db.Uuid
+  topic       String   @db.VarChar(140)
+  total       Int
+  correct     Int
+  score       Int
+  answers     Json
+
+  @@index([userId])
+  @@map("alexa_trivia_results")
+}
+
 model EvaluationAttempt {
   id              String     @id @default(uuid()) @db.Uuid
   transactionDate DateTime   @default(now()) @map("transaction_date") @db.Timestamp(6)

@@ -11,6 +11,8 @@ import { CertificationController } from './certification/certification.controlle
 import { PaymentController } from './payment/payment.controller';
 import { StatsController } from './stats/stats.controller';
 import { UploadsModule } from './uploads/uploads.module';
+import { AlexaController } from './alexa/alexa.controller';
+import { AlexaApiKeyGuard } from './alexa/alexa-api-key.guard';
 
 @Module({
   imports: [
@@ -31,13 +33,14 @@ import { UploadsModule } from './uploads/uploads.module';
     MessagingModule.forGateway(),
     UploadsModule,
   ],
-  providers: [JwtStrategy, JaasService],
+  providers: [JwtStrategy, JaasService, AlexaApiKeyGuard],
   controllers: [
     IdentityController,
     LearningController,
     CertificationController,
     PaymentController,
     StatsController,
+    AlexaController,
   ],
 })
 export class AppModule {}

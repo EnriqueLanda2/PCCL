@@ -76,4 +76,9 @@ export const LEARNING_PATTERNS = {
   CHAT_CLEAR_HISTORY: 'learning.chat.clear_history',
   CHAT_LIST_CONVERSATIONS: 'learning.chat.list_conversations',
   CHAT_DELETE_FROM: 'learning.chat.delete_from',
+
+  ALEXA_SCHEDULE_CLASS: 'learning.alexa.schedule_class',
+  ALEXA_GENERATE_TRIVIA: 'learning.alexa.generate_trivia',
+  ALEXA_SAVE_TRIVIA_RESULT: 'learning.alexa.save_trivia_result',
+  ALEXA_GET_PROGRESS: 'learning.alexa.get_progress',
 } as const;
