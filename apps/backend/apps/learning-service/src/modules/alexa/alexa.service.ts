@@ -134,6 +134,11 @@ export class AlexaService {
       throw new BadRequestException('Esa fecha u hora ya pasó. Elige una fecha futura.');
     }
 
+    const course = await this.findCourseByTopic(topic);
+    if (!course) {
+      throw new NotFoundException(`No encontré un curso activo de "${topic}" en PCCL.`);
+    }
+
     const { email } = this.linkedHost();
     const title = `Clase de ${topic}`;
 
@@ -144,11 +149,10 @@ export class AlexaService {
     });
     if (existing) return this.toAgendaResponse(existing, topic, input.date, input.time);
 
-    const course = await this.findCourseByTopic(topic);
     /* Solo se ata al curso si además tiene una fase: create() exige fase
        cuando hay courseId (ver assertPhase en LiveSessionsService), y un
        curso publicado sin fases no tiene dónde encajar la clase. */
-    const phaseId = course?.phases[0]?.id;
+    const phaseId = course.phases[0]?.id;
 
     const created = await this.liveSessions.create(
       {
