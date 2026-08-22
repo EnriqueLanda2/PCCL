@@ -9,6 +9,7 @@ const OLLAMA_TIMEOUT_MS = 100_000;
 const AIRUMBO_UNAVAILABLE_MESSAGE =
   'AIRumbo no está disponible en este momento. Intenta de nuevo más tarde.';
 const VALID_OPTIONS = ['A', 'B', 'C', 'D'] as const;
+const TRIVIA_COUNTS = [3, 5, 10, 20] as const;
 
 interface ScheduleClassInput {
   topic: string;
@@ -199,8 +200,8 @@ export class AlexaService {
   async generateTrivia(input: GenerateTriviaInput) {
     const topic = input.topic?.trim();
     if (!topic) throw new BadRequestException('Falta el tema de la trivia.');
-    if (input.count !== 10 && input.count !== 20) {
-      throw new BadRequestException('Solo se permiten trivias de 10 o 20 preguntas.');
+    if (!TRIVIA_COUNTS.includes(input.count as (typeof TRIVIA_COUNTS)[number])) {
+      throw new BadRequestException('Solo se permiten trivias de 3, 5, 10 o 20 preguntas.');
     }
 
     const course = await this.findCourseByTopic(topic);
@@ -212,11 +213,15 @@ export class AlexaService {
       where: { courseId: course.id },
       select: { title: true, content: true },
       orderBy: { createdAt: 'asc' },
-      take: 12,
+      /* Alexa debe contestar en pocos segundos. Mandar doce lecciones largas
+         al modelo 7B gastaba la mayor parte del tiempo en procesar entrada,
+         antes incluso de generar una pregunta. Tres extractos conservan la
+         base real del curso y hacen viable una trivia corta por voz. */
+      take: 3,
     });
 
     const material = lessons.length
-      ? lessons.map((l) => `- ${l.title}: ${l.content.slice(0, 600)}`).join('\n')
+      ? lessons.map((l) => `- ${l.title}: ${l.content.slice(0, 250)}`).join('\n')
       : `Curso: ${course.title} (sin lecciones todavía; genera preguntas generales sobre el título del curso).`;
 
     const questions = await this.askAIRumboForTrivia(course.title, material, input.count);
@@ -235,9 +240,15 @@ export class AlexaService {
       `Responde ÚNICAMENTE con un JSON válido, sin texto adicional ni markdown, con esta forma exacta: ` +
       `{"questions":[{"question":"...","options":{"A":"...","B":"...","C":"...","D":"..."},"correctAnswer":"A","explanation":"..."}]}. ` +
       `Genera exactamente ${count} preguntas distintas entre sí, en español, claras para leerse en voz alta. ` +
+      `Sé breve: pregunta de máximo 100 caracteres, cada opción de máximo 50 y explicación de máximo 120. ` +
       `"correctAnswer" debe ser siempre una de "A", "B", "C" o "D".`;
 
-    const raw = await this.callOllamaJson([{ role: 'system', content: systemPrompt }]);
+    /* Da espacio suficiente para JSON válido, sin permitir que una trivia de
+       tres preguntas monopolice la ventana de respuesta de Alexa. */
+    const raw = await this.callOllamaJson(
+      [{ role: 'system', content: systemPrompt }],
+      count <= 3 ? 900 : undefined,
+    );
 
     let parsed: { questions?: unknown };
     try {
@@ -283,7 +294,10 @@ export class AlexaService {
     }));
   }
 
-  private async callOllamaJson(messages: { role: string; content: string }[]): Promise<string> {
+  private async callOllamaJson(
+    messages: { role: string; content: string }[],
+    numPredict?: number,
+  ): Promise<string> {
     const url = process.env.OLLAMA_URL ?? 'http://localhost:11434';
     const model = process.env.OLLAMA_MODEL ?? 'llama3.1';
     const basicAuthUser = process.env.OLLAMA_BASIC_AUTH_USERNAME?.trim();
@@ -301,7 +315,14 @@ export class AlexaService {
       res = await fetch(`${url}/api/chat`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ model, messages, stream: false, format: 'json', keep_alive: '30m' }),
+        body: JSON.stringify({
+          model,
+          messages,
+          stream: false,
+          format: 'json',
+          keep_alive: '30m',
+          ...(numPredict ? { options: { num_predict: numPredict, temperature: 0.2 } } : {}),
+        }),
         signal: controller.signal,
       });
     } catch {
