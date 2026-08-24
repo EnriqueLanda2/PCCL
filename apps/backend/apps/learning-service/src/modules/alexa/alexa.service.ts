@@ -239,7 +239,8 @@ export class AlexaService {
       `Básate ÚNICAMENTE en el siguiente material real del curso, no inventes temas fuera de él:\n\n${material}\n\n` +
       `Responde ÚNICAMENTE con un JSON válido, sin texto adicional ni markdown, con esta forma exacta: ` +
       `{"questions":[{"question":"...","options":{"A":"...","B":"...","C":"...","D":"..."},"correctAnswer":"A","explanation":"..."}]}. ` +
-      `Genera exactamente ${count} preguntas distintas entre sí, en español, claras para leerse en voz alta. ` +
+      `Genera exactamente ${count} preguntas distintas entre sí, completamente en español mexicano, claras para leerse en voz alta. ` +
+      `Está PROHIBIDO usar caracteres chinos, japoneses o coreanos; traduce cualquier texto del material al español. ` +
       `Sé breve: pregunta de máximo 100 caracteres, cada opción de máximo 50 y explicación de máximo 120. ` +
       `"correctAnswer" debe ser siempre una de "A", "B", "C" o "D".`;
 
@@ -258,6 +259,7 @@ export class AlexaService {
     }
 
     const rawQuestions = Array.isArray(parsed.questions) ? parsed.questions : [];
+    const hasAsianCharacters = (value: string) => /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/u.test(value);
     const valid = rawQuestions.filter((q): q is {
       question: string;
       options: Record<string, string>;
@@ -269,7 +271,8 @@ export class AlexaService {
       const options = item.options as Record<string, unknown> | undefined;
       if (!options) return false;
       const hasAllOptions = VALID_OPTIONS.every((k) => typeof options[k] === 'string' && (options[k] as string).length > 0);
-      return hasAllOptions && VALID_OPTIONS.includes(item.correctAnswer.toUpperCase() as (typeof VALID_OPTIONS)[number]);
+      const text = [item.question, ...VALID_OPTIONS.map((k) => options[k] as string), typeof item.explanation === 'string' ? item.explanation : ''].join(' ');
+      return hasAllOptions && !hasAsianCharacters(text) && VALID_OPTIONS.includes(item.correctAnswer.toUpperCase() as (typeof VALID_OPTIONS)[number]);
     });
 
     if (valid.length < count) {
