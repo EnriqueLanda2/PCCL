@@ -13,6 +13,8 @@ export const IDENTITY_PATTERNS = {
   RBAC_CATALOGS: 'identity.rbac.catalogs',
   PUSH_TOKEN_REGISTER: 'identity.push_token.register',
   PUSH_NOTIFY_USERS: 'identity.push.notify_users',
+  PUSH_NOTIFY_EMAIL: 'identity.push.notify_email',
+  PUSH_NOTIFY_ROLE: 'identity.push.notify_role',
   NOTIFICATION_FIND_ALL: 'identity.notification.find_all',
   NOTIFICATION_UNREAD_COUNT: 'identity.notification.unread_count',
   NOTIFICATION_MARK_READ: 'identity.notification.mark_read',

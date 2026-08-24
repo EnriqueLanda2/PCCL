@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import IconButton from '@mui/material/IconButton';
 import { Logo } from './Logo';
@@ -155,7 +155,6 @@ function NavItem({ item, collapsed, isActive, onNavigate }: Readonly<{ item: Men
 /* ── Main component ── */
 export function Sidebar() {
   const pathname = usePathname();
-  const router   = useRouter();
 
   /* Valores por defecto — deben calzar EXACTO entre servidor y el primer render
      del cliente (antes de que corra el useEffect) para evitar un hydration
@@ -322,13 +321,20 @@ export function Sidebar() {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    await api.logout().catch(() => {});
-    sessionStorage.removeItem('pccl_user');
-    sessionStorage.removeItem('pccl_access');
-    /* Va aparte porque vive en localStorage: sin esto el siguiente login vería
-       el nombre del usuario anterior hasta que terminara de hidratarse. */
-    clearUserName();
-    router.replace(appRoutes.login);
+    try {
+      await api.logout().catch(() => {});
+      sessionStorage.removeItem('pccl_user');
+      sessionStorage.removeItem('pccl_access');
+      /* Va aparte porque vive en localStorage: sin esto el siguiente login vería
+         el nombre del usuario anterior hasta que terminara de hidratarse. */
+      clearUserName();
+    } finally {
+      /* Navegación dura (no router.replace): el proxy de sesión decide qué
+         renderizar según la cookie httpOnly, y el router cache de Next puede
+         servir el árbol autenticado que ya tenía guardado para esta ruta. Un
+         reload real fuerza que el proxy vuelva a evaluar la cookie ya borrada. */
+      window.location.href = appRoutes.login;
+    }
   };
 
   /* En móvil el drawer siempre se muestra expandido: colapsarlo a iconos ahí no

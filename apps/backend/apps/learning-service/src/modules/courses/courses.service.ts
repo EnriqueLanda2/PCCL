@@ -1,5 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DataScope } from '@app/contracts';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { IDENTITY_CLIENT } from '@app/messaging';
+import { DataScope, IDENTITY_PATTERNS } from '@app/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { courseWhereFor } from '../../common/scope-filter';
 import { CreateCourseDto } from './dtos/create-course.dto';
@@ -7,7 +9,27 @@ import { UpdateCourseDto } from './dtos/update-course.dto';
 
 @Injectable()
 export class CoursesService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CoursesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(IDENTITY_CLIENT) private readonly identityClient: ClientProxy,
+  ) {}
+
+  /** Ninguna notificación debe tumbar el flujo real (enviar a revisión,
+      aprobar, rechazar) si identity-service está lento o caído — por eso
+      siempre se dispara "fire and forget" con su propio catch. */
+  private notifyByRole(role: string, title: string, body: string) {
+    this.identityClient.send(IDENTITY_PATTERNS.PUSH_NOTIFY_ROLE, { role, title, body }).subscribe({
+      error: (err) => this.logger.warn(`No se pudo notificar al rol ${role}: ${(err as Error).message}`),
+    });
+  }
+
+  private notifyByEmail(email: string, title: string, body: string) {
+    this.identityClient.send(IDENTITY_PATTERNS.PUSH_NOTIFY_EMAIL, { email, title, body }).subscribe({
+      error: (err) => this.logger.warn(`No se pudo notificar a ${email}: ${(err as Error).message}`),
+    });
+  }
 
   private async withCourseStats<T extends { id: string }>(courses: T[]) {
     if (courses.length === 0) return courses;
@@ -178,6 +200,11 @@ export class CoursesService {
       where: { id },
       data: { status: 'pending_review', updatedBy: actor },
     });
+    this.notifyByRole(
+      'revisor',
+      'Curso en espera de revisión',
+      `"${course.title}" está en tu cola de revisión.`,
+    );
     return this.findOne(id);
   }
 
@@ -209,6 +236,21 @@ export class CoursesService {
         updatedBy: actor,
       },
     });
+    if (course.createdBy) {
+      if (decision === 'rejected') {
+        this.notifyByEmail(
+          course.createdBy,
+          'Tu curso fue rechazado',
+          `"${course.title}" fue rechazado: ${trimmedNote}`,
+        );
+      } else {
+        this.notifyByEmail(
+          course.createdBy,
+          'Tu curso fue publicado',
+          `"${course.title}" fue aprobado y ya está publicado en el catálogo.`,
+        );
+      }
+    }
     return this.findOne(id);
   }
 

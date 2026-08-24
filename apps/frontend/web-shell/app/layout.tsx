@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter';
 import { NavigatorBridge } from '@/app/components/shared/NavigatorBridge';
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export default function RootLayout({
           <style>{'.reveal-on-scroll{opacity:1 !important;transform:none !important;}'}</style>
         </noscript>
         <NavigatorBridge />
-        {children}
+        <AppRouterCacheProvider options={{ key: 'mui' }}>{children}</AppRouterCacheProvider>
       </body>
     </html>
   );

@@ -1,6 +1,12 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { IDENTITY_PATTERNS, PushNotifyUsersPayload, PushTokenRegisterPayload } from '@app/contracts';
+import {
+  IDENTITY_PATTERNS,
+  PushNotifyEmailPayload,
+  PushNotifyRolePayload,
+  PushNotifyUsersPayload,
+  PushTokenRegisterPayload,
+} from '@app/contracts';
 import { PushService } from './push.service';
 
 @Controller()
@@ -15,6 +21,16 @@ export class PushController {
   @MessagePattern(IDENTITY_PATTERNS.PUSH_NOTIFY_USERS)
   notify(@Payload() payload: PushNotifyUsersPayload) {
     return this.pushService.notifyUsers(payload.userIds, payload.title, payload.body);
+  }
+
+  @MessagePattern(IDENTITY_PATTERNS.PUSH_NOTIFY_EMAIL)
+  notifyEmail(@Payload() payload: PushNotifyEmailPayload) {
+    return this.pushService.notifyByEmail(payload.email, payload.title, payload.body);
+  }
+
+  @MessagePattern(IDENTITY_PATTERNS.PUSH_NOTIFY_ROLE)
+  notifyRole(@Payload() payload: PushNotifyRolePayload) {
+    return this.pushService.notifyByRole(payload.role, payload.title, payload.body);
   }
 
   @MessagePattern(IDENTITY_PATTERNS.NOTIFICATION_FIND_ALL)

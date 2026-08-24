@@ -43,6 +43,22 @@ export interface PushNotifyUsersPayload {
   body: string;
 }
 
+/** Para servicios que no conocen el userId del destinatario (ej. learning-
+    service solo guarda el email del creador de un curso, no su id). */
+export interface PushNotifyEmailPayload {
+  email: string;
+  title: string;
+  body: string;
+}
+
+/** Para avisar a todos los que tengan un rol (ej. todos los 'revisor' cuando
+    entra un curso nuevo a la cola) sin que el emisor sepa quiénes son. */
+export interface PushNotifyRolePayload {
+  role: string;
+  title: string;
+  body: string;
+}
+
 export interface NotificationRecord {
   id: string;
   title: string;

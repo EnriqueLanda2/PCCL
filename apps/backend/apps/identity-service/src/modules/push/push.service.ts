@@ -50,6 +50,25 @@ export class PushService {
     return { sent: tokens.length - invalidTokens.length };
   }
 
+  /** Para servicios que solo conocen el email del destinatario (learning-
+      service guarda `createdBy` como email, no como id de usuario). */
+  async notifyByEmail(email: string, title: string, body: string) {
+    const user = await this.prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (!user) return { sent: 0 };
+    return this.notifyUsers([user.id], title, body);
+  }
+
+  /** Para avisar a todos los que tengan un rol activo (ej. todo el equipo de
+      revisores cuando entra un curso nuevo a la cola). */
+  async notifyByRole(roleName: string, title: string, body: string) {
+    const userRoles = await this.prisma.userRole.findMany({
+      where: { role: { name: roleName }, user: { active: true } },
+      select: { userId: true },
+    });
+    const userIds = [...new Set(userRoles.map((r) => r.userId))];
+    return this.notifyUsers(userIds, title, body);
+  }
+
   async findForUser(userId: string) {
     const rows = await this.prisma.notification.findMany({
       where: { userId },
