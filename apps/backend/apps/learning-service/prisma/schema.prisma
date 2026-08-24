@@ -363,7 +363,9 @@ model AlexaTriviaResult {
   id          String   @id @default(uuid()) @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   userId      String   @map("user_id") @db.Uuid
-  alexaUserId String   @map("alexa_user_id") @db.VarChar(200)
+  // Los identificadores actuales de cuentas Alexa pueden superar 200 caracteres.
+  // TEXT conserva el valor completo para auditoría sin rechazar resultados válidos.
+  alexaUserId String   @map("alexa_user_id") @db.Text
   courseId    String?  @map("course_id") @db.Uuid
   topic       String   @db.VarChar(140)
   total       Int
