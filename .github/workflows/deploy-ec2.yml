@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 60
     env:
       # Avoid exhausting the small EC2 while Docker rebuilds all services.
-      COMPOSE_PARALLEL_LIMIT: 2
+      COMPOSE_PARALLEL_LIMIT: 1
 
     steps:
       - name: Update production checkout
@@ -57,6 +57,16 @@ jobs:
             echo "scope=none" >> "$GITHUB_OUTPUT"
           fi
 
+      # Only removes Docker resources that are not in use. Running containers
+      # and all named volumes (including databases) are preserved.
+      - name: Reclaim unused Docker build space
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker builder prune --all --force
+          docker image prune --force
+          docker container prune --force
+
       - name: Rebuild and start only affected services
         shell: bash
         run: |
@@ -92,3 +102,6 @@ jobs:
         run: |
           cd /home/ubuntu/PCCL
           docker compose -f infra/docker/compose/docker-compose.prod.yml ps
+          # Avoid accumulating unused layers after a successful deployment.
+          docker builder prune --all --force
+          docker image prune --force
